@@ -1,0 +1,51 @@
+{
+  "name": "materiabill",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": "22.14.0",
+    "pnpm": "10.26.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml": "^4.2.0",
+      "multer": "^2.2.0"
+    }
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "knip": "knip --config knip.json",
+    "audit": "pnpm audit --audit-level=high",
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm knip && pnpm audit && pnpm build",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "turbo run dev --filter=@materiabill/api",
+    "dev:worker": "turbo run dev --filter=@materiabill/worker",
+    "dev:admin": "turbo run dev --filter=@materiabill/admin",
+    "prepare": "node scripts/install-git-hooks.mjs"
+  },
+  "devDependencies": {
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.0.1",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.7.0",
+    "knip": "^6.23.0",
+    "lefthook": "^2.1.9",
+    "prettier": "^3.9.3",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "turbo": "^2.10.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,60 @@
+name: Auto Assign PR Author
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  assign-author:
+    name: Assign PR author
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign author when eligible
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { pull_request } = context.payload;
+            const login = pull_request.user?.login;
+            const association = pull_request.author_association;
+
+            if (!login) {
+              core.notice('Skipping auto-assign: pull request author is missing.');
+              return;
+            }
+
+            if (login.endsWith('[bot]')) {
+              core.notice(`Skipping auto-assign for bot author ${login}.`);
+              return;
+            }
+
+            const eligibleAssociations = new Set(['COLLABORATOR', 'MEMBER', 'OWNER']);
+
+            if (!eligibleAssociations.has(association)) {
+              core.notice(`Skipping auto-assign for non-collaborator author association ${association}.`);
+              return;
+            }
+
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pull_request.number,
+                assignees: [login],
+              });
+              core.info(`Assigned ${login} to PR #${pull_request.number}.`);
+            } catch (error) {
+              if (error.status === 422) {
+                core.notice(`Skipping auto-assign for ${login}: GitHub does not allow assignment in this repository.`);
+                return;
+              }
+
+              throw error;
+            }

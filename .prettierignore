@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.pnpm-store/
+.serena/
+.superpowers/
+pnpm-lock.yaml
