@@ -1,0 +1,12 @@
+{
+  "portVariables": [
+    "API_PORT",
+    "ADMIN_PORT",
+    "POSTGRES_PORT",
+    "RABBITMQ_PORT",
+    "RABBITMQ_MANAGEMENT_PORT"
+  ],
+  "envOverrides": {
+    "VITE_API_BASE_URL": "http://127.0.0.1:${API_PORT}"
+  }
+}
