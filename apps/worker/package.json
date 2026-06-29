@@ -1,0 +1,23 @@
+{
+  "name": "@materiabill/worker",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "types": "./src/main.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts --dir test",
+    "dev": "node --env-file-if-exists=../../.env --watch --import tsx src/main.ts"
+  },
+  "dependencies": {
+    "@materiabill/config": "workspace:*",
+    "@nestjs/common": "^11.1.8",
+    "@nestjs/core": "^11.1.8",
+    "nestjs-pino": "^4.6.1",
+    "pino": "^10.1.0",
+    "pino-http": "^11.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  }
+}

@@ -1,0 +1,89 @@
+name: PR Check
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-title:
+    name: PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            test
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5
+        with:
+          deny-licenses: GPL-3.0, AGPL-3.0
+
+  merge-conflicts:
+    name: Merge Conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when the PR cannot merge cleanly
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            let pull;
+
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+              const response = await github.rest.pulls.get({ owner, repo, pull_number });
+              pull = response.data;
+
+              if (pull.mergeable !== null) {
+                break;
+              }
+
+              await sleep(3000);
+            }
+
+            if (!pull) {
+              core.setFailed('Unable to load pull request mergeability state.');
+              return;
+            }
+
+            if (pull.mergeable === false || pull.mergeable_state === 'dirty') {
+              core.setFailed('Pull request has merge conflicts and must be rebased before merge.');
+              return;
+            }
+
+            core.info(`Mergeable state: ${pull.mergeable_state ?? 'unknown'}`);

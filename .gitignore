@@ -6,6 +6,8 @@ dist/
 build/
 coverage/
 .turbo/
+.pnpm-store/
+*.tsbuildinfo
 .next/
 out/
 
@@ -13,6 +15,12 @@ out/
 .env
 .env.*
 !.env.example
+
+# Secrets
+*.pem
+*.key
+*.p12
+secrets/
 
 # Logs
 *.log

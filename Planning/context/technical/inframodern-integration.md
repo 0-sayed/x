@@ -55,26 +55,26 @@ Materiabill consumes only the subset its domain needs, declared in `resources.js
 
 **Required**
 
-| Resource | Inframodern routing key | Projection | Why |
-|----------|-------------------------|------------|-----|
-| Users | `inframodern.users` | `inframodern_user_refs` | Identity. Payload carries `workspaces[]` + `adminWorkspaces[]`. |
-| Workspaces | derived from user payload + bootstrap (queue also exists) | `workspace_refs` | Tenant/isolation boundary. |
-| Memberships | derived from user payload | `workspace_membership_refs` | Access gate inside a workspace. |
-| Brands | `inframodern.brands` | `brand_refs` | Per-project white-label. |
-| Locations | `inframodern.locations` | `location_refs` | Project city, geo-coords, site. |
-| Exchange rates | `inframodern.exchange-rates` | `exchange_rate_refs` | Multi-currency portfolio rollups (`ExchangeRate` + `ExchangeRateValue`: base + quote rates). |
+| Resource       | Inframodern routing key                                   | Projection                  | Why                                                                                          |
+| -------------- | --------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| Users          | `inframodern.users`                                       | `inframodern_user_refs`     | Identity. Payload carries `workspaces[]` + `adminWorkspaces[]`.                              |
+| Workspaces     | derived from user payload + bootstrap (queue also exists) | `workspace_refs`            | Tenant/isolation boundary.                                                                   |
+| Memberships    | derived from user payload                                 | `workspace_membership_refs` | Access gate inside a workspace.                                                              |
+| Brands         | `inframodern.brands`                                      | `brand_refs`                | Per-project white-label.                                                                     |
+| Locations      | `inframodern.locations`                                   | `location_refs`             | Project city, geo-coords, site.                                                              |
+| Exchange rates | `inframodern.exchange-rates`                              | `exchange_rate_refs`        | Multi-currency portfolio rollups (`ExchangeRate` + `ExchangeRateValue`: base + quote rates). |
 
 **Recommended (domain fit; wire the consumer when the feature ships)**
 
-| Resource | Inframodern routing key | Projection | Why |
-|----------|-------------------------|------------|-----|
+| Resource          | Inframodern routing key         | Projection              | Why                                                                                                                                         |
+| ----------------- | ------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Measurement units | `inframodern.measurement-units` | `measurement_unit_refs` | BOM / materials quantities (m, m³, kg, ton, bag). Inframodern already owns units — do **not** invent a local UOM enum. `dependsOn: brands`. |
-| Taxes | `inframodern.taxes` | `tax_refs` | Saudi/Egypt VAT, ZATCA e-invoicing. **No concrete v1 consumer yet** — sync only when invoicing/VAT lands. `dependsOn: brands`. |
+| Taxes             | `inframodern.taxes`             | `tax_refs`              | Saudi/Egypt VAT, ZATCA e-invoicing. **No concrete v1 consumer yet** — sync only when invoicing/VAT lands. `dependsOn: brands`.              |
 
 **Open decision (do not hard-code — see §7)**
 
-| Resource | Inframodern routing key | Status |
-|----------|-------------------------|--------|
+| Resource  | Inframodern routing key | Status                                                                                                                                                                                |
+| --------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Customers | `inframodern.customers` | Only consumed if client identity uses the **Inframodern customer projection** option (see Open Decisions §1); not consumed under **Materiabill-native ClientIdentity** (recommended). |
 
 **Not synced**
@@ -160,12 +160,12 @@ So from the current project root, `../elwaste` resolves to the elwaste repo (e.g
 `cd` if the tool takes a path). Paths are environment-relative, not fixed. Check
 these repos out when you need ground truth instead of guessing:
 
-| Path | What it is | Look here for |
-|------|------------|---------------|
-| `../elwaste` | The modern NestJS satellite app we mirror | Reference implementation: OAuth `SessionModule`, `apps/worker` RabbitMQ consumers, `*_refs` schema, pull-sync, `packages/db` layout. |
-| `../inframodernbackend` | Inframodern (Fastify + Prisma) | The producer: `prisma/schema.prisma` (master data), `resources.json` (consume/publish registry), RabbitMQ publishing, `routes/oauth/*`, `routes/internal-dashboard/sync/*`. |
-| `../inframodernadminfrontend` | Inframodern admin panel | The admin-triggered initial-sync UI (Applications → Sync) and install/subscription flows. |
-| `../inframodernfrontend` | Inframodern user-facing app | OAuth login/consent screens (`/authenticate`). |
+| Path                          | What it is                                | Look here for                                                                                                                                                               |
+| ----------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `../elwaste`                  | The modern NestJS satellite app we mirror | Reference implementation: OAuth `SessionModule`, `apps/worker` RabbitMQ consumers, `*_refs` schema, pull-sync, `packages/db` layout.                                        |
+| `../inframodernbackend`       | Inframodern (Fastify + Prisma)            | The producer: `prisma/schema.prisma` (master data), `resources.json` (consume/publish registry), RabbitMQ publishing, `routes/oauth/*`, `routes/internal-dashboard/sync/*`. |
+| `../inframodernadminfrontend` | Inframodern admin panel                   | The admin-triggered initial-sync UI (Applications → Sync) and install/subscription flows.                                                                                   |
+| `../inframodernfrontend`      | Inframodern user-facing app               | OAuth login/consent screens (`/authenticate`).                                                                                                                              |
 
 When verifying a routing key, queue name, payload shape, or endpoint, prefer
 reading these repos over relying on this summary — code is the source of truth.

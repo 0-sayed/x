@@ -57,14 +57,14 @@ app's internals.
 
 ## Communication
 
-| From | To | Method | Purpose |
-|------|----|--------|---------|
-| Admin app | Materiabill API | REST | Admin operations |
-| Materiabill API | Admin app | SSE | Live updates (pending decisions, settlement bar, milestones) |
-| Admin app | Materiabill API | Upload endpoint | Logos, document assets, photos |
-| Inframodern | Materiabill worker | RabbitMQ | Master-data events |
-| Materiabill API/worker | PostgreSQL | SQL | Persistence |
-| Materiabill API | Inframodern OAuth | HTTPS | Auth code exchange, refresh |
+| From                   | To                 | Method          | Purpose                                                      |
+| ---------------------- | ------------------ | --------------- | ------------------------------------------------------------ |
+| Admin app              | Materiabill API    | REST            | Admin operations                                             |
+| Materiabill API        | Admin app          | SSE             | Live updates (pending decisions, settlement bar, milestones) |
+| Admin app              | Materiabill API    | Upload endpoint | Logos, document assets, photos                               |
+| Inframodern            | Materiabill worker | RabbitMQ        | Master-data events                                           |
+| Materiabill API/worker | PostgreSQL         | SQL             | Persistence                                                  |
+| Materiabill API        | Inframodern OAuth  | HTTPS           | Auth code exchange, refresh                                  |
 
 ## Backend Modules (first pass)
 
@@ -122,6 +122,7 @@ RabbitMQ topology, auth flow, and initial-vs-ongoing sync. In short:
 ## Access Enforcement
 
 Two gates on every request:
+
 1. **Authenticated** Inframodern session (route guard).
 2. **Authorized** for the action via RBAC permission key within the resolved
    workspace.
@@ -187,13 +188,13 @@ Per-**project** brand (accent colour, logo, custom domain via CNAME + SSL). Once
   projections.
 - Keep GMP as a field on cost-plus terms, never a standalone model enum value.
 
-| Don't use | Use instead | Reason |
-|-----------|-------------|--------|
-| `tenant` / `account` | `workspace` / `workspace_id` | Inframodern owns the account boundary |
-| `job` / `site` (as the entity) | `project` | product language |
-| `invoice` (money-in) | `draw` / `draw_item` | domain language |
-| `bill` (money-out) | `payable` | domain language |
-| a `model = 'gmp'` enum value | `gmp_ceiling` field on cost-plus terms | GMP is a cost-plus sub-option |
+| Don't use                      | Use instead                            | Reason                                |
+| ------------------------------ | -------------------------------------- | ------------------------------------- |
+| `tenant` / `account`           | `workspace` / `workspace_id`           | Inframodern owns the account boundary |
+| `job` / `site` (as the entity) | `project`                              | product language                      |
+| `invoice` (money-in)           | `draw` / `draw_item`                   | domain language                       |
+| `bill` (money-out)             | `payable`                              | domain language                       |
+| a `model = 'gmp'` enum value   | `gmp_ceiling` field on cost-plus terms | GMP is a cost-plus sub-option         |
 
 ## Database & Persistence Conventions
 
@@ -201,24 +202,28 @@ The actual schema lives in code (`packages/db`, Drizzle) as the single source of
 truth; these are the standing conventions that schema must follow.
 
 **Workspace isolation**
+
 - Every operational table carries a non-null `workspace_id`; all queries are
   scoped by the request's resolved workspace.
 - The only deliberate cross-workspace records are `payment_edges` and
   `client_identities`, which carry explicit relationship scoping.
 
 **Drizzle naming**
+
 - PostgreSQL: plural `snake_case` tables, `snake_case` columns; Drizzle config
   `casing: 'snake_case'` (camelCase TS ↔ snake_case SQL).
 - Foreign keys `{target}_id`; join tables `{left}_{right}_assignments` or
   `{left}_{right}`; event/history tables `{noun}_events`.
 
 **Money**
+
 - Store money as integer **minor units** (`amount_minor`, `unit_price_minor`,
   `retention_amount_minor`, `target_cost_minor`, `gmp_ceiling_minor`, …), each
   with an explicit `currency` ISO code. Quantities are separate numeric fields.
 - Runtime math uses decimal.js; rollups convert via `exchange_rate_refs`.
 
 **Immutability / append-only**
+
 - Append-only: audit events, material usage log, submittal revisions.
 - Immutable once resolved: draw items (Released), variations (Approved),
   certificates (Executed), sign-offs (Resolved), agreement terms (locked),
@@ -226,12 +231,13 @@ truth; these are the standing conventions that schema must follow.
 - Enforce in the service layer; do not expose update/delete paths for these.
 
 **Inframodern projections**
+
 - Synced master data lives in read-only `*_refs` tables; never mint local IDs
   for synced rows. Sync handlers are idempotent.
 
 ## Mental Model
 
-Inframodern is the system of record for *who* and *what master data*.
-Materiabill is the system of record for *what happened on the project and the
-money*. Everything operational is workspace-scoped, audience-gated, and (for
+Inframodern is the system of record for _who_ and _what master data_.
+Materiabill is the system of record for _what happened on the project and the
+money_. Everything operational is workspace-scoped, audience-gated, and (for
 financial/legal records) append-only and immutable once resolved.
