@@ -3,7 +3,7 @@
 **Product:** Materiabill — construction project management & payments, built on the Inframodern platform
 **Audience:** Product, business stakeholders, and the build team
 **Status:** Requirements for v1, with roadmap to a contractor marketplace
-**Scope of this document:** Self-contained business requirements — the *what* and *why*. Technical design (data model, APIs, integration) is intentionally out of scope here and is documented separately.
+**Scope of this document:** Self-contained business requirements — the _what_ and _why_. Technical design (data model, APIs, integration) is intentionally out of scope here and is documented separately.
 
 ---
 
@@ -37,14 +37,14 @@ Construction relationships break down over money and trust:
 
 ## 4. Business objectives
 
-| # | Objective | Why it matters |
-|---|---|---|
-| O1 | One account per participant across all counterparties | Removes app-switching; creates the network effect |
-| O2 | Make payment behaviour transparent and fair to both sides | Reduces disputes; differentiates on trust |
-| O3 | Capture the full commercial agreement at project start | Fewer disputes; correct billing; audit-ready |
-| O4 | Drive adoption through built-in invite/growth loops | Each user pulls in their counterparties |
-| O5 | Establish portable reputation data from day one | Enables a future ratings marketplace |
-| O6 | Deliver a premium, regionally-fit experience (EN/AR, SAR/EGP) | Wins a segment incumbents under-serve |
+| #   | Objective                                                     | Why it matters                                    |
+| --- | ------------------------------------------------------------- | ------------------------------------------------- |
+| O1  | One account per participant across all counterparties         | Removes app-switching; creates the network effect |
+| O2  | Make payment behaviour transparent and fair to both sides     | Reduces disputes; differentiates on trust         |
+| O3  | Capture the full commercial agreement at project start        | Fewer disputes; correct billing; audit-ready      |
+| O4  | Drive adoption through built-in invite/growth loops           | Each user pulls in their counterparties           |
+| O5  | Establish portable reputation data from day one               | Enables a future ratings marketplace              |
+| O6  | Deliver a premium, regionally-fit experience (EN/AR, SAR/EGP) | Wins a segment incumbents under-serve             |
 
 ## 5. Target users (personas)
 
@@ -60,8 +60,8 @@ Construction relationships break down over money and trust:
 
 Incumbents (Procore, Buildertrend, Houzz Pro, CompanyCam, Fieldwire) are **single-contractor
 silos**; none offer a cross-contractor client/sub network. Materiabill's wedge is the network +
-premium UX + commercial depth, **not** out-feature-ing Procore. Position as *the client-first
-construction network*.
+premium UX + commercial depth, **not** out-feature-ing Procore. Position as _the client-first
+construction network_.
 
 ## 7. Scope
 
@@ -81,6 +81,7 @@ matching, escrow/marketplace payments, native mobile field-capture app, WhatsApp
 Grouped by capability. Each is a business-level requirement (the system shall…).
 
 ### 8.1 Identity, access & network
+
 - **BR-IA-1** Each participant (contractor org, client, subcontractor) has **one account**,
   identified by a verified email/phone, usable across every counterparty.
 - **BR-IA-2** A client sees **all their projects across all contractors** in one place; a
@@ -97,6 +98,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
   manage roles.
 
 ### 8.2 Projects & agreements
+
 - **BR-PR-1** A contractor can create a project capturing the **commercial model**: lump-sum,
   cost-plus, or remeasured.
 - **BR-PR-2** The create flow captures **model-specific agreement terms**. For cost-plus: fee
@@ -113,6 +115,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
   claim it.
 
 ### 8.3 Schedule
+
 - **BR-SC-1** Projects have phases and milestones; completing a milestone can **unlock a linked
   client payment**.
 - **BR-SC-2** A contractor proposes a timeline the client agrees to; the agreed timeline becomes
@@ -120,6 +123,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 - **BR-SC-3** Moving a forecast date **requires a reason** that the client sees.
 
 ### 8.4 Money & payments
+
 - **BR-MO-1** Track **money in** (client draws): expected → submitted → approved → released →
   received, with dates and references.
 - **BR-MO-2** Track **money out** (subcontractor & supplier payables); money-out is **org-only**
@@ -139,6 +143,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
   way and gently nudges the client to pay; it propagates down the subcontract chain.
 
 ### 8.5 Materials / BOM
+
 - **BR-BM-1** Track materials per project and across the portfolio: sourcing, quantities
   ordered/used/remaining, delivery and install status, reorder.
 - **BR-BM-2** Issuing a PO records provenance; receiving updates status; logging usage decrements
@@ -146,6 +151,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 - **BR-BM-3** What the **client sees** of the BOM is governed by the project's disclosure depth.
 
 ### 8.6 Subcontractors (supply side)
+
 - **BR-SB-1** A contractor can see **every subcontractor on a project**: trade/scope, package
   value, progress, paid/owed, retention, and whether they're on Materiabill.
 - **BR-SB-2** Opening a subcontractor shows their **package file**: payment applications,
@@ -157,6 +163,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 - **BR-SB-4** A contractor can **invite a subcontractor** (off-platform → onto Materiabill).
 
 ### 8.7 Quality & approvals
+
 - **BR-QA-1** Manage **snags/punch list**; a snag **cannot be marked fixed without a fix photo**;
   only the client can close a snag they raised.
 - **BR-QA-2** Manage **submittals and design packages** with revision history, and **variations /
@@ -167,12 +174,14 @@ Grouped by capability. Each is a business-level requirement (the system shall…
   project data, with **multi-party signing, no fixed order**.
 
 ### 8.8 Documents & audit
+
 - **BR-DC-1** Store project documents with **category and audience** (org / participants /
   client); site photos are first-class.
 - **BR-DC-2** Every consequential action is recorded in an **append-only audit trail**
   ("logged in the trail").
 
 ### 8.9 Client experience
+
 - **BR-CL-1** Clients get a **mobile-first portal**: a neutral "My projects" home, with each
   project view **skinned in that contractor's brand**.
 - **BR-CL-2** Clients can approve, sign, comment, see their account, and view the **build
@@ -180,12 +189,14 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 - **BR-CL-3** Clients can **invite a contractor** (project-first), seeding the network cold.
 
 ### 8.10 Branding & white-label
+
 - **BR-BR-1** Each contractor configures **accent colour, logo, and a custom domain** (with
   CNAME/SSL) that skins the **client's view of their projects** — branding applies at the
   **project** level, not the whole client app.
 - **BR-BR-2** A removable "Secured by Materiabill" footer (plan-gated).
 
 ### 8.11 Onboarding & growth
+
 - **BR-ON-1** Contractors onboard self-serve (marketplace install) or **pulled in by a client
   invite**.
 - **BR-ON-2** Clients onboard via invite or **self-serve (project-first)**: sign up → add a
@@ -194,6 +205,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
   project and takes one action; key network metric = a client reaching a **second contractor**.
 
 ### 8.12 Settings
+
 - **BR-ST-1** Org defaults: decision **grace window** (undo period, default 10 min), default
   retention, disclosure depth, notification channels, suggestion throttle — overridable per
   project where noted.
@@ -244,12 +256,12 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 
 ## 13. Key risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                          | Mitigation                                                                                                                                                      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cross-workspace client identity is a genuine platform concern | Decide between a **Materiabill-native client directory** and an **Inframodern customer projection** early; ship native for v1, keep the projection schema-ready |
-| Field/mobile experience must rival CompanyCam/Fieldwire | Invest real engineering in camera-first, offline-tolerant capture |
-| Trust feature (goodwill) could be seen as one-sided | Keep it strictly factual and even-handed; document the justified-pause case too |
-| Privacy leakage across the network | Enforce isolation/consent server-side; only opt-in/aggregate data is shareable |
+| Field/mobile experience must rival CompanyCam/Fieldwire       | Invest real engineering in camera-first, offline-tolerant capture                                                                                               |
+| Trust feature (goodwill) could be seen as one-sided           | Keep it strictly factual and even-handed; document the justified-pause case too                                                                                 |
+| Privacy leakage across the network                            | Enforce isolation/consent server-side; only opt-in/aggregate data is shareable                                                                                  |
 
 ## 14. Roadmap (phasing)
 
@@ -265,7 +277,7 @@ Grouped by capability. Each is a business-level requirement (the system shall…
 
 - **Client identity model** — **Materiabill-native client directory** vs **Inframodern
   customer projection** (shared in Inframodern core).
-  *Recommendation: Materiabill-native for v1, projection schema-ready.*
+  _Recommendation: Materiabill-native for v1, projection schema-ready._
   (Options are named, not lettered: the web spec and integration doc previously used
   "Option A/B" with the letters swapped relative to this list.)
 - **Participant-org model** — subs/consultants as Inframodern guest orgs vs Materiabill-local.
