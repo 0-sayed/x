@@ -62,11 +62,11 @@ Copy `.env.example` to `.env`. Defaults are fake and safe for local bootstrap, a
 | `RABBITMQ_MANAGEMENT_PORT` | host RabbitMQ UI port           | `55673`                 |
 | `DATABASE_URL`             | reserved for later DB wiring    | empty                   |
 | `RABBITMQ_URL`             | reserved for later queue wiring | empty                   |
-| `VITE_API_BASE_URL`        | admin shell API base URL        | `http://127.0.0.1:3000` |
+| `VITE_API_BASE_URL`        | admin shell API base URL        | derived from `API_PORT` |
 
 ## Validation
 
-Run the required Task 3 validation flow:
+Run the full validation flow (format then validate):
 
 ```bash
 corepack pnpm format

@@ -1,8 +1,8 @@
 import { getWorkerLoggerOptions, getWorkerRuntimeConfig } from '@materiabill/config';
 import { EventEmitter } from 'node:events';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { waitForShutdownSignal, type ShutdownSignalSource } from '../src/main.js';
+import { runWorker, waitForShutdownSignal, type ShutdownSignalSource } from '../src/main.js';
 
 describe('worker bootstrap runtime', () => {
   it('uses structured json logger settings for standalone bootstrap', () => {
@@ -46,5 +46,36 @@ describe('worker bootstrap runtime', () => {
     await expect(waitForSignal).resolves.toBe('SIGTERM');
     expect(emitter.listenerCount('SIGINT')).toBe(0);
     expect(emitter.listenerCount('SIGTERM')).toBe(0);
+  });
+
+  it('does not close the worker app twice when close fails', async () => {
+    const emitter = new EventEmitter();
+    const signalSource: ShutdownSignalSource = {
+      off: (signal, handler) => {
+        emitter.off(signal, handler);
+      },
+      once: (signal, handler) => {
+        emitter.once(signal, handler);
+      },
+    };
+    const closeError = new Error('close failed');
+    const app = {
+      close: vi.fn().mockRejectedValue(closeError),
+      get: vi.fn(() => ({
+        log: vi.fn(),
+        warn: vi.fn(),
+      })),
+    };
+
+    const run = runWorker(signalSource, () => Promise.resolve(app));
+    const emitWhenReady = setInterval(() => {
+      if (emitter.listenerCount('SIGTERM') > 0) {
+        clearInterval(emitWhenReady);
+        emitter.emit('SIGTERM');
+      }
+    }, 1);
+
+    await expect(run).rejects.toThrow(closeError);
+    expect(app.close).toHaveBeenCalledTimes(1);
   });
 });

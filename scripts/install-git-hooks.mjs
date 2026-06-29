@@ -35,6 +35,9 @@ if (lefthookInstall.stdout) {
 if (lefthookInstall.stderr) {
   process.stderr.write(lefthookInstall.stderr);
 }
+if (lefthookInstall.error) {
+  process.stderr.write(`lefthook install spawn failed: ${lefthookInstall.error.message}\n`);
+}
 
 const hooksPathError = hooksPath.stderr.trim();
 

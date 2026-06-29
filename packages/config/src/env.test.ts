@@ -8,6 +8,11 @@ describe('runtime environment config', () => {
     expect(getWorkerRuntimeConfig({ NODE_ENV: 'test' }).logLevel).toBe('silent');
   });
 
+  it('preserves explicit root log-level overrides in tests', () => {
+    expect(getApiRuntimeConfig({ LOG_LEVEL: 'info', NODE_ENV: 'test' }).logLevel).toBe('info');
+    expect(getWorkerRuntimeConfig({ LOG_LEVEL: 'warn', NODE_ENV: 'test' }).logLevel).toBe('warn');
+  });
+
   it('allows scoped log-level overrides in tests', () => {
     expect(getApiRuntimeConfig({ API_LOG_LEVEL: 'debug', NODE_ENV: 'test' }).logLevel).toBe(
       'debug',

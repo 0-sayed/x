@@ -15,12 +15,18 @@ export type ShutdownSignalSource = {
   once(signal: NodeJS.Signals, handler: ShutdownSignalHandler): void;
 };
 
+type WorkerLogger = Pick<Logger, 'log' | 'warn'>;
+
+export type WorkerApp = {
+  close(): Promise<void>;
+  get(token: typeof Logger): WorkerLogger;
+};
+
 export async function bootstrapWorker() {
   const app = await NestFactory.createApplicationContext(WorkerModule, { bufferLogs: true });
 
   app.useLogger(app.get(Logger));
   app.flushLogs();
-  app.enableShutdownHooks();
   return app;
 }
 
@@ -52,24 +58,20 @@ export function waitForShutdownSignal(
 
 export async function runWorker(
   signalSource: ShutdownSignalSource = process,
+  createApp: () => Promise<WorkerApp> = bootstrapWorker,
 ): Promise<NodeJS.Signals> {
   const config = getWorkerRuntimeConfig(process.env);
-  const app = await bootstrapWorker();
+  const app = await createApp();
   const logger = app.get(Logger);
 
   logger.log({ event: 'bootstrap_ready' }, `${config.appName} bootstrap shell ready`);
 
-  try {
-    const signal = await waitForShutdownSignal(signalSource);
+  const signal = await waitForShutdownSignal(signalSource);
 
-    logger.warn({ event: 'shutdown_requested', signal }, `${config.appName} shutting down`);
-    await app.close();
+  logger.warn({ event: 'shutdown_requested', signal }, `${config.appName} shutting down`);
+  await app.close();
 
-    return signal;
-  } catch (error) {
-    await app.close();
-    throw error;
-  }
+  return signal;
 }
 
 const isDirectExecution = import.meta.url === new URL(process.argv[1] ?? '', 'file:').href;

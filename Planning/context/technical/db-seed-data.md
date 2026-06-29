@@ -68,7 +68,7 @@ Seeded when a workspace projection is enabled.
 | `default_language`                 | `en` (`ar` supported, RTL)                  |
 | `default_retention_percentage`     | `5`                                         |
 | `grace_window_minutes`             | `10`                                        |
-| `default_disclosure_depth`         | `none` (`none                               | category | line`) |
+| `default_disclosure_depth`         | `none` (`none`, `category`, `line`)         |
 | `invite_auto_nudge_hours`          | `48` (Invite Variant B only)                |
 | `suggestion_throttle_per_material` | cap on open client suggestions per material |
 | `notification_channels`            | in-app + email on; WhatsApp deferred (v1.5) |

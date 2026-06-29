@@ -38,6 +38,13 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
       - name: Review dependency changes
         uses: actions/dependency-review-action@v5
         with:

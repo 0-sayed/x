@@ -32,7 +32,7 @@ jobs:
           - name: Build
             command: pnpm build
           - name: Security Audit
-            command: pnpm audit
+            command: pnpm run audit
     steps:
       - name: Checkout
         uses: actions/checkout@v6

@@ -42,15 +42,20 @@ function normalizeLogLevel(level: z.infer<typeof runtimeLogLevelSchema>): PinoLo
   }
 }
 
+function hasDefinedEnvValue(env: NodeJS.ProcessEnv, name: keyof RuntimeEnv): boolean {
+  return Object.prototype.hasOwnProperty.call(env, name) && env[name] !== undefined;
+}
+
 function selectRuntimeLogLevel(
   parsed: RuntimeEnv,
   scopedLevel: z.infer<typeof runtimeLogLevelSchema> | undefined,
+  rootLogLevelWasSet: boolean,
 ): PinoLogLevel {
   if (scopedLevel) {
     return normalizeLogLevel(scopedLevel);
   }
 
-  if (parsed.LOG_LEVEL !== 'info') {
+  if (rootLogLevelWasSet) {
     return normalizeLogLevel(parsed.LOG_LEVEL);
   }
 
@@ -68,7 +73,11 @@ export function getApiRuntimeConfig(env: NodeJS.ProcessEnv): ApiRuntimeConfig {
     appName: 'materiabill-api',
     port: parsed.API_PORT,
     environment: parsed.NODE_ENV,
-    logLevel: selectRuntimeLogLevel(parsed, parsed.API_LOG_LEVEL),
+    logLevel: selectRuntimeLogLevel(
+      parsed,
+      parsed.API_LOG_LEVEL,
+      hasDefinedEnvValue(env, 'LOG_LEVEL'),
+    ),
     version: parsed.APP_VERSION,
   };
 }
@@ -79,7 +88,11 @@ export function getWorkerRuntimeConfig(env: NodeJS.ProcessEnv): WorkerRuntimeCon
   return {
     appName: 'materiabill-worker',
     environment: parsed.NODE_ENV,
-    logLevel: selectRuntimeLogLevel(parsed, parsed.WORKER_LOG_LEVEL),
+    logLevel: selectRuntimeLogLevel(
+      parsed,
+      parsed.WORKER_LOG_LEVEL,
+      hasDefinedEnvValue(env, 'LOG_LEVEL'),
+    ),
     version: parsed.APP_VERSION,
   };
 }
