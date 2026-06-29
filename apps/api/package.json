@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts --dir test",
-    "dev": "tsx watch src/main.ts"
+    "dev": "node --env-file-if-exists=../../.env --watch --import tsx src/main.ts"
   },
   "dependencies": {
     "@materiabill/config": "workspace:*",
