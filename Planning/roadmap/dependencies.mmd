@@ -1,0 +1,198 @@
+%% Materiabill roadmap dependency DAG (web phase).
+%% An edge A --> B means B is blocked until A is merged.
+%% The orchestrator may run any task whose deps are all complete, up to
+%% maxConcurrency. No waves, no fixed merge order. See tasks.md for details.
+flowchart TD
+  %% Phase A — Platform Foundation
+  T000["T000 Project bootstrap"]
+  T001["T001 Shared packages"]
+  T002["T002 DB foundation + sync infra"]
+  T003["T003 Projection tables (*_refs)"]
+  T004["T004 SessionModule (OAuth)"]
+  T005["T005 Sync consumers (worker)"]
+  T006["T006 WorkspaceContext + access gate"]
+  T007["T007 PermissionsModule (RBAC)"]
+  T008["T008 AuditModule"]
+  T009["T009 File storage adapter"]
+  T010["T010 SSE realtime infra"]
+  T011["T011 Grace-window engine"]
+  T012["T012 Audience enforcement"]
+  T013["T013 SignOffsModule"]
+  T014["T014 Admin app shell"]
+
+  %% Phase B — Projects & Identity
+  T015["T015 ProjectsModule backend"]
+  T016["T016 Client identity model"]
+  T017["T017 Invites system"]
+  T018["T018 AgreementTermsModule"]
+  T019["T019 Creation wizard (admin)"]
+  T020["T020 Project list + dashboard (admin)"]
+
+  %% Phase C — Schedule & Money
+  T021["T021 ScheduleModule backend"]
+  T022["T022 Schedule tab (admin)"]
+  T023["T023 DrawsModule backend"]
+  T024["T024 Draws admin + settlement bar"]
+  T025["T025 PayablesModule backend"]
+  T026["T026 PaymentEdge"]
+  T027["T027 Payables admin"]
+  T028["T028 ContinuityModule backend"]
+  T029["T029 Continuity admin"]
+  T030["T030 BudgetModule backend"]
+  T031["T031 Budget admin"]
+
+  %% Phase D — Operational Modules
+  T032["T032 MaterialsModule backend"]
+  T033["T033 ClientSuggestion + throttle"]
+  T034["T034 Materials admin"]
+  T035["T035 SubcontractorsModule backend"]
+  T036["T036 Subcontractors admin"]
+  T037["T037 SubmittalsModule backend"]
+  T038["T038 Submittals/design admin"]
+  T039["T039 DocumentsModule backend"]
+  T040["T040 Documents admin"]
+  T041["T041 SnagsModule backend"]
+  T042["T042 Snags admin"]
+
+  %% Phase E — Config, Comms & Aggregation
+  T043["T043 BrandingModule backend"]
+  T044["T044 Branding admin + preview"]
+  T045["T045 SettingsModule backend"]
+  T046["T046 Settings + People/Roles admin"]
+  T047["T047 NotificationsModule backend"]
+  T048["T048 Notifications admin"]
+  T049["T049 SearchModule backend"]
+  T050["T050 Global search admin"]
+  T051["T051 Signup & onboarding"]
+  T052["T052 Client-initiated stub & claim"]
+  T053["T053 Portfolio backend"]
+  T054["T054 Portfolio admin screens"]
+  T055["T055 Scheduled jobs (worker)"]
+
+  %% Edges
+  T000 --> T001
+  T001 --> T002
+  T002 --> T003
+  T003 --> T004
+  T003 --> T005
+  T004 --> T006
+  T006 --> T007
+  T001 --> T007
+  T006 --> T008
+  T006 --> T009
+  T006 --> T010
+  T008 --> T011
+  T006 --> T012
+  T011 --> T013
+  T012 --> T013
+  T008 --> T013
+  T004 --> T014
+  T007 --> T014
+  T001 --> T014
+
+  T007 --> T015
+  T008 --> T015
+  T012 --> T015
+  T015 --> T016
+  T016 --> T017
+  T015 --> T018
+  T018 --> T019
+  T014 --> T019
+  T015 --> T020
+  T014 --> T020
+
+  T015 --> T021
+  T013 --> T021
+  T021 --> T022
+  T020 --> T022
+  T018 --> T023
+  T012 --> T023
+  T013 --> T023
+  T023 --> T024
+  T020 --> T024
+  T023 --> T025
+  T012 --> T025
+  T025 --> T026
+  T008 --> T026
+  T025 --> T027
+  T020 --> T027
+  T026 --> T028
+  T028 --> T029
+  T020 --> T029
+  T015 --> T030
+  T012 --> T030
+  T030 --> T031
+  T020 --> T031
+
+  T015 --> T032
+  T012 --> T032
+  T009 --> T032
+  T032 --> T033
+  T032 --> T034
+  T033 --> T034
+  T020 --> T034
+  T026 --> T035
+  T017 --> T035
+  T035 --> T036
+  T020 --> T036
+  T018 --> T037
+  T009 --> T037
+  T037 --> T038
+  T020 --> T038
+  T018 --> T039
+  T009 --> T039
+  T012 --> T039
+  T013 --> T039
+  T039 --> T040
+  T020 --> T040
+  T015 --> T041
+  T009 --> T041
+  T012 --> T041
+  T013 --> T041
+  T041 --> T042
+  T020 --> T042
+
+  T015 --> T043
+  T009 --> T043
+  T043 --> T044
+  T014 --> T044
+  T006 --> T045
+  T011 --> T045
+  T045 --> T046
+  T007 --> T046
+  T014 --> T046
+  T008 --> T047
+  T010 --> T047
+  T047 --> T048
+  T014 --> T048
+  T015 --> T049
+  T032 --> T049
+  T039 --> T049
+  T049 --> T050
+  T014 --> T050
+  T014 --> T051
+  T043 --> T051
+  T017 --> T052
+  T019 --> T052
+  T023 --> T053
+  T025 --> T053
+  T030 --> T053
+  T053 --> T054
+  T020 --> T054
+  T024 --> T054
+  T027 --> T054
+  T034 --> T054
+  T040 --> T054
+  T011 --> T055
+  T028 --> T055
+  T017 --> T055
+  T041 --> T055
+  T047 --> T055
+
+  %% Realtime consumers (SSE infra feeds live admin surfaces)
+  T010 --> T024
+  T010 --> T029
+  T010 --> T054
+  %% Cross-module rollup/index dependencies
+  T028 --> T053
+  T035 --> T049
