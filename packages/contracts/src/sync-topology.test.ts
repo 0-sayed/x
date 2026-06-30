@@ -17,7 +17,7 @@ describe('Inframodern RabbitMQ topology', () => {
     expect(topology.queues.locations).toEqual({
       queue: 'q.inframodern-testing.materiabill-testing.locations',
       routingKey: 'inframodern-testing.locations',
-      deadLetterRoutingKey: 'dead.inframodern-testing.locations',
+      deadLetterRoutingKey: 'dead.inframodern-testing.materiabill-testing.locations',
       deadLetterQueue: 'dlq.inframodern-testing.materiabill-testing.locations',
     });
   });
@@ -32,9 +32,33 @@ describe('Inframodern RabbitMQ topology', () => {
       durable: true,
       arguments: {
         'x-dead-letter-exchange': 'dlx.inframodern-testing',
-        'x-dead-letter-routing-key': 'dead.inframodern-testing.users',
+        'x-dead-letter-routing-key': 'dead.inframodern-testing.materiabill-testing.users',
       },
     });
+  });
+
+  it('namespaces dead-letter routing keys by app', () => {
+    const materiabillTopology = getInframodernTopology(
+      { environmentName: 'testing', appCode: 'materiabill' },
+      ['users'],
+    );
+    const backofficeTopology = getInframodernTopology(
+      { environmentName: 'testing', appCode: 'backoffice' },
+      ['users'],
+    );
+
+    expect(materiabillTopology.queues.users.deadLetterRoutingKey).toBe(
+      'dead.inframodern-testing.materiabill-testing.users',
+    );
+    expect(backofficeTopology.queues.users.deadLetterRoutingKey).toBe(
+      'dead.inframodern-testing.backoffice-testing.users',
+    );
+    expect(materiabillTopology.queueOptions('users').arguments['x-dead-letter-routing-key']).toBe(
+      materiabillTopology.queues.users.deadLetterRoutingKey,
+    );
+    expect(materiabillTopology.queues.users.deadLetterRoutingKey).not.toBe(
+      backofficeTopology.queues.users.deadLetterRoutingKey,
+    );
   });
 
   it('exposes DLQs bound by dead-letter routing keys', () => {
@@ -47,7 +71,7 @@ describe('Inframodern RabbitMQ topology', () => {
       'dlq.inframodern-testing.materiabill-testing.users',
     );
     expect(topology.queueOptions('users').arguments['x-dead-letter-routing-key']).toBe(
-      'dead.inframodern-testing.users',
+      'dead.inframodern-testing.materiabill-testing.users',
     );
     type QueueOptionsResource = Parameters<typeof topology.queueOptions>[0];
     const validResourceSubsetCheck: QueueOptionsResource = 'users';

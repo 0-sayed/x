@@ -60,7 +60,7 @@ describe('SyncAdminRabbitMqService', () => {
     expect(channel.bindQueue).toHaveBeenCalledWith(
       'dlq.inframodern-testing.materiabill-testing.users',
       'dlx.inframodern-testing',
-      'dead.inframodern-testing.users',
+      'dead.inframodern-testing.materiabill-testing.users',
     );
     expect(channel.publish).toHaveBeenCalledWith(
       'x.inframodern-testing',

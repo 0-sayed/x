@@ -43,7 +43,7 @@ export function getInframodernTopology<const Resource extends SyncResource>(
       {
         queue: `q.${inframodernNamespace}.${appNamespace}.${resource}`,
         routingKey: `${inframodernNamespace}.${resource}`,
-        deadLetterRoutingKey: `dead.${inframodernNamespace}.${resource}`,
+        deadLetterRoutingKey: `dead.${inframodernNamespace}.${appNamespace}.${resource}`,
         deadLetterQueue: `dlq.${inframodernNamespace}.${appNamespace}.${resource}`,
       },
     ]),
