@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  ForbiddenException,
   Get,
   Inject,
   Query,
@@ -28,6 +29,12 @@ export class AuditController {
   ) {
     if (!workspaceContext) {
       throw new UnauthorizedException('Not authenticated');
+    }
+    if (
+      !workspaceContext.membership.isAdmin &&
+      !workspaceContext.membership.permissions.includes('audit.view')
+    ) {
+      throw new ForbiddenException('Missing audit.view permission');
     }
 
     const parsedQuery = auditEventQuerySchema.safeParse(query);

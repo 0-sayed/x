@@ -95,7 +95,26 @@ describe('AuditService', () => {
       workspaceId: row.workspaceId,
       audience: 'internal',
       before: new Date('2026-06-30T13:00:00.000Z'),
+      beforeId: undefined,
       limit: 25,
+    });
+  });
+
+  it('passes the stable pagination cursor to the repository', async () => {
+    const { repository, service } = createService();
+
+    await service.listEvents({
+      workspaceId: row.workspaceId,
+      before: '2026-06-30T13:00:00.000Z',
+      beforeId: row.id,
+    });
+
+    expect(repository.listEvents).toHaveBeenCalledWith({
+      workspaceId: row.workspaceId,
+      audience: undefined,
+      before: new Date('2026-06-30T13:00:00.000Z'),
+      beforeId: row.id,
+      limit: 50,
     });
   });
 
@@ -110,6 +129,7 @@ describe('AuditService', () => {
       workspaceId: row.workspaceId,
       audience: undefined,
       before: undefined,
+      beforeId: undefined,
       limit: 50,
     });
   });

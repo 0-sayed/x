@@ -50,6 +50,25 @@ describe('audit contracts', () => {
     expect(() => auditEventQuerySchema.parse({ audience: 'public' })).toThrow();
   });
 
+  it('accepts a stable pagination cursor only with its timestamp', () => {
+    expect(
+      auditEventQuerySchema.parse({
+        before: '2026-06-30T13:00:00.000Z',
+        beforeId: '98d9e64c-7686-4e40-91ce-3f861fd169e5',
+      }),
+    ).toEqual({
+      before: '2026-06-30T13:00:00.000Z',
+      beforeId: '98d9e64c-7686-4e40-91ce-3f861fd169e5',
+      limit: 50,
+    });
+
+    expect(() =>
+      auditEventQuerySchema.parse({
+        beforeId: '98d9e64c-7686-4e40-91ce-3f861fd169e5',
+      }),
+    ).toThrow();
+  });
+
   it('rejects unknown response fields and out-of-range limits', () => {
     expect(() =>
       auditEventListResponseSchema.parse({

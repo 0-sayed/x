@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { AuditEventRecord, DatabaseClient } from '@materiabill/db';
 import { auditEvents } from '@materiabill/db';
-import { and, desc, eq, lt } from 'drizzle-orm';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
 import type { InsertAuditEventInput, ListAuditEventsInput } from './audit.types.js';
@@ -28,17 +28,26 @@ export class AuditRepository {
   }
 
   async listEvents(input: ListAuditEventsInput): Promise<AuditEventRecord[]> {
+    const cursorFilter =
+      input.before && input.beforeId
+        ? or(
+            lt(auditEvents.occurredAt, input.before),
+            and(eq(auditEvents.occurredAt, input.before), lt(auditEvents.id, input.beforeId)),
+          )
+        : input.before
+          ? lt(auditEvents.occurredAt, input.before)
+          : undefined;
     const filters = [
       eq(auditEvents.workspaceId, input.workspaceId),
       input.audience ? eq(auditEvents.audience, input.audience) : undefined,
-      input.before ? lt(auditEvents.occurredAt, input.before) : undefined,
+      cursorFilter,
     ].filter((filter): filter is NonNullable<typeof filter> => filter !== undefined);
 
     return this.#db
       .select()
       .from(auditEvents)
       .where(and(...filters))
-      .orderBy(desc(auditEvents.occurredAt))
+      .orderBy(desc(auditEvents.occurredAt), desc(auditEvents.id))
       .limit(input.limit);
   }
 }

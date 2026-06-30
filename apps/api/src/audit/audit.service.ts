@@ -48,6 +48,7 @@ export class AuditService {
     const parsedQuery = auditEventQuerySchema.parse({
       audience: input.audience,
       before: input.before,
+      beforeId: input.beforeId,
       limit: input.limit,
     });
 
@@ -55,6 +56,7 @@ export class AuditService {
       workspaceId: input.workspaceId,
       audience: parsedQuery.audience,
       before: parsedQuery.before ? new Date(parsedQuery.before) : undefined,
+      beforeId: parsedQuery.beforeId,
       limit: parsedQuery.limit,
     });
 

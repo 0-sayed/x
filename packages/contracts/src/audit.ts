@@ -34,9 +34,14 @@ export const auditEventQuerySchema = z
   .object({
     audience: auditAudienceSchema.optional(),
     before: z.iso.datetime().optional(),
+    beforeId: z.uuid().optional(),
     limit: z.coerce.number().int().min(1).max(100).default(50),
   })
-  .strict();
+  .strict()
+  .refine((query) => query.before !== undefined || query.beforeId === undefined, {
+    message: 'beforeId requires before',
+    path: ['beforeId'],
+  });
 
 export const auditEventListResponseSchema = z
   .object({

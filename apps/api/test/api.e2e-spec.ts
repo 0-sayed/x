@@ -10,7 +10,7 @@ import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import type { CurrentSessionUser } from '@materiabill/contracts';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
 import { AuditService } from '../src/audit/audit.service.js';
@@ -442,7 +442,7 @@ describe('audit endpoints', () => {
     membership: {
       userId: sessionUser.id,
       roleKey: 'workspace_admin',
-      permissions: ['workspace.view'],
+      permissions: ['workspace.view', 'audit.view'],
       isAdmin: true,
     },
     access: {
@@ -503,6 +503,12 @@ describe('audit endpoints', () => {
     await auditApp.close();
   });
 
+  beforeEach(() => {
+    auditWorkspaceContext.membership.permissions = ['workspace.view', 'audit.view'];
+    auditWorkspaceContext.membership.isAdmin = true;
+    auditService.listEvents.mockClear();
+  });
+
   it('lists audit events for the resolved workspace context', async () => {
     const response = await request(auditApp.getHttpServer())
       .get('/audit-events')
@@ -520,6 +526,15 @@ describe('audit endpoints', () => {
       before: '2026-06-30T13:00:00.000Z',
       limit: 25,
     });
+  });
+
+  it('rejects audit event listing without audit.view permission', async () => {
+    auditWorkspaceContext.membership.permissions = ['workspace.view'];
+    auditWorkspaceContext.membership.isAdmin = false;
+
+    await request(auditApp.getHttpServer()).get('/audit-events').expect(403);
+
+    expect(auditService.listEvents).not.toHaveBeenCalled();
   });
 
   it('rejects invalid audit query params', async () => {

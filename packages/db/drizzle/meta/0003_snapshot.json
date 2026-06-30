@@ -142,7 +142,7 @@
       "checkConstraints": {
         "audit_events_audience_check": {
           "name": "audit_events_audience_check",
-          "value": "\"audit_events\".\"audience\" in ('internal', 'client')"
+          "value": "\"audience\" in ('internal', 'client')"
         }
       },
       "isRLSEnabled": false

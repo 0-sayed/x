@@ -1,5 +1,6 @@
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { auditEvents } from './audit.js';
@@ -38,5 +39,17 @@ describe('audit schema', () => {
     expect(getTableConfig(auditEvents).checks.map((check) => check.name)).toEqual([
       'audit_events_audience_check',
     ]);
+  });
+
+  it('keeps the generated migration check constraint unqualified', () => {
+    const migrationSql = readFileSync(
+      new URL('../../drizzle/0003_audit_events.sql', import.meta.url),
+      'utf8',
+    );
+
+    expect(migrationSql).toContain(
+      'CONSTRAINT "audit_events_audience_check" CHECK ("audience" in (\'internal\', \'client\'))',
+    );
+    expect(migrationSql).not.toContain('"audit_events"."audience"');
   });
 });

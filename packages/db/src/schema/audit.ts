@@ -27,7 +27,7 @@ export const auditEvents = pgTable(
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check('audit_events_audience_check', sql`${table.audience} in ('internal', 'client')`),
+    check('audit_events_audience_check', sql`"audience" in ('internal', 'client')`),
     index('audit_events_workspace_occurred_at_idx').on(table.workspaceId, table.occurredAt),
     index('audit_events_workspace_audience_occurred_at_idx').on(
       table.workspaceId,

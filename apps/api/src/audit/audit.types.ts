@@ -17,5 +17,6 @@ export type ListAuditEventsInput = {
   readonly workspaceId: string;
   readonly audience?: AuditAudience;
   readonly before?: Date;
+  readonly beforeId?: string;
   readonly limit: number;
 };
