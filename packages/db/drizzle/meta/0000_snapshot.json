@@ -280,21 +280,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "sync_inbox_operation_id_idx": {
-          "name": "sync_inbox_operation_id_idx",
-          "columns": [
-            {
-              "expression": "operation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},

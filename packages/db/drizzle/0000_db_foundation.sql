@@ -37,5 +37,4 @@ ALTER TABLE "sync_failures" ADD CONSTRAINT "sync_failures_event_id_sync_inbox_ev
 CREATE UNIQUE INDEX "sync_failures_event_id_idx" ON "sync_failures" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "sync_failures_resource_failed_at_idx" ON "sync_failures" USING btree ("resource","failed_at");--> statement-breakpoint
 CREATE INDEX "sync_failures_resolved_at_idx" ON "sync_failures" USING btree ("resolved_at");--> statement-breakpoint
-CREATE INDEX "sync_inbox_resource_received_at_idx" ON "sync_inbox" USING btree ("resource","received_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "sync_inbox_operation_id_idx" ON "sync_inbox" USING btree ("operation_id");
+CREATE INDEX "sync_inbox_resource_received_at_idx" ON "sync_inbox" USING btree ("resource","received_at");

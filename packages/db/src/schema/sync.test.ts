@@ -1,4 +1,5 @@
 import { getTableColumns, getTableName } from 'drizzle-orm';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 
 import { syncCheckpoints, syncFailures, syncInbox } from './sync.js';
@@ -48,6 +49,21 @@ describe('sync schema', () => {
       'lastEventId',
       'lastSyncedAt',
       'updatedAt',
+    ]);
+  });
+
+  it('updates checkpoint timestamps when rows change', () => {
+    expect(syncCheckpoints.updatedAt.onUpdateFn).toEqual(expect.any(Function));
+  });
+
+  it('does not require operation ids to be globally unique inbox identifiers', () => {
+    const inboxIndexes = getTableConfig(syncInbox).indexes.map((index) => index.config);
+
+    expect(inboxIndexes).toEqual([
+      expect.objectContaining({
+        name: 'sync_inbox_resource_received_at_idx',
+        unique: false,
+      }),
     ]);
   });
 });

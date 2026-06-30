@@ -20,13 +20,6 @@ export type SyncEnvelopePayload = {
 
 export type SyncCheckpointCursor = Record<string, unknown>;
 
-const receivedAt = timestamp('received_at', { withTimezone: true }).notNull().defaultNow();
-const processedAt = timestamp('processed_at', { withTimezone: true });
-const failedAt = timestamp('failed_at', { withTimezone: true }).notNull().defaultNow();
-const resolvedAt = timestamp('resolved_at', { withTimezone: true });
-const lastSyncedAt = timestamp('last_synced_at', { withTimezone: true });
-const updatedAt = timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
-
 export const syncInbox = pgTable(
   'sync_inbox',
   {
@@ -37,13 +30,10 @@ export const syncInbox = pgTable(
     jobId: text('job_id'),
     targetApp: text('target_app'),
     payload: jsonb('payload').$type<SyncEnvelopePayload>().notNull(),
-    receivedAt,
-    processedAt,
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
   },
-  (table) => [
-    index('sync_inbox_resource_received_at_idx').on(table.resource, table.receivedAt),
-    uniqueIndex('sync_inbox_operation_id_idx').on(table.operationId),
-  ],
+  (table) => [index('sync_inbox_resource_received_at_idx').on(table.resource, table.receivedAt)],
 );
 
 export const syncFailures = pgTable(
@@ -61,8 +51,8 @@ export const syncFailures = pgTable(
     errorMessage: text('error_message').notNull(),
     errorStack: text('error_stack'),
     retryCount: integer('retry_count').notNull().default(0),
-    failedAt,
-    resolvedAt,
+    failedAt: timestamp('failed_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   },
   (table) => [
     uniqueIndex('sync_failures_event_id_idx').on(table.eventId),
@@ -78,8 +68,11 @@ export const syncCheckpoints = pgTable('sync_checkpoints', {
     .notNull()
     .default(sql`'{}'::jsonb`),
   lastEventId: text('last_event_id'),
-  lastSyncedAt,
-  updatedAt,
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
 export type SyncInbox = typeof syncInbox.$inferSelect;
