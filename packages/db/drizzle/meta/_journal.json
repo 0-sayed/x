@@ -22,6 +22,20 @@
       "when": 1782821034218,
       "tag": "0002_session_records",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782846553515,
+      "tag": "0003_permissions_rbac",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782855092721,
+      "tag": "0004_role_assignment_sources",
+      "breakpoints": true
     }
   ]
 }
