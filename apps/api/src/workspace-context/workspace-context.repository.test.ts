@@ -108,7 +108,7 @@ describe('WorkspaceContextRepository', () => {
     );
   });
 
-  it('preserves projected permissions when RBAC assignments are empty', async () => {
+  it('uses empty RBAC permissions as authoritative over projected permissions', async () => {
     const { db } = createDbMock([
       {
         workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
@@ -136,7 +136,7 @@ describe('WorkspaceContextRepository', () => {
       ),
     ).resolves.toEqual(
       expect.objectContaining({
-        permissions: ['workspace.view'],
+        permissions: [],
       }),
     );
   });

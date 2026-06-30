@@ -2,6 +2,7 @@ import { getTableColumns, getTableName } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { permissionKeys } from '@materiabill/contracts';
 
 import { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 
@@ -41,6 +42,9 @@ const sqlText = (value: unknown) =>
 
 const permissionsMigrationSql = () =>
   readFileSync(new URL('../../drizzle/0003_permissions_rbac.sql', import.meta.url), 'utf8');
+
+const permissionsSchemaSource = () =>
+  readFileSync(new URL('./permissions.ts', import.meta.url), 'utf8');
 
 describe('permissions schema', () => {
   it('uses stable RBAC table names', () => {
@@ -145,5 +149,15 @@ describe('permissions schema', () => {
     );
     expect(permissionsMigrationSql()).toContain("'workspace.view'");
     expect(permissionsMigrationSql()).toContain("'user_role_assignments.manage'");
+  });
+
+  it('builds the permission key check from the contract catalog', () => {
+    const schemaSource = permissionsSchemaSource();
+
+    expect(schemaSource).toContain("import { permissionKeys } from '@materiabill/contracts';");
+    expect(schemaSource).not.toContain('const permissionCatalogKeys = [');
+    for (const permissionKey of permissionKeys) {
+      expect(permissionsMigrationSql()).toContain(`'${permissionKey}'`);
+    }
   });
 });

@@ -95,6 +95,24 @@ describe('PermissionsRepository', () => {
     );
   });
 
+  it('adds the admin assignment when an admin membership already has role assignments', async () => {
+    const { calls, db, selectBuilder } = createDbMock();
+    selectBuilder.where.mockResolvedValueOnce([{ count: 1 }]);
+    const repository = new PermissionsRepository({ db } as never);
+
+    await repository.seedWorkspaceSystemRoles({
+      workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      membershipUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+      isAdmin: true,
+    });
+
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'insert', table: userRoleAssignments }),
+      ]),
+    );
+  });
+
   it('preserves existing assignments when seeding ordinary memberships', async () => {
     const { calls, db } = createDbMock();
     const insertedAssignments: unknown[] = [];

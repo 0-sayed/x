@@ -138,7 +138,7 @@ export class PermissionsRepository {
             ),
           );
 
-        if ((existingAssignments[0]?.count ?? 0) === 0) {
+        if (input.isAdmin || (existingAssignments[0]?.count ?? 0) === 0) {
           await tx
             .insert(userRoleAssignments)
             .values({
