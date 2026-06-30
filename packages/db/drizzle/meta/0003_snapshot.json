@@ -276,7 +276,7 @@
         },
         "size_bytes": {
           "name": "size_bytes",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
