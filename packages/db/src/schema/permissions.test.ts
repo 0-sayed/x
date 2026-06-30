@@ -1,5 +1,6 @@
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
@@ -15,6 +16,20 @@ const indexNames = (
     .indexes.map((index) => index.config.name)
     .sort();
 
+const foreignKeyNames = (
+  table: typeof workspaceRoles | typeof rolePermissions | typeof userRoleAssignments,
+) =>
+  getTableConfig(table)
+    .foreignKeys.map((foreignKey) => foreignKey.getName())
+    .sort();
+
+const uniqueConstraintNames = (
+  table: typeof workspaceRoles | typeof rolePermissions | typeof userRoleAssignments,
+) =>
+  getTableConfig(table)
+    .uniqueConstraints.map((constraint) => constraint.getName())
+    .sort();
+
 const sqlText = (value: unknown) =>
   (
     value as {
@@ -23,6 +38,9 @@ const sqlText = (value: unknown) =>
   ).queryChunks
     ?.flatMap((chunk) => chunk.value ?? [])
     .join('');
+
+const permissionsMigrationSql = () =>
+  readFileSync(new URL('../../drizzle/0003_permissions_rbac.sql', import.meta.url), 'utf8');
 
 describe('permissions schema', () => {
   it('uses stable RBAC table names', () => {
@@ -97,5 +115,35 @@ describe('permissions schema', () => {
     expect(sqlText(systemRoleIndex?.config.where)).toBe(
       'system_key IS NOT NULL AND is_system = true AND deleted_at IS NULL',
     );
+  });
+
+  it('enforces workspace consistency across RBAC relationships', () => {
+    expect(uniqueConstraintNames(workspaceRoles)).toContain(
+      'workspace_roles_workspace_id_id_unique',
+    );
+    expect(foreignKeyNames(rolePermissions)).toEqual(
+      expect.arrayContaining([
+        'role_permissions_workspace_id_role_id_workspace_roles_workspace_id_id_fk',
+      ]),
+    );
+    expect(foreignKeyNames(userRoleAssignments)).toEqual(
+      expect.arrayContaining([
+        'user_role_assignments_workspace_id_user_id_workspace_membership_refs_workspace_id_user_id_fk',
+        'user_role_assignments_workspace_id_role_id_workspace_roles_workspace_id_id_fk',
+      ]),
+    );
+  });
+
+  it('constrains stored permission keys to the catalog', () => {
+    const permissionKeyCheck = getTableConfig(rolePermissions).checks.find(
+      (check) => check.name === 'role_permissions_permission_key_catalog_check',
+    );
+
+    expect(permissionKeyCheck).toBeDefined();
+    expect(permissionsMigrationSql()).toContain(
+      'CONSTRAINT "role_permissions_permission_key_catalog_check"',
+    );
+    expect(permissionsMigrationSql()).toContain("'workspace.view'");
+    expect(permissionsMigrationSql()).toContain("'user_role_assignments.manage'");
   });
 });

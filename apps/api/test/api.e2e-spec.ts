@@ -483,7 +483,14 @@ describe('permissions endpoints', () => {
     membership: {
       userId,
       roleKey: 'workspace_admin',
-      permissions: ['workspace.view', 'roles.view', 'manage_roles'],
+      permissions: [
+        'workspace.view',
+        'roles.view',
+        'roles.create',
+        'roles.edit',
+        'manage_roles',
+        'user_role_assignments.manage',
+      ],
       isAdmin: true,
     },
     access: {

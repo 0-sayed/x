@@ -128,8 +128,9 @@ export class PermissionsRepository {
       }
 
       if (input.membershipUserId && assignmentRoleId) {
-        await tx
-          .delete(userRoleAssignments)
+        const existingAssignments = await tx
+          .select({ count: countDistinct(userRoleAssignments.roleId) })
+          .from(userRoleAssignments)
           .where(
             and(
               eq(userRoleAssignments.workspaceId, input.workspaceId),
@@ -137,11 +138,16 @@ export class PermissionsRepository {
             ),
           );
 
-        await tx.insert(userRoleAssignments).values({
-          workspaceId: input.workspaceId,
-          userId: input.membershipUserId,
-          roleId: assignmentRoleId,
-        });
+        if ((existingAssignments[0]?.count ?? 0) === 0) {
+          await tx
+            .insert(userRoleAssignments)
+            .values({
+              workspaceId: input.workspaceId,
+              userId: input.membershipUserId,
+              roleId: assignmentRoleId,
+            })
+            .onConflictDoNothing();
+        }
       }
     };
 
@@ -253,6 +259,16 @@ export class PermissionsRepository {
             permissionKey,
           })),
         );
+        await tx
+          .update(workspaceRoles)
+          .set({ updatedAt: new Date() })
+          .where(
+            and(
+              eq(workspaceRoles.workspaceId, input.workspaceId),
+              eq(workspaceRoles.id, input.roleId),
+              isNull(workspaceRoles.deletedAt),
+            ),
+          );
         await this.assertWorkspaceKeepsManageRoles(input.workspaceId, tx);
       }
 
@@ -374,11 +390,67 @@ export class PermissionsRepository {
         and(
           eq(userRoleAssignments.workspaceId, workspaceId),
           eq(userRoleAssignments.userId, userId),
+          eq(workspaceRoles.workspaceId, workspaceId),
+          eq(rolePermissions.workspaceId, workspaceId),
           isNull(workspaceRoles.deletedAt),
         ),
       );
 
     return [...new Set(rows.map((row) => row.permissionKey as PermissionKey))].sort();
+  }
+
+  async findEffectivePermissionsByWorkspaceIds(
+    workspaceIds: readonly string[],
+    userId: string,
+    db: Db = this.#db,
+  ): Promise<ReadonlyMap<string, readonly PermissionKey[]>> {
+    const uniqueWorkspaceIds = [...new Set(workspaceIds)];
+    const permissionsByWorkspaceId = new Map<string, PermissionKey[]>(
+      uniqueWorkspaceIds.map((workspaceId) => [workspaceId, []]),
+    );
+
+    if (uniqueWorkspaceIds.length === 0) {
+      return permissionsByWorkspaceId;
+    }
+
+    const rows = await db
+      .select({
+        workspaceId: userRoleAssignments.workspaceId,
+        permissionKey: rolePermissions.permissionKey,
+      })
+      .from(userRoleAssignments)
+      .innerJoin(
+        workspaceRoles,
+        and(
+          eq(workspaceRoles.id, userRoleAssignments.roleId),
+          eq(workspaceRoles.workspaceId, userRoleAssignments.workspaceId),
+        ),
+      )
+      .innerJoin(
+        rolePermissions,
+        and(
+          eq(rolePermissions.roleId, workspaceRoles.id),
+          eq(rolePermissions.workspaceId, userRoleAssignments.workspaceId),
+        ),
+      )
+      .where(
+        and(
+          inArray(userRoleAssignments.workspaceId, uniqueWorkspaceIds),
+          eq(userRoleAssignments.userId, userId),
+          isNull(workspaceRoles.deletedAt),
+        ),
+      );
+
+    for (const row of rows) {
+      permissionsByWorkspaceId.get(row.workspaceId)?.push(row.permissionKey as PermissionKey);
+    }
+
+    return new Map(
+      [...permissionsByWorkspaceId.entries()].map(([workspaceId, permissions]) => [
+        workspaceId,
+        [...new Set(permissions)].sort(),
+      ]),
+    );
   }
 
   async assertWorkspaceKeepsManageRoles(workspaceId: string, db: Db = this.#db): Promise<void> {

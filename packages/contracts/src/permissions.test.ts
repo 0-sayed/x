@@ -78,6 +78,22 @@ describe('permission contracts', () => {
     ).toThrow();
   });
 
+  it('rejects duplicate permission keys in role mutation requests', () => {
+    expect(() =>
+      createRoleRequestSchema.parse({
+        nameEn: 'Role Editor',
+        nameAr: 'محرر الأدوار',
+        permissions: ['roles.view', 'roles.view'],
+      }),
+    ).toThrow('Permission keys must be unique');
+
+    expect(() =>
+      updateRoleRequestSchema.parse({
+        permissions: ['roles.edit', 'roles.edit'],
+      }),
+    ).toThrow('Permission keys must be unique');
+  });
+
   it('validates clone and user role assignment requests', () => {
     expect(
       cloneRoleRequestSchema.parse({
@@ -98,5 +114,14 @@ describe('permission contracts', () => {
       userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
       roleIds: ['01890f8e-5f47-7cc3-98c4-dc0c0c07398f'],
     });
+  });
+
+  it('rejects duplicate role ids in assignment replacement requests', () => {
+    expect(() =>
+      replaceUserRoleAssignmentsRequestSchema.parse({
+        userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        roleIds: ['01890f8e-5f47-7cc3-98c4-dc0c0c07398f', '01890f8e-5f47-7cc3-98c4-dc0c0c07398f'],
+      }),
+    ).toThrow('Role ids must be unique');
   });
 });

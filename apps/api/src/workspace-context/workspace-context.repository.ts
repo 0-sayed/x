@@ -75,7 +75,7 @@ export class WorkspaceContextRepository {
 
     return {
       ...row,
-      permissions,
+      permissions: permissions.length > 0 ? permissions : row.permissions,
     };
   }
 

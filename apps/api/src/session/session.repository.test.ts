@@ -92,6 +92,9 @@ function createDbMock(selectRows: readonly unknown[] = []) {
 function createPermissionsRepositoryMock() {
   return {
     findEffectivePermissions: vi.fn().mockResolvedValue(['workspace.view']),
+    findEffectivePermissionsByWorkspaceIds: vi
+      .fn()
+      .mockResolvedValue(new Map([['82bf0afe-b730-4046-ac0b-30f74ce1db7a', ['workspace.view']]])),
     seedWorkspaceSystemRoles: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -448,10 +451,9 @@ describe('SessionRepository', () => {
       },
     ]);
     const permissionsRepository = createPermissionsRepositoryMock();
-    permissionsRepository.findEffectivePermissions.mockResolvedValue([
-      'manage_roles',
-      'workspace.view',
-    ]);
+    permissionsRepository.findEffectivePermissionsByWorkspaceIds.mockResolvedValue(
+      new Map([['82bf0afe-b730-4046-ac0b-30f74ce1db7a', ['manage_roles', 'workspace.view']]]),
+    );
     const repository = new SessionRepository(db as never, permissionsRepository as never);
 
     await expect(
@@ -494,8 +496,9 @@ describe('SessionRepository', () => {
 
     const workspaceJoinLeaves = collectLeaves(selectBuilder.leftJoin.mock.calls[1]?.[1]);
     expect(workspaceJoinLeaves).toContain('deleted_at');
-    expect(permissionsRepository.findEffectivePermissions).toHaveBeenCalledWith(
-      '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+    expect(permissionsRepository.findEffectivePermissions).not.toHaveBeenCalled();
+    expect(permissionsRepository.findEffectivePermissionsByWorkspaceIds).toHaveBeenCalledWith(
+      ['82bf0afe-b730-4046-ac0b-30f74ce1db7a'],
       '3f43835d-7f3b-4b16-907b-d57db49832dd',
     );
   });

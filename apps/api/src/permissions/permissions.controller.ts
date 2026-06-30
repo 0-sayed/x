@@ -54,7 +54,7 @@ export class PermissionsController {
 
   @Post('roles')
   @UseGuards(WorkspaceContextGuard, permissionsGuard)
-  @RequirePermissions('manage_roles')
+  @RequirePermissions('roles.create')
   createRole(
     @WorkspaceContext() workspaceContext: WorkspaceContextValue,
     @Body() body: unknown,
@@ -66,7 +66,7 @@ export class PermissionsController {
 
   @Patch('roles/:roleId')
   @UseGuards(WorkspaceContextGuard, permissionsGuard)
-  @RequirePermissions('manage_roles')
+  @RequirePermissions('roles.edit')
   updateRole(
     @WorkspaceContext() workspaceContext: WorkspaceContextValue,
     @Param('roleId') roleId: string,
@@ -83,7 +83,7 @@ export class PermissionsController {
 
   @Post('roles/:roleId/clone')
   @UseGuards(WorkspaceContextGuard, permissionsGuard)
-  @RequirePermissions('manage_roles')
+  @RequirePermissions('roles.create')
   cloneRole(
     @WorkspaceContext() workspaceContext: WorkspaceContextValue,
     @Param('roleId') roleId: string,
@@ -100,7 +100,7 @@ export class PermissionsController {
 
   @Post('user-role-assignments')
   @UseGuards(WorkspaceContextGuard, permissionsGuard)
-  @RequirePermissions('manage_roles')
+  @RequirePermissions('user_role_assignments.manage')
   replaceUserRoleAssignments(
     @WorkspaceContext() workspaceContext: WorkspaceContextValue,
     @Body() body: unknown,

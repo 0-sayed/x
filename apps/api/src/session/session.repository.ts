@@ -222,28 +222,47 @@ export class SessionRepository {
       return null;
     }
 
-    const workspaces = await Promise.all(
-      rows.flatMap((row) => {
-        if (!row.workspaceId || !row.workspaceName) {
-          return [];
-        }
+    const workspaceRows: {
+      readonly workspaceId: string;
+      readonly workspaceName: string;
+      readonly workspaceSlug: string | null;
+      readonly roleKey: string | null;
+      readonly permissions: readonly string[];
+      readonly isAdmin: boolean | null;
+    }[] = rows.flatMap((row) => {
+      if (!row.workspaceId || !row.workspaceName) {
+        return [];
+      }
 
-        const workspaceId = row.workspaceId;
-        const workspaceName = row.workspaceName;
-        return [
-          this.permissionsRepository
-            .findEffectivePermissions(workspaceId, first.userId)
-            .then((permissions) => ({
-              id: workspaceId,
-              name: workspaceName,
-              slug: row.workspaceSlug,
-              roleKey: row.roleKey,
-              permissions: [...permissions],
-              isAdmin: row.isAdmin ?? false,
-            })),
-        ];
-      }),
-    );
+      return [
+        {
+          workspaceId: row.workspaceId,
+          workspaceName: row.workspaceName,
+          workspaceSlug: row.workspaceSlug,
+          roleKey: row.roleKey,
+          permissions: row.permissions ?? [],
+          isAdmin: row.isAdmin,
+        },
+      ];
+    });
+    const permissionsByWorkspaceId =
+      await this.permissionsRepository.findEffectivePermissionsByWorkspaceIds(
+        workspaceRows.map((row) => row.workspaceId),
+        first.userId,
+      );
+
+    const workspaces = workspaceRows.map((row) => {
+      const permissions = permissionsByWorkspaceId.get(row.workspaceId) ?? [];
+
+      return {
+        id: row.workspaceId,
+        name: row.workspaceName,
+        slug: row.workspaceSlug,
+        roleKey: row.roleKey,
+        permissions: [...(permissions.length > 0 ? permissions : row.permissions)],
+        isAdmin: row.isAdmin ?? false,
+      };
+    });
 
     return {
       encryptedTokens: first.encryptedTokens,

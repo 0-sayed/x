@@ -91,7 +91,12 @@ export const systemRoleKeySchema = z.enum([
 
 export const roleNameSchema = z.string().trim().min(1).max(120);
 
-export const rolePermissionListSchema = z.array(permissionKeySchema).min(1);
+export const rolePermissionListSchema = z
+  .array(permissionKeySchema)
+  .min(1)
+  .refine((permissions) => new Set(permissions).size === permissions.length, {
+    message: 'Permission keys must be unique',
+  });
 
 export const roleSummarySchema = z
   .object({
@@ -137,7 +142,12 @@ export const cloneRoleRequestSchema = z
 export const replaceUserRoleAssignmentsRequestSchema = z
   .object({
     userId: z.uuid(),
-    roleIds: z.array(z.uuid()).min(1),
+    roleIds: z
+      .array(z.uuid())
+      .min(1)
+      .refine((roleIds) => new Set(roleIds).size === roleIds.length, {
+        message: 'Role ids must be unique',
+      }),
   })
   .strict();
 

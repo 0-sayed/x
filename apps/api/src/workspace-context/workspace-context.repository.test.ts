@@ -108,6 +108,39 @@ describe('WorkspaceContextRepository', () => {
     );
   });
 
+  it('preserves projected permissions when RBAC assignments are empty', async () => {
+    const { db } = createDbMock([
+      {
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        workspaceName: 'Demo Workspace',
+        workspaceSlug: 'demo-workspace',
+        paymentCurrency: 'SAR',
+        userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        roleKey: 'workspace_admin',
+        permissions: ['workspace.view'],
+        isAdmin: true,
+      },
+    ]);
+    const permissionsRepository = {
+      findEffectivePermissions: vi.fn().mockResolvedValue([]),
+    };
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      permissionsRepository as never,
+    );
+
+    await expect(
+      repository.findMembershipContext(
+        '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        permissions: ['workspace.view'],
+      }),
+    );
+  });
+
   it('returns null when no membership is found', async () => {
     const { db } = createDbMock([]);
     const repository = new WorkspaceContextRepository(
