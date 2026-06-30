@@ -47,8 +47,6 @@ export const workspaceRefs = pgTable(
     name: text('name').notNull(),
     slug: text('slug'),
     paymentCurrency: varchar('payment_currency', { length: 3 }),
-    isInstalled: boolean('is_installed').notNull().default(false),
-    subscriptionActive: boolean('subscription_active').notNull().default(false),
     ...projectionColumns(),
   },
   (table) => [index('workspace_refs_slug_idx').on(table.slug)],
@@ -77,7 +75,6 @@ export const workspaceMembershipRefs = pgTable(
       columns: [table.workspaceId, table.userId],
       name: 'workspace_membership_refs_workspace_id_user_id_pk',
     }),
-    index('workspace_membership_refs_workspace_id_idx').on(table.workspaceId),
     index('workspace_membership_refs_user_id_idx').on(table.userId),
   ],
 );

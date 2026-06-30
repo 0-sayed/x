@@ -999,21 +999,6 @@
         }
       },
       "indexes": {
-        "workspace_membership_refs_workspace_id_idx": {
-          "name": "workspace_membership_refs_workspace_id_idx",
-          "columns": [
-            {
-              "expression": "workspace_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "workspace_membership_refs_user_id_idx": {
           "name": "workspace_membership_refs_user_id_idx",
           "columns": [
@@ -1088,20 +1073,6 @@
           "type": "varchar(3)",
           "primaryKey": false,
           "notNull": false
-        },
-        "is_installed": {
-          "name": "is_installed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "subscription_active": {
-          "name": "subscription_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "raw_payload": {
           "name": "raw_payload",

@@ -64,8 +64,6 @@ describe('projection schema', () => {
       'name',
       'slug',
       'paymentCurrency',
-      'isInstalled',
-      'subscriptionActive',
       'rawPayload',
       'syncedAt',
       'createdAt',
@@ -181,10 +179,7 @@ describe('projection schema', () => {
   it('adds lookup indexes used by upcoming session, workspace, and sync modules', () => {
     expect(indexNames(inframodernUserRefs)).toEqual(['inframodern_user_refs_email_idx']);
     expect(indexNames(workspaceRefs)).toEqual(['workspace_refs_slug_idx']);
-    expect(indexNames(workspaceMembershipRefs)).toEqual([
-      'workspace_membership_refs_user_id_idx',
-      'workspace_membership_refs_workspace_id_idx',
-    ]);
+    expect(indexNames(workspaceMembershipRefs)).toEqual(['workspace_membership_refs_user_id_idx']);
     expect(indexNames(brandRefs)).toEqual(['brand_refs_workspace_id_idx']);
     expect(indexNames(locationRefs)).toEqual(['location_refs_workspace_id_idx']);
     expect(indexNames(exchangeRateRefs)).toEqual([

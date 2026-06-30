@@ -104,8 +104,6 @@ CREATE TABLE "workspace_refs" (
 	"name" text NOT NULL,
 	"slug" text,
 	"payment_currency" varchar(3),
-	"is_installed" boolean DEFAULT false NOT NULL,
-	"subscription_active" boolean DEFAULT false NOT NULL,
 	"raw_payload" jsonb NOT NULL,
 	"synced_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -123,6 +121,5 @@ CREATE INDEX "inframodern_user_refs_email_idx" ON "inframodern_user_refs" USING 
 CREATE INDEX "location_refs_workspace_id_idx" ON "location_refs" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "measurement_unit_refs_code_idx" ON "measurement_unit_refs" USING btree ("code");--> statement-breakpoint
 CREATE INDEX "tax_refs_code_idx" ON "tax_refs" USING btree ("code");--> statement-breakpoint
-CREATE INDEX "workspace_membership_refs_workspace_id_idx" ON "workspace_membership_refs" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "workspace_membership_refs_user_id_idx" ON "workspace_membership_refs" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "workspace_refs_slug_idx" ON "workspace_refs" USING btree ("slug");
