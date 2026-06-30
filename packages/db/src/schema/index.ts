@@ -1,5 +1,4 @@
-export { getDatabaseHealth } from './health.js';
-export { syncCheckpoints, syncFailures, syncInbox } from './schema/index.js';
+export { syncCheckpoints, syncFailures, syncInbox } from './sync.js';
 export type {
   NewSyncCheckpoint,
   NewSyncFailure,
@@ -9,4 +8,4 @@ export type {
   SyncEnvelopePayload,
   SyncFailure,
   SyncInbox,
-} from './schema/index.js';
+} from './sync.js';

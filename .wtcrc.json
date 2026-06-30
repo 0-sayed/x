@@ -7,6 +7,7 @@
     "RABBITMQ_MANAGEMENT_PORT"
   ],
   "envOverrides": {
+    "DATABASE_URL": "postgresql://local_user:changeme-local-only@127.0.0.1:${POSTGRES_PORT}/materiabill",
     "VITE_API_BASE_URL": "http://127.0.0.1:${API_PORT}"
   }
 }
