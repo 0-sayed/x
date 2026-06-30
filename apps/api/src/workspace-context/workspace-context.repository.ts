@@ -4,6 +4,7 @@ import { sessionRecords, workspaceMembershipRefs, workspaceRefs } from '@materia
 import { and, eq, gt, isNull } from 'drizzle-orm';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
+import { PermissionsRepository } from '../permissions/permissions.repository.js';
 
 type Db = DatabaseClient['db'];
 
@@ -22,7 +23,10 @@ export type WorkspaceMembershipRecord = {
 export class WorkspaceContextRepository {
   readonly #db: Db;
 
-  constructor(@Inject(DATABASE_CLIENT) databaseClient: DatabaseClient) {
+  constructor(
+    @Inject(DATABASE_CLIENT) databaseClient: DatabaseClient,
+    private readonly permissionsRepository: PermissionsRepository,
+  ) {
     this.#db = databaseClient.db;
   }
 
@@ -59,7 +63,20 @@ export class WorkspaceContextRepository {
       )
       .limit(1);
 
-    return rows[0] ?? null;
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+
+    const permissions = await this.permissionsRepository.findEffectivePermissions(
+      workspaceId,
+      userId,
+    );
+
+    return {
+      ...row,
+      permissions,
+    };
   }
 
   async updateActiveWorkspace(

@@ -89,6 +89,13 @@ function createDbMock(selectRows: readonly unknown[] = []) {
   };
 }
 
+function createPermissionsRepositoryMock() {
+  return {
+    findEffectivePermissions: vi.fn().mockResolvedValue(['workspace.view']),
+    seedWorkspaceSystemRoles: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 function collectLeaves(value: unknown, seen = new Set<unknown>()): string[] {
   if (value === null || value === undefined) {
     return [];
@@ -119,7 +126,8 @@ function collectLeaves(value: unknown, seen = new Set<unknown>()): string[] {
 describe('SessionRepository', () => {
   it('chooses the first available workspace and upserts user, workspace, and membership projections', async () => {
     const { db, insertCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const permissionsRepository = createPermissionsRepositoryMock();
+    const repository = new SessionRepository(db as never, permissionsRepository as never);
 
     const activeWorkspaceId = await repository.bootstrapFromInframodern({
       id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -267,11 +275,30 @@ describe('SessionRepository', () => {
         }),
       }),
     );
+    expect(permissionsRepository.seedWorkspaceSystemRoles).toHaveBeenCalledWith(
+      {
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        membershipUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        isAdmin: false,
+      },
+      db,
+    );
+    expect(permissionsRepository.seedWorkspaceSystemRoles).toHaveBeenCalledWith(
+      {
+        workspaceId: '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
+        membershipUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        isAdmin: true,
+      },
+      db,
+    );
   });
 
   it('returns null when bootstrap data has no workspaces', async () => {
     const { db, insertCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     await expect(
       repository.bootstrapFromInframodern({
@@ -288,7 +315,10 @@ describe('SessionRepository', () => {
 
   it('deactivates memberships omitted from the latest bootstrap payload', async () => {
     const { db, updateCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     await repository.bootstrapFromInframodern({
       id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -324,7 +354,10 @@ describe('SessionRepository', () => {
 
   it('deactivates all memberships when bootstrap data has no workspaces', async () => {
     const { db, updateCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     await repository.bootstrapFromInframodern({
       id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -350,7 +383,10 @@ describe('SessionRepository', () => {
 
   it('persists new sessions and returns the inserted session id', async () => {
     const { db, insertCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     const sessionId = await repository.createSession({
       userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -411,7 +447,12 @@ describe('SessionRepository', () => {
         isAdmin: false,
       },
     ]);
-    const repository = new SessionRepository(db as never);
+    const permissionsRepository = createPermissionsRepositoryMock();
+    permissionsRepository.findEffectivePermissions.mockResolvedValue([
+      'manage_roles',
+      'workspace.view',
+    ]);
+    const repository = new SessionRepository(db as never, permissionsRepository as never);
 
     await expect(
       repository.findCurrentUserBySessionId('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2', now),
@@ -430,7 +471,7 @@ describe('SessionRepository', () => {
             name: 'Demo Workspace',
             slug: 'demo-workspace',
             roleKey: 'workspace_admin',
-            permissions: ['workspace.view'],
+            permissions: ['manage_roles', 'workspace.view'],
             isAdmin: true,
           },
         ],
@@ -453,11 +494,18 @@ describe('SessionRepository', () => {
 
     const workspaceJoinLeaves = collectLeaves(selectBuilder.leftJoin.mock.calls[1]?.[1]);
     expect(workspaceJoinLeaves).toContain('deleted_at');
+    expect(permissionsRepository.findEffectivePermissions).toHaveBeenCalledWith(
+      '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      '3f43835d-7f3b-4b16-907b-d57db49832dd',
+    );
   });
 
   it('returns null when a current session cannot be found', async () => {
     const { db } = createDbMock([]);
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     await expect(
       repository.findCurrentUserBySessionId('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2'),
@@ -466,7 +514,10 @@ describe('SessionRepository', () => {
 
   it('updates and revokes sessions by id', async () => {
     const { db, updateCalls } = createDbMock();
-    const repository = new SessionRepository(db as never);
+    const repository = new SessionRepository(
+      db as never,
+      createPermissionsRepositoryMock() as never,
+    );
 
     await repository.updateTokens('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2', {
       encryptedTokens: 'rotated-token-payload',

@@ -11,6 +11,7 @@ import { and, eq, gt, isNull, notInArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
+import { PermissionsRepository } from '../permissions/permissions.repository.js';
 import type { InframodernOAuthUser } from './session.types.js';
 
 type Db = DatabaseClient['db'];
@@ -39,7 +40,10 @@ type LiveSessionResult = {
 type BootstrapWorkspaceProjection = SessionWorkspace;
 
 export class SessionRepository {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly permissionsRepository: PermissionsRepository,
+  ) {}
 
   async bootstrapFromInframodern(user: InframodernOAuthUser): Promise<string | null> {
     return this.db.transaction((tx) => this.#bootstrapFromInframodern(tx, user));
@@ -143,6 +147,15 @@ export class SessionRepository {
             deletedAt: null,
           },
         });
+
+      await this.permissionsRepository.seedWorkspaceSystemRoles(
+        {
+          workspaceId: workspace.id,
+          membershipUserId: user.id,
+          isAdmin: workspace.isAdmin,
+        },
+        db as Db,
+      );
     }
 
     return workspaces[0]?.id ?? null;
@@ -209,6 +222,29 @@ export class SessionRepository {
       return null;
     }
 
+    const workspaces = await Promise.all(
+      rows.flatMap((row) => {
+        if (!row.workspaceId || !row.workspaceName) {
+          return [];
+        }
+
+        const workspaceId = row.workspaceId;
+        const workspaceName = row.workspaceName;
+        return [
+          this.permissionsRepository
+            .findEffectivePermissions(workspaceId, first.userId)
+            .then((permissions) => ({
+              id: workspaceId,
+              name: workspaceName,
+              slug: row.workspaceSlug,
+              roleKey: row.roleKey,
+              permissions: [...permissions],
+              isAdmin: row.isAdmin ?? false,
+            })),
+        ];
+      }),
+    );
+
     return {
       encryptedTokens: first.encryptedTokens,
       user: {
@@ -218,22 +254,7 @@ export class SessionRepository {
         phone: first.phone,
         avatarUrl: first.avatarUrl,
         activeWorkspaceId: first.activeWorkspaceId,
-        workspaces: rows.flatMap((row) => {
-          if (!row.workspaceId || !row.workspaceName) {
-            return [];
-          }
-
-          return [
-            {
-              id: row.workspaceId,
-              name: row.workspaceName,
-              slug: row.workspaceSlug,
-              roleKey: row.roleKey,
-              permissions: row.permissions ? [...row.permissions] : [],
-              isAdmin: row.isAdmin ?? false,
-            },
-          ];
-        }),
+        workspaces,
       },
     };
   }
@@ -325,7 +346,10 @@ export class SessionRepository {
 
 @Injectable()
 export class NestSessionRepository extends SessionRepository {
-  constructor(@Inject(DATABASE_CLIENT) databaseClient: DatabaseClient) {
-    super(databaseClient.db);
+  constructor(
+    @Inject(DATABASE_CLIENT) databaseClient: DatabaseClient,
+    permissionsRepository: PermissionsRepository,
+  ) {
+    super(databaseClient.db, permissionsRepository);
   }
 }

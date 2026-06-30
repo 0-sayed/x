@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { getSessionRuntimeConfig } from '@materiabill/config';
 
+import { PermissionsDataModule } from '../permissions/permissions.module.js';
 import { InframodernOAuthClient } from './inframodern-oauth.client.js';
 import { SessionController } from './session.controller.js';
 import { SessionCrypto } from './session.crypto.js';
@@ -9,6 +10,7 @@ import { NestSessionRepository } from './session.repository.js';
 import { SessionService } from './session.service.js';
 
 @Module({
+  imports: [PermissionsDataModule],
   controllers: [SessionController],
   providers: [
     NestSessionRepository,

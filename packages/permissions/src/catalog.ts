@@ -30,9 +30,81 @@ export type PermissionCatalogEntry = {
   readonly key: PermissionKey;
   readonly area: PermissionArea;
   readonly labelEn: string;
+  readonly labelAr: string;
 };
 
-export const permissionCatalog = [
+const permissionLabelArByKey: Record<PermissionKey, string> = {
+  'workspace.view': 'عرض مساحة العمل',
+  'projects.view': 'عرض المشاريع',
+  'projects.create': 'إنشاء المشاريع',
+  'projects.edit': 'تعديل المشاريع',
+  'projects.archive': 'أرشفة المشاريع',
+  'agreement_terms.view': 'عرض شروط الاتفاق',
+  'agreement_terms.configure': 'إعداد شروط الاتفاق',
+  'schedule.view': 'عرض الجدول',
+  'schedule.manage': 'إدارة الجدول',
+  'schedule.propose_baseline': 'اقتراح خط الأساس',
+  'milestones.complete': 'إكمال المراحل',
+  'draws.view': 'عرض الدفعات',
+  'draws.create': 'إنشاء الدفعات',
+  'draws.submit': 'إرسال الدفعات',
+  'draws.release': 'صرف الدفعات',
+  'draws.release_retention': 'صرف الاحتجاز',
+  'payables.view': 'عرض المستحقات',
+  'payables.create': 'إنشاء المستحقات',
+  'payables.pay': 'تسجيل دفع المستحقات',
+  'continuity.view': 'عرض الاستمرارية',
+  'continuity.pause': 'إيقاف الاستمرارية مؤقتا',
+  'budget.view': 'عرض الميزانية',
+  'budget.manage': 'إدارة الميزانية',
+  'budget.set_audience': 'تحديد جمهور الميزانية',
+  'materials.view': 'عرض المواد',
+  'materials.create': 'إنشاء المواد',
+  'materials.edit': 'تعديل المواد',
+  'materials.receive': 'استلام المواد',
+  'materials.use': 'استخدام المواد',
+  'materials.manage_po': 'إدارة أوامر الشراء',
+  'suggestions.view': 'عرض الاقتراحات',
+  'suggestions.resolve': 'حل الاقتراحات',
+  'subcontractors.view': 'عرض مقاولي الباطن',
+  'subcontractors.create': 'إنشاء مقاولي الباطن',
+  'subcontractors.edit': 'تعديل مقاولي الباطن',
+  'subcontractors.manage_compliance': 'إدارة امتثال مقاولي الباطن',
+  'submittals.view': 'عرض الاعتمادات',
+  'submittals.create': 'إنشاء الاعتمادات',
+  'submittals.review': 'مراجعة الاعتمادات',
+  'submittals.approve': 'اعتماد الاعتمادات',
+  'variations.view': 'عرض التغييرات',
+  'variations.create': 'إنشاء التغييرات',
+  'variations.approve': 'اعتماد التغييرات',
+  'documents.view': 'عرض المستندات',
+  'documents.create': 'إنشاء المستندات',
+  'documents.send_for_signature': 'إرسال المستندات للتوقيع',
+  'documents.void': 'إلغاء المستندات',
+  manage_documents: 'إدارة المستندات',
+  'certificates.view': 'عرض الشهادات',
+  'certificates.generate': 'إنشاء الشهادات',
+  'signoffs.view': 'عرض الاعتمادات النهائية',
+  'snags.view': 'عرض الملاحظات',
+  'snags.create': 'إنشاء الملاحظات',
+  'snags.assign': 'إسناد الملاحظات',
+  'snags.fix': 'إصلاح الملاحظات',
+  manage_snags: 'إدارة الملاحظات',
+  'people.view': 'عرض الأشخاص',
+  'roles.view': 'عرض الأدوار',
+  'roles.create': 'إنشاء الأدوار',
+  'roles.edit': 'تعديل الأدوار',
+  manage_roles: 'إدارة الأدوار',
+  'user_role_assignments.manage': 'إدارة تعيينات أدوار المستخدمين',
+  'branding.view': 'عرض الهوية',
+  'branding.manage': 'إدارة الهوية',
+  'settings.view': 'عرض الإعدادات',
+  'settings.manage_defaults': 'إدارة الإعدادات الافتراضية',
+  'audit.view': 'عرض سجل التدقيق',
+  'search.use': 'استخدام البحث',
+};
+
+const permissionCatalogEntries = [
   { key: 'workspace.view', area: 'workspace', labelEn: 'View workspace' },
   { key: 'projects.view', area: 'projects', labelEn: 'View projects' },
   { key: 'projects.create', area: 'projects', labelEn: 'Create projects' },
@@ -117,7 +189,14 @@ export const permissionCatalog = [
   { key: 'settings.manage_defaults', area: 'settings', labelEn: 'Manage setting defaults' },
   { key: 'audit.view', area: 'audit', labelEn: 'View audit events' },
   { key: 'search.use', area: 'search', labelEn: 'Use search' },
-] as const satisfies readonly PermissionCatalogEntry[];
+] as const satisfies readonly Omit<PermissionCatalogEntry, 'labelAr'>[];
+
+export const permissionCatalog: readonly PermissionCatalogEntry[] = permissionCatalogEntries.map(
+  (entry) => ({
+    ...entry,
+    labelAr: permissionLabelArByKey[entry.key],
+  }),
+);
 
 export const contractorPermissionKeys: readonly PermissionKey[] = permissionCatalog.map(
   (entry) => entry.key,
@@ -224,6 +303,18 @@ export const defaultRoleTemplates = {
     permissions: viewPermissions,
   },
 } as const satisfies Record<DefaultRoleTemplateKey, DefaultRoleTemplate>;
+
+export type PermissionCatalogResponse = {
+  readonly permissions: readonly PermissionCatalogEntry[];
+  readonly roleTemplates: typeof defaultRoleTemplates;
+};
+
+export function buildPermissionCatalogResponse(): PermissionCatalogResponse {
+  return {
+    permissions: permissionCatalog,
+    roleTemplates: defaultRoleTemplates,
+  };
+}
 
 export function isPermissionKey(value: string): value is PermissionKey {
   return isContractPermissionKey(value);
