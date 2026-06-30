@@ -1,3 +1,4 @@
+export { auditEvents } from './audit.js';
 export {
   brandRefs,
   exchangeRateRefs,
@@ -9,6 +10,7 @@ export {
   workspaceRefs,
 } from './projections.js';
 export { sessionRecords } from './sessions.js';
+export type { AuditEventRecord, NewAuditEventRecord } from './audit.js';
 export type {
   BrandRef,
   ExchangeRateRef,
