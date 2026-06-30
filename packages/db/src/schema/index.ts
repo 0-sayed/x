@@ -8,6 +8,7 @@ export {
   workspaceMembershipRefs,
   workspaceRefs,
 } from './projections.js';
+export { fileAssets } from './file-assets.js';
 export { sessionRecords } from './sessions.js';
 export type {
   BrandRef,
@@ -27,6 +28,7 @@ export type {
   WorkspaceMembershipRef,
   WorkspaceRef,
 } from './projections.js';
+export type { FileAsset, NewFileAsset } from './file-assets.js';
 export type { NewSessionRecord, SessionRecord } from './sessions.js';
 export { syncCheckpoints, syncFailures, syncInbox } from './sync.js';
 export type {

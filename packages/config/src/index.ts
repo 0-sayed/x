@@ -1,6 +1,7 @@
 export {
   getApiRuntimeConfig,
   getDatabaseRuntimeConfig,
+  getFileStorageRuntimeConfig,
   getQueueRuntimeConfig,
   getSyncAdminRuntimeConfig,
   getSessionRuntimeConfig,
@@ -10,13 +11,16 @@ export {
 export type {
   ApiRuntimeConfig,
   DatabaseRuntimeConfig,
+  FileStorageRuntimeConfig,
+  LocalFileStorageRuntimeConfig,
   PinoLogLevel,
   QueueRuntimeConfig,
   RuntimeEnv,
-  SyncAdminRuntimeConfig,
   SessionOAuthClientConfig,
   SessionOAuthMode,
   SessionRuntimeConfig,
+  SpacesFileStorageRuntimeConfig,
+  SyncAdminRuntimeConfig,
   WorkerRuntimeConfig,
 } from './env.js';
 export { getApiLoggerOptions, getWorkerLoggerOptions } from './logging.js';

@@ -27,6 +27,17 @@ const booleanStringSchema = z.preprocess((value) => {
 
   return value;
 }, z.boolean());
+const mimeListSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) =>
+    value
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0),
+  )
+  .pipe(z.array(z.string().regex(/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i)).min(1));
 
 const runtimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -58,6 +69,19 @@ const runtimeEnvSchema = z.object({
   INFRAMODERN_SANDBOX_OAUTH_CLIENT_ID: z.string().trim().min(1).optional(),
   INFRAMODERN_SANDBOX_OAUTH_CLIENT_SECRET: z.string().trim().min(1).optional(),
   INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL: optionalUrlSchema,
+  FILE_STORAGE_DRIVER: z.enum(['local', 'spaces']).default('local'),
+  FILE_STORAGE_LOCAL_ROOT: z.string().trim().min(1).default('.local/file-storage'),
+  FILE_STORAGE_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  FILE_STORAGE_ALLOWED_MIME_TYPES: z.preprocess(
+    (value) => value ?? 'image/jpeg,image/png,application/pdf,image/svg+xml',
+    mimeListSchema,
+  ),
+  FILE_STORAGE_SPACES_ENDPOINT: optionalUrlSchema,
+  FILE_STORAGE_SPACES_REGION: z.string().trim().min(1).default('nyc3'),
+  FILE_STORAGE_SPACES_BUCKET: z.string().trim().min(1).optional(),
+  FILE_STORAGE_SPACES_ACCESS_KEY_ID: z.string().trim().min(1).optional(),
+  FILE_STORAGE_SPACES_SECRET_ACCESS_KEY: z.string().trim().min(1).optional(),
+  FILE_STORAGE_SPACES_FORCE_PATH_STYLE: booleanStringSchema.default(false),
 });
 
 export type RuntimeEnv = z.infer<typeof runtimeEnvSchema>;
@@ -92,6 +116,29 @@ export type SyncAdminRuntimeConfig = {
   readonly syncAdminToken: string | undefined;
   readonly inframodernDbUrl: string | undefined;
 };
+
+type FileStorageBaseRuntimeConfig = {
+  readonly maxBytes: number;
+  readonly allowedMimeTypes: readonly string[];
+};
+
+export type LocalFileStorageRuntimeConfig = FileStorageBaseRuntimeConfig & {
+  readonly driver: 'local';
+  readonly localRoot: string;
+};
+
+export type SpacesFileStorageRuntimeConfig = FileStorageBaseRuntimeConfig & {
+  readonly driver: 'spaces';
+  readonly endpoint: string;
+  readonly region: string;
+  readonly bucket: string;
+  readonly accessKeyId: string;
+  readonly secretAccessKey: string;
+  readonly forcePathStyle: boolean;
+};
+
+export type FileStorageRuntimeConfig =
+  LocalFileStorageRuntimeConfig | SpacesFileStorageRuntimeConfig;
 
 export type SessionOAuthMode = 'production' | 'sandbox';
 
@@ -150,6 +197,14 @@ function selectRuntimeLogLevel(
 function requireConfigValue(value: string | undefined, message: string): string {
   if (!value) {
     throw new Error(message);
+  }
+
+  return value;
+}
+
+function requireSpacesConfigValue(value: string | undefined): string {
+  if (!value) {
+    throw new Error('Missing DigitalOcean Spaces file storage configuration');
   }
 
   return value;
@@ -244,6 +299,33 @@ export function getSyncAdminRuntimeConfig(env: NodeJS.ProcessEnv): SyncAdminRunt
   return {
     syncAdminToken: parsed.SYNC_ADMIN_TOKEN,
     inframodernDbUrl: parsed.INFRAMODERN_DB_URL,
+  };
+}
+
+export function getFileStorageRuntimeConfig(env: NodeJS.ProcessEnv): FileStorageRuntimeConfig {
+  const parsed = parseRuntimeEnv(env);
+  const base = {
+    maxBytes: parsed.FILE_STORAGE_MAX_BYTES,
+    allowedMimeTypes: parsed.FILE_STORAGE_ALLOWED_MIME_TYPES,
+  };
+
+  if (parsed.FILE_STORAGE_DRIVER === 'local') {
+    return {
+      driver: 'local',
+      localRoot: parsed.FILE_STORAGE_LOCAL_ROOT,
+      ...base,
+    };
+  }
+
+  return {
+    driver: 'spaces',
+    endpoint: requireSpacesConfigValue(parsed.FILE_STORAGE_SPACES_ENDPOINT),
+    region: parsed.FILE_STORAGE_SPACES_REGION,
+    bucket: requireSpacesConfigValue(parsed.FILE_STORAGE_SPACES_BUCKET),
+    accessKeyId: requireSpacesConfigValue(parsed.FILE_STORAGE_SPACES_ACCESS_KEY_ID),
+    secretAccessKey: requireSpacesConfigValue(parsed.FILE_STORAGE_SPACES_SECRET_ACCESS_KEY),
+    forcePathStyle: parsed.FILE_STORAGE_SPACES_FORCE_PATH_STYLE,
+    ...base,
   };
 }
 

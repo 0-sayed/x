@@ -5,6 +5,7 @@ export type { DbClient, MateriabillDatabase } from './client.js';
 export {
   brandRefs,
   exchangeRateRefs,
+  fileAssets,
   inframodernUserRefs,
   locationRefs,
   measurementUnitRefs,
@@ -19,11 +20,13 @@ export {
 export type {
   BrandRef,
   ExchangeRateRef,
+  FileAsset,
   InframodernUserRef,
   LocationRef,
   MeasurementUnitRef,
   NewBrandRef,
   NewExchangeRateRef,
+  NewFileAsset,
   NewInframodernUserRef,
   NewLocationRef,
   NewMeasurementUnitRef,

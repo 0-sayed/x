@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getApiRuntimeConfig,
   getDatabaseRuntimeConfig,
+  getFileStorageRuntimeConfig,
   getQueueRuntimeConfig,
   getSyncAdminRuntimeConfig,
   getSessionRuntimeConfig,
@@ -187,5 +188,62 @@ describe('session runtime config', () => {
         INFRAMODERN_OAUTH_MODE: 'sandbox',
       }),
     ).toThrow('Missing sandbox OAuth configuration');
+  });
+});
+
+describe('file storage runtime config', () => {
+  it('uses safe local storage defaults for development', () => {
+    expect(getFileStorageRuntimeConfig({})).toEqual({
+      driver: 'local',
+      localRoot: '.local/file-storage',
+      maxBytes: 10_485_760,
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf', 'image/svg+xml'],
+    });
+  });
+
+  it('parses explicit local storage settings', () => {
+    expect(
+      getFileStorageRuntimeConfig({
+        FILE_STORAGE_DRIVER: 'local',
+        FILE_STORAGE_LOCAL_ROOT: '/tmp/materiabill-files',
+        FILE_STORAGE_MAX_BYTES: '1024',
+        FILE_STORAGE_ALLOWED_MIME_TYPES: 'image/jpeg, application/pdf',
+      }),
+    ).toEqual({
+      driver: 'local',
+      localRoot: '/tmp/materiabill-files',
+      maxBytes: 1024,
+      allowedMimeTypes: ['image/jpeg', 'application/pdf'],
+    });
+  });
+
+  it('requires DigitalOcean Spaces credentials when the spaces driver is selected', () => {
+    expect(() => getFileStorageRuntimeConfig({ FILE_STORAGE_DRIVER: 'spaces' })).toThrow(
+      'Missing DigitalOcean Spaces file storage configuration',
+    );
+  });
+
+  it('parses DigitalOcean Spaces settings', () => {
+    expect(
+      getFileStorageRuntimeConfig({
+        FILE_STORAGE_DRIVER: 'spaces',
+        FILE_STORAGE_SPACES_ENDPOINT: 'https://nyc3.digitaloceanspaces.com',
+        FILE_STORAGE_SPACES_REGION: 'nyc3',
+        FILE_STORAGE_SPACES_BUCKET: 'materiabill-local',
+        FILE_STORAGE_SPACES_ACCESS_KEY_ID: 'access-key',
+        FILE_STORAGE_SPACES_SECRET_ACCESS_KEY: 'secret-key',
+        FILE_STORAGE_SPACES_FORCE_PATH_STYLE: 'true',
+      }),
+    ).toEqual({
+      driver: 'spaces',
+      endpoint: 'https://nyc3.digitaloceanspaces.com',
+      region: 'nyc3',
+      bucket: 'materiabill-local',
+      accessKeyId: 'access-key',
+      secretAccessKey: 'secret-key',
+      forcePathStyle: true,
+      maxBytes: 10_485_760,
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf', 'image/svg+xml'],
+    });
   });
 });

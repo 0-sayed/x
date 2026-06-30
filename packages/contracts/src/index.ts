@@ -29,6 +29,8 @@ export {
   supportedCurrencyCodes,
 } from './money.js';
 export type { CurrencyCode, Money } from './money.js';
+export { fileUploadPurposeSchema, uploadedFileAssetSchema } from './file-storage.js';
+export type { FileUploadPurpose, UploadedFileAsset } from './file-storage.js';
 export * from './sync.js';
 export * from './sync-topology.js';
 export { currentSessionUserSchema, sessionWorkspaceSchema } from './session.js';
