@@ -82,6 +82,7 @@ describe('permissions schema', () => {
       'workspaceId',
       'userId',
       'roleId',
+      'source',
       'createdAt',
       'updatedAt',
     ]);
@@ -92,7 +93,7 @@ describe('permissions schema', () => {
       'role_permissions_role_id_permission_key_pk',
     ]);
     expect(getTableConfig(userRoleAssignments).primaryKeys.map((key) => key.getName())).toEqual([
-      'user_role_assignments_workspace_id_user_id_role_id_pk',
+      'user_role_assignments_workspace_id_user_id_role_id_source_pk',
     ]);
     expect(indexNames(workspaceRoles)).toEqual([
       'workspace_roles_system_key_idx',
@@ -149,6 +150,14 @@ describe('permissions schema', () => {
     );
     expect(permissionsMigrationSql()).toContain("'workspace.view'");
     expect(permissionsMigrationSql()).toContain("'user_role_assignments.manage'");
+  });
+
+  it('constrains user role assignment sources', () => {
+    const assignmentSourceCheck = getTableConfig(userRoleAssignments).checks.find(
+      (check) => check.name === 'user_role_assignments_source_check',
+    );
+
+    expect(assignmentSourceCheck).toBeDefined();
   });
 
   it('builds the permission key check from the contract catalog', () => {

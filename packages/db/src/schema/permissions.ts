@@ -24,7 +24,12 @@ const auditColumns = () => ({
     .$onUpdate(() => new Date()),
 });
 
+export const userRoleAssignmentSources = ['manual', 'inframodern_admin'] as const;
+
 const permissionCatalogSql = sql.raw(permissionKeys.map((key) => `'${key}'`).join(', '));
+const userRoleAssignmentSourceSql = sql.raw(
+  userRoleAssignmentSources.map((source) => `'${source}'`).join(', '),
+);
 
 export const workspaceRoles = pgTable(
   'workspace_roles',
@@ -96,13 +101,18 @@ export const userRoleAssignments = pgTable(
     roleId: uuid('role_id')
       .notNull()
       .references(() => workspaceRoles.id, { onDelete: 'cascade' }),
+    source: text('source').notNull().default('manual'),
     ...auditColumns(),
   },
   (table) => [
     primaryKey({
-      columns: [table.workspaceId, table.userId, table.roleId],
-      name: 'user_role_assignments_workspace_id_user_id_role_id_pk',
+      columns: [table.workspaceId, table.userId, table.roleId, table.source],
+      name: 'user_role_assignments_workspace_id_user_id_role_id_source_pk',
     }),
+    check(
+      'user_role_assignments_source_check',
+      sql`${table.source} IN (${userRoleAssignmentSourceSql})`,
+    ),
     foreignKey({
       columns: [table.workspaceId, table.userId],
       foreignColumns: [workspaceMembershipRefs.workspaceId, workspaceMembershipRefs.userId],

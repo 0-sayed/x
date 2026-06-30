@@ -70,6 +70,8 @@ type WorkspaceRoleSummary = {
 const systemRoleUpsertTarget = [workspaceRoles.workspaceId, workspaceRoles.systemKey];
 
 const systemRoleUpsertTargetWhere = sql`${workspaceRoles.systemKey} IS NOT NULL AND ${workspaceRoles.isSystem} = true AND ${workspaceRoles.deletedAt} IS NULL`;
+const externalAdminAssignmentSource = 'inframodern_admin';
+const manualAssignmentSource = 'manual';
 
 @Injectable()
 export class PermissionsRepository {
@@ -82,6 +84,7 @@ export class PermissionsRepository {
   async seedWorkspaceSystemRoles(input: SeedWorkspaceInput, db: Db = this.#db): Promise<void> {
     const seed = async (tx: Db): Promise<void> => {
       let assignmentRoleId: string | null = null;
+      let externalAdminRoleId: string | null = null;
       const assignmentSystemKey: DefaultRoleTemplateKey = input.isAdmin
         ? 'workspaceAdmin'
         : 'viewer';
@@ -122,12 +125,29 @@ export class PermissionsRepository {
           })),
         );
 
+        if (template.key === 'workspaceAdmin') {
+          externalAdminRoleId = roleId;
+        }
+
         if (template.key === assignmentSystemKey) {
           assignmentRoleId = roleId;
         }
       }
 
       if (input.membershipUserId && assignmentRoleId) {
+        if (!input.isAdmin && externalAdminRoleId) {
+          await tx
+            .delete(userRoleAssignments)
+            .where(
+              and(
+                eq(userRoleAssignments.workspaceId, input.workspaceId),
+                eq(userRoleAssignments.userId, input.membershipUserId),
+                eq(userRoleAssignments.roleId, externalAdminRoleId),
+                eq(userRoleAssignments.source, externalAdminAssignmentSource),
+              ),
+            );
+        }
+
         const existingAssignments = await tx
           .select({ count: countDistinct(userRoleAssignments.roleId) })
           .from(userRoleAssignments)
@@ -145,6 +165,7 @@ export class PermissionsRepository {
               workspaceId: input.workspaceId,
               userId: input.membershipUserId,
               roleId: assignmentRoleId,
+              source: input.isAdmin ? externalAdminAssignmentSource : manualAssignmentSource,
             })
             .onConflictDoNothing();
         }
@@ -170,6 +191,7 @@ export class PermissionsRepository {
           and(
             eq(userRoleAssignments.workspaceId, input.workspaceId),
             eq(userRoleAssignments.userId, input.userId),
+            eq(userRoleAssignments.source, manualAssignmentSource),
           ),
         );
 
@@ -179,6 +201,7 @@ export class PermissionsRepository {
             workspaceId: input.workspaceId,
             userId: input.userId,
             roleId,
+            source: manualAssignmentSource,
           })),
         );
       }
