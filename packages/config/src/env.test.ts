@@ -68,6 +68,8 @@ describe('session runtime config', () => {
     SESSION_SECRET: '12345678901234567890123456789012',
     SESSION_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
     INFRAMODERN_URL: 'http://inframodern.test',
+    INFRAMODERN_FRONTEND_URL: 'http://frontend.test',
+    ADMIN_URL: 'http://admin.test',
     INFRAMODERN_OAUTH_CLIENT_ID: 'prod-client',
     INFRAMODERN_OAUTH_CLIENT_SECRET: 'prod-secret',
     INFRAMODERN_OAUTH_CALLBACK_URL: 'http://api.test/auth/callback',
@@ -80,10 +82,11 @@ describe('session runtime config', () => {
       oauthStateCookieName: 'materiabill.oauth_state',
       sessionTtlSeconds: 28_800,
       oauthStateTtlSeconds: 600,
+      cookieSecure: false,
       oauthMode: 'production',
       inframodernUrl: 'http://inframodern.test',
-      inframodernFrontendUrl: 'http://localhost:5174',
-      adminUrl: 'http://localhost:4173',
+      inframodernFrontendUrl: 'http://frontend.test',
+      adminUrl: 'http://admin.test',
       oauthClient: {
         clientId: 'prod-client',
         clientSecret: 'prod-secret',
@@ -108,6 +111,31 @@ describe('session runtime config', () => {
         clientSecret: 'sandbox-secret',
         callbackUrl: 'http://api.test/auth/sandbox/callback',
       },
+    });
+  });
+
+  it('requires production-facing OAuth and admin URLs', () => {
+    expect(() =>
+      getSessionRuntimeConfig({ ...baseEnv, INFRAMODERN_FRONTEND_URL: undefined }),
+    ).toThrow('Missing Inframodern frontend URL');
+    expect(() => getSessionRuntimeConfig({ ...baseEnv, ADMIN_URL: undefined })).toThrow(
+      'Missing admin URL',
+    );
+  });
+
+  it('uses an explicit cookie secure flag independent from OAuth mode', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        INFRAMODERN_OAUTH_MODE: 'sandbox',
+        INFRAMODERN_SANDBOX_OAUTH_CLIENT_ID: 'sandbox-client',
+        INFRAMODERN_SANDBOX_OAUTH_CLIENT_SECRET: 'sandbox-secret',
+        INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL: 'http://api.test/auth/sandbox/callback',
+        SESSION_COOKIE_SECURE: 'true',
+      }),
+    ).toMatchObject({
+      cookieSecure: true,
+      oauthMode: 'sandbox',
     });
   });
 

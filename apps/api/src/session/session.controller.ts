@@ -45,7 +45,7 @@ export class SessionController {
       oauthStateCookieName: config.oauthStateCookieName,
       sessionTtlSeconds: config.sessionTtlSeconds,
       oauthStateTtlSeconds: config.oauthStateTtlSeconds,
-      secure: config.oauthMode === 'production',
+      secure: config.cookieSecure,
     };
   }
 

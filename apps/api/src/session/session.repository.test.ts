@@ -284,6 +284,68 @@ describe('SessionRepository', () => {
     expect(insertCalls).toHaveLength(1);
   });
 
+  it('deactivates memberships omitted from the latest bootstrap payload', async () => {
+    const { db, updateCalls } = createDbMock();
+    const repository = new SessionRepository(db as never);
+
+    await repository.bootstrapFromInframodern({
+      id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+      email: 'admin@example.com',
+      displayName: 'Admin User',
+      workspaces: [
+        {
+          workspace: {
+            id: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+            code: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+          permissions: ['workspace.view'],
+        },
+      ],
+      adminWorkspaces: [],
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]?.table).toBe(workspaceMembershipRefs);
+    expect(updateCalls[0]?.setArgs[0]).toEqual(
+      expect.objectContaining({
+        isActive: false,
+        deletedAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      }),
+    );
+    const conditionLeaves = collectLeaves(updateCalls[0]?.whereArgs[0]);
+
+    expect(conditionLeaves).toContain('3f43835d-7f3b-4b16-907b-d57db49832dd');
+    expect(conditionLeaves).toContain('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
+  });
+
+  it('deactivates all memberships when bootstrap data has no workspaces', async () => {
+    const { db, updateCalls } = createDbMock();
+    const repository = new SessionRepository(db as never);
+
+    await repository.bootstrapFromInframodern({
+      id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+      email: 'admin@example.com',
+      displayName: 'Admin User',
+      workspaces: [],
+      adminWorkspaces: [],
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]?.table).toBe(workspaceMembershipRefs);
+    expect(updateCalls[0]?.setArgs[0]).toEqual(
+      expect.objectContaining({
+        isActive: false,
+        deletedAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      }),
+    );
+    const conditionLeaves = collectLeaves(updateCalls[0]?.whereArgs[0]);
+
+    expect(conditionLeaves).toContain('3f43835d-7f3b-4b16-907b-d57db49832dd');
+  });
+
   it('persists new sessions and returns the inserted session id', async () => {
     const { db, insertCalls } = createDbMock();
     const repository = new SessionRepository(db as never);
@@ -381,6 +443,14 @@ describe('SessionRepository', () => {
     expect(conditionLeaves).toContain('expires_at');
     expect(conditionLeaves).toContain('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2');
     expect(conditionLeaves).toContain(now.toISOString());
+
+    const membershipJoinLeaves = collectLeaves(selectBuilder.leftJoin.mock.calls[0]?.[1]);
+    expect(membershipJoinLeaves).toContain('is_active');
+    expect(membershipJoinLeaves).toContain('true');
+    expect(membershipJoinLeaves).toContain('deleted_at');
+
+    const workspaceJoinLeaves = collectLeaves(selectBuilder.leftJoin.mock.calls[1]?.[1]);
+    expect(workspaceJoinLeaves).toContain('deleted_at');
   });
 
   it('returns null when a current session cannot be found', async () => {

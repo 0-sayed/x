@@ -7,7 +7,7 @@ import {
   workspaceMembershipRefs,
   workspaceRefs,
 } from '@materiabill/db';
-import { and, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, notInArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
@@ -73,6 +73,12 @@ export class SessionRepository {
       });
 
     const workspaces = this.#collectBootstrapWorkspaces(user);
+    await this.#deactivateOmittedMemberships(
+      user.id,
+      workspaces.map((workspace) => workspace.id),
+      now,
+    );
+
     if (workspaces.length === 0) {
       return null;
     }
@@ -166,8 +172,21 @@ export class SessionRepository {
       })
       .from(sessionRecords)
       .innerJoin(inframodernUserRefs, eq(sessionRecords.userId, inframodernUserRefs.id))
-      .leftJoin(workspaceMembershipRefs, eq(workspaceMembershipRefs.userId, inframodernUserRefs.id))
-      .leftJoin(workspaceRefs, eq(workspaceRefs.id, workspaceMembershipRefs.workspaceId))
+      .leftJoin(
+        workspaceMembershipRefs,
+        and(
+          eq(workspaceMembershipRefs.userId, inframodernUserRefs.id),
+          eq(workspaceMembershipRefs.isActive, true),
+          isNull(workspaceMembershipRefs.deletedAt),
+        ),
+      )
+      .leftJoin(
+        workspaceRefs,
+        and(
+          eq(workspaceRefs.id, workspaceMembershipRefs.workspaceId),
+          isNull(workspaceRefs.deletedAt),
+        ),
+      )
       .where(
         and(
           eq(sessionRecords.id, sessionId),
@@ -230,6 +249,32 @@ export class SessionRepository {
         updatedAt: new Date(),
       })
       .where(eq(sessionRecords.id, sessionId));
+  }
+
+  async #deactivateOmittedMemberships(
+    userId: string,
+    currentWorkspaceIds: readonly string[],
+    now: Date,
+  ): Promise<void> {
+    const currentWorkspaceFilter =
+      currentWorkspaceIds.length > 0
+        ? notInArray(workspaceMembershipRefs.workspaceId, [...currentWorkspaceIds])
+        : undefined;
+
+    await this.db
+      .update(workspaceMembershipRefs)
+      .set({
+        isActive: false,
+        deletedAt: now,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(workspaceMembershipRefs.userId, userId),
+          isNull(workspaceMembershipRefs.deletedAt),
+          currentWorkspaceFilter,
+        ),
+      );
   }
 
   #collectBootstrapWorkspaces(user: InframodernOAuthUser): BootstrapWorkspaceProjection[] {

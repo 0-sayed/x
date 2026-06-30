@@ -101,8 +101,17 @@ describe('InframodernOAuthClient', () => {
         phone: null,
         avatarUrl: null,
         locale: 'en',
-        workspaces: [{ id: 'workspace-1' }],
-        adminWorkspaces: [{ id: 'workspace-1' }],
+        workspaces: [
+          {
+            workspace: {
+              id: 'workspace-1',
+              code: 'workspace-1',
+              name: 'Workspace 1',
+            },
+            permissions: ['workspace.view'],
+          },
+        ],
+        adminWorkspaces: [{ id: 'workspace-1', code: 'workspace-1', name: 'Workspace 1' }],
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -119,5 +128,35 @@ describe('InframodernOAuthClient', () => {
       name: 'Admin User',
       locale: 'en',
     });
+  });
+
+  it('rejects malformed token responses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        access_token: 'access-token',
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new InframodernOAuthClient(config);
+
+    await expect(client.exchangeCode('auth-code')).rejects.toThrow(
+      'Invalid Inframodern token response',
+    );
+  });
+
+  it('rejects malformed user responses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        id: 'user-1',
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new InframodernOAuthClient(config);
+
+    await expect(client.fetchUser('access-token')).rejects.toThrow(
+      'Invalid Inframodern user response',
+    );
   });
 });

@@ -7,6 +7,17 @@ const optionalUrlSchema = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.url().optional(),
 );
+const booleanStringSchema = z.preprocess((value) => {
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  return value;
+}, z.boolean());
 
 const runtimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -20,12 +31,13 @@ const runtimeEnvSchema = z.object({
   SESSION_SECRET: z.string().trim().min(32).optional(),
   SESSION_ENCRYPTION_KEY: z.string().trim().optional(),
   SESSION_COOKIE_NAME: z.string().trim().min(1).default('materiabill.sid'),
+  SESSION_COOKIE_SECURE: booleanStringSchema.default(false),
   OAUTH_STATE_COOKIE_NAME: z.string().trim().min(1).default('materiabill.oauth_state'),
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(28_800),
   OAUTH_STATE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   INFRAMODERN_URL: optionalUrlSchema,
-  INFRAMODERN_FRONTEND_URL: optionalUrlSchema.default('http://localhost:5174'),
-  ADMIN_URL: optionalUrlSchema.default('http://localhost:4173'),
+  INFRAMODERN_FRONTEND_URL: optionalUrlSchema,
+  ADMIN_URL: optionalUrlSchema,
   INFRAMODERN_OAUTH_MODE: z.enum(['production', 'sandbox']).default('production'),
   INFRAMODERN_OAUTH_CLIENT_ID: z.string().trim().min(1).optional(),
   INFRAMODERN_OAUTH_CLIENT_SECRET: z.string().trim().min(1).optional(),
@@ -73,6 +85,7 @@ export type SessionRuntimeConfig = {
   readonly sessionSecret: string;
   readonly encryptionKey: string;
   readonly cookieName: string;
+  readonly cookieSecure: boolean;
   readonly oauthStateCookieName: string;
   readonly sessionTtlSeconds: number;
   readonly oauthStateTtlSeconds: number;
@@ -218,10 +231,19 @@ export function getSessionRuntimeConfig(env: NodeJS.ProcessEnv): SessionRuntimeC
     throw new Error('Missing Inframodern URL');
   }
 
+  if (!parsed.INFRAMODERN_FRONTEND_URL) {
+    throw new Error('Missing Inframodern frontend URL');
+  }
+
+  if (!parsed.ADMIN_URL) {
+    throw new Error('Missing admin URL');
+  }
+
   return {
     sessionSecret: parsed.SESSION_SECRET,
     encryptionKey: assertBase64Key(parsed.SESSION_ENCRYPTION_KEY),
     cookieName: parsed.SESSION_COOKIE_NAME,
+    cookieSecure: parsed.SESSION_COOKIE_SECURE,
     oauthStateCookieName: parsed.OAUTH_STATE_COOKIE_NAME,
     sessionTtlSeconds: parsed.SESSION_TTL_SECONDS,
     oauthStateTtlSeconds: parsed.OAUTH_STATE_TTL_SECONDS,

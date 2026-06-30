@@ -135,6 +135,18 @@ describe('SessionService', () => {
     );
   });
 
+  it('maps OAuth refresh failures to unauthorized responses', async () => {
+    const { oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+    oauthClient.refresh.mockRejectedValue(new Error('refresh failed'));
+
+    await expect(service.refresh('session-id')).rejects.toThrow(UnauthorizedException);
+    expect(repository.updateTokens).not.toHaveBeenCalled();
+  });
+
   it('revokes sessions when logging out', async () => {
     const { repository, service } = makeService();
 

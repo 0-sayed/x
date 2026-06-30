@@ -75,7 +75,12 @@ export class SessionService {
     }
 
     const storedTokens = this.crypto.decrypt(session.encryptedTokens);
-    const tokenResponse = await this.oauthClient.refresh(storedTokens.refreshToken);
+    let tokenResponse: OAuthTokenResponse;
+    try {
+      tokenResponse = await this.oauthClient.refresh(storedTokens.refreshToken);
+    } catch {
+      throw new UnauthorizedException('Session expired or invalid');
+    }
 
     await this.repository.updateTokens(sessionId, {
       encryptedTokens: this.crypto.encrypt(toStoredTokens(tokenResponse)),
