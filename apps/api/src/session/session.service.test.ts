@@ -181,6 +181,14 @@ describe('SessionService', () => {
       tokenType: 'Bearer',
       scope: 'openid profile email',
     });
+    expect(repository.updateTokens).toHaveBeenCalledWith(
+      'session-id',
+      expect.objectContaining({
+        encryptedTokens: 'encrypted-token-payload',
+        accessTokenExpiresAt: expect.any(Date),
+        refreshTokenExpiresAt: expect.any(Date),
+      }),
+    );
     expect(oauthClient.fetchUser).toHaveBeenLastCalledWith('rotated-access-token');
   });
 

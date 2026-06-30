@@ -224,6 +224,9 @@ describe('WorkspaceContextService', () => {
     expect(repository.findMembershipContext.mock.invocationCallOrder[0]).toBeLessThan(
       repository.updateActiveWorkspace.mock.invocationCallOrder[0] ?? 0,
     );
+    expect(sessionService.assertWorkspaceAccess.mock.invocationCallOrder[0]).toBeLessThan(
+      repository.updateActiveWorkspace.mock.invocationCallOrder[0] ?? 0,
+    );
   });
 
   it('rejects active workspace switches when the session update matches no row', async () => {
