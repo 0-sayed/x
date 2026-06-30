@@ -31,17 +31,31 @@ const uniqueConstraintNames = (
     .uniqueConstraints.map((constraint) => constraint.getName())
     .sort();
 
-const sqlText = (value: unknown) =>
-  (
-    value as {
-      queryChunks?: { value?: string[] }[];
-    }
-  ).queryChunks
-    ?.flatMap((chunk) => chunk.value ?? [])
-    .join('');
+const sqlText = (value: unknown): string | undefined => {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  if ('value' in value && Array.isArray(value.value)) {
+    return value.value.filter((chunk) => typeof chunk === 'string').join('');
+  }
+
+  if ('queryChunks' in value && Array.isArray(value.queryChunks)) {
+    return value.queryChunks.map((chunk) => sqlText(chunk)).join('');
+  }
+
+  if ('name' in value && typeof value.name === 'string') {
+    return value.name;
+  }
+
+  return undefined;
+};
 
 const permissionsMigrationSql = () =>
   readFileSync(new URL('../../drizzle/0003_permissions_rbac.sql', import.meta.url), 'utf8');
+
+const roleAssignmentSourcesMigrationSql = () =>
+  readFileSync(new URL('../../drizzle/0004_role_assignment_sources.sql', import.meta.url), 'utf8');
 
 const permissionsSchemaSource = () =>
   readFileSync(new URL('./permissions.ts', import.meta.url), 'utf8');
@@ -158,6 +172,12 @@ describe('permissions schema', () => {
     );
 
     expect(assignmentSourceCheck).toBeDefined();
+    expect(sqlText(assignmentSourceCheck?.value)).toBe("source IN ('manual', 'inframodern_admin')");
+    expect(roleAssignmentSourcesMigrationSql()).toContain(
+      'CONSTRAINT "user_role_assignments_source_check"',
+    );
+    expect(roleAssignmentSourcesMigrationSql()).toContain("'manual'");
+    expect(roleAssignmentSourcesMigrationSql()).toContain("'inframodern_admin'");
   });
 
   it('builds the permission key check from the contract catalog', () => {
