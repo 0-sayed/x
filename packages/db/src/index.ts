@@ -1,4 +1,6 @@
 export { getDatabaseHealth } from './health.js';
+export { getDbClient } from './client.js';
+export type { DbClient, MateriabillDatabase } from './client.js';
 export {
   brandRefs,
   exchangeRateRefs,

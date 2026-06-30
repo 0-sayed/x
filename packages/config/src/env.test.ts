@@ -4,6 +4,7 @@ import {
   getApiRuntimeConfig,
   getDatabaseRuntimeConfig,
   getQueueRuntimeConfig,
+  getSyncAdminRuntimeConfig,
   getWorkerRuntimeConfig,
   parseRuntimeEnv,
 } from './env.js';
@@ -36,6 +37,8 @@ describe('runtime connection config', () => {
     });
     expect(getQueueRuntimeConfig({ RABBITMQ_URL: '' })).toEqual({
       rabbitMqUrl: undefined,
+      environmentName: 'testing',
+      appCode: 'materiabill',
     });
   });
 
@@ -53,11 +56,37 @@ describe('runtime connection config', () => {
       }),
     ).toEqual({
       rabbitMqUrl: 'amqp://local_user:changeme-local-only@127.0.0.1:55672',
+      environmentName: 'testing',
+      appCode: 'materiabill',
     });
   });
 
   it('rejects malformed non-empty connection URLs', () => {
     expect(() => parseRuntimeEnv({ DATABASE_URL: 'not a url' })).toThrow();
     expect(() => parseRuntimeEnv({ RABBITMQ_URL: 'not a url' })).toThrow();
+  });
+
+  it('derives queue namespace defaults for Inframodern sync', () => {
+    expect(getQueueRuntimeConfig({ RABBITMQ_URL: 'amqp://localhost:5672' })).toEqual({
+      rabbitMqUrl: 'amqp://localhost:5672',
+      environmentName: 'testing',
+      appCode: 'materiabill',
+    });
+  });
+
+  it('normalizes empty sync admin values to undefined', () => {
+    expect(
+      getSyncAdminRuntimeConfig({
+        SYNC_ADMIN_TOKEN: '',
+        INFRAMODERN_DB_URL: '',
+      }),
+    ).toEqual({
+      syncAdminToken: undefined,
+      inframodernDbUrl: undefined,
+    });
+  });
+
+  it('rejects invalid RabbitMQ environment names', () => {
+    expect(() => parseRuntimeEnv({ RABBITMQ_ENVIRONMENT: 'bad env' })).toThrow();
   });
 });

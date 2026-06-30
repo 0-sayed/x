@@ -20,6 +20,7 @@
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
   },
   "dependencies": {
+    "@materiabill/config": "workspace:*",
     "@materiabill/contracts": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9"

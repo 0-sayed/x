@@ -29,3 +29,5 @@ export {
   supportedCurrencyCodes,
 } from './money.js';
 export type { CurrencyCode, Money } from './money.js';
+export * from './sync.js';
+export * from './sync-topology.js';
