@@ -1,3 +1,4 @@
+export { createDatabaseClient } from './client.js';
 export { getDatabaseHealth } from './health.js';
 export { getDbClient } from './client.js';
 export type { DbClient, MateriabillDatabase } from './client.js';
@@ -7,6 +8,7 @@ export {
   inframodernUserRefs,
   locationRefs,
   measurementUnitRefs,
+  sessionRecords,
   syncCheckpoints,
   syncFailures,
   syncInbox,
@@ -25,12 +27,14 @@ export type {
   NewInframodernUserRef,
   NewLocationRef,
   NewMeasurementUnitRef,
+  NewSessionRecord,
   NewSyncCheckpoint,
   NewSyncFailure,
   NewSyncInbox,
   NewTaxRef,
   NewWorkspaceMembershipRef,
   NewWorkspaceRef,
+  SessionRecord,
   SyncCheckpoint,
   SyncCheckpointCursor,
   SyncEnvelopePayload,
@@ -40,3 +44,4 @@ export type {
   WorkspaceMembershipRef,
   WorkspaceRef,
 } from './schema/index.js';
+export type { DatabaseClient } from './client.js';

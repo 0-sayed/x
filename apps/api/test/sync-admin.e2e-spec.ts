@@ -260,6 +260,14 @@ async function createApp(
   process.env.RABBITMQ_URL = 'amqp://local_user:local_pass@127.0.0.1:55672';
   process.env.RABBITMQ_ENVIRONMENT = 'testing';
   process.env.RABBITMQ_APP_CODE = 'materiabill';
+  process.env.SESSION_SECRET = '12345678901234567890123456789012';
+  process.env.SESSION_ENCRYPTION_KEY = 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=';
+  process.env.INFRAMODERN_URL = 'http://inframodern.test';
+  process.env.INFRAMODERN_FRONTEND_URL = 'http://frontend.test';
+  process.env.ADMIN_URL = 'http://admin.test';
+  process.env.INFRAMODERN_OAUTH_CLIENT_ID = 'client-id';
+  process.env.INFRAMODERN_OAUTH_CLIENT_SECRET = 'client-secret';
+  process.env.INFRAMODERN_OAUTH_CALLBACK_URL = 'http://api.test/auth/callback';
   Object.assign(process.env, env);
 
   const builder = Test.createTestingModule({ imports: [AppModule] });

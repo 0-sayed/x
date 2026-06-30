@@ -3,6 +3,7 @@ export {
   getDatabaseRuntimeConfig,
   getQueueRuntimeConfig,
   getSyncAdminRuntimeConfig,
+  getSessionRuntimeConfig,
   getWorkerRuntimeConfig,
   parseRuntimeEnv,
 } from './env.js';
@@ -13,6 +14,9 @@ export type {
   QueueRuntimeConfig,
   RuntimeEnv,
   SyncAdminRuntimeConfig,
+  SessionOAuthClientConfig,
+  SessionOAuthMode,
+  SessionRuntimeConfig,
   WorkerRuntimeConfig,
 } from './env.js';
 export { getApiLoggerOptions, getWorkerLoggerOptions } from './logging.js';
