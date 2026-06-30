@@ -4,6 +4,8 @@ build/
 coverage/
 .turbo/
 .pnpm-store/
+.archon/
 .serena/
 .superpowers/
+pr.md
 pnpm-lock.yaml
