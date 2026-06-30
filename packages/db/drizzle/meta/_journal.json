@@ -8,6 +8,13 @@
       "when": 1782785811036,
       "tag": "0000_db_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782817870227,
+      "tag": "0001_projection_refs",
+      "breakpoints": true
     }
   ]
 }
