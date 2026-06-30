@@ -1,5 +1,5 @@
 import {
-  ForbiddenException,
+  UnauthorizedException,
   type CanActivate,
   type ExecutionContext,
   Inject,
@@ -19,14 +19,17 @@ export class WorkspaceContextGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    await this.sessionGuard.canActivate(context);
-
     const request = context.switchToHttp().getRequest<WorkspaceScopedRequest>();
     if (!request.user) {
-      throw new ForbiddenException('Workspace access denied');
+      await this.sessionGuard.canActivate(context);
+    }
+
+    if (!request.user) {
+      throw new UnauthorizedException('Not authenticated');
     }
 
     request.workspaceContext = await this.workspaceContextService.resolveForRequest({
+      sessionId: request.sessionId,
       user: request.user,
       requestedWorkspaceId: readWorkspaceHeader(request.headers?.['x-workspace-id']),
     });

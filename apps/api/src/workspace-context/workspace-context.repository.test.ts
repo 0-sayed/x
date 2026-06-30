@@ -131,6 +131,7 @@ describe('WorkspaceContextRepository', () => {
     expect(conditionLeaves).toContain('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2');
     expect(conditionLeaves).toContain('3f43835d-7f3b-4b16-907b-d57db49832dd');
     expect(conditionLeaves).toContain('revoked_at');
+    expect(conditionLeaves).toContain('expires_at');
   });
 
   it('returns false when no current session row is updated', async () => {

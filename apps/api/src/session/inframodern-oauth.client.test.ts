@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { InframodernOAuthClient } from './inframodern-oauth.client.js';
+import {
+  InframodernOAuthClient,
+  InframodernOAuthUserRequestError,
+} from './inframodern-oauth.client.js';
 
 describe('InframodernOAuthClient', () => {
   const config = {
@@ -151,6 +154,19 @@ describe('InframodernOAuthClient', () => {
       name: 'Admin User',
       locale: 'en',
     });
+  });
+
+  it('preserves OAuth user request failure statuses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new InframodernOAuthClient(config);
+
+    await expect(client.fetchUser('access-token')).rejects.toEqual(
+      new InframodernOAuthUserRequestError(403),
+    );
   });
 
   it('rejects malformed token responses', async () => {

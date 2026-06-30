@@ -72,6 +72,30 @@ describe('workspace context contracts', () => {
     expect(switchWorkspaceRequestSchema.parse({ workspaceId })).toEqual({ workspaceId });
   });
 
+  it('rejects malformed workspace payment currencies', () => {
+    expect(() =>
+      workspaceContextSchema.parse({
+        workspace: {
+          id: workspaceId,
+          name: 'Demo Workspace',
+          slug: 'demo-workspace',
+          paymentCurrency: 'usd',
+        },
+        membership: {
+          userId,
+          roleKey: 'workspace_admin',
+          permissions: ['workspace.view'],
+          isAdmin: true,
+        },
+        access: {
+          appInstalled: true,
+          subscriptionActive: true,
+          membershipActive: true,
+        },
+      }),
+    ).toThrow();
+  });
+
   it('rejects malformed workspace ids', () => {
     expect(() => switchWorkspaceRequestSchema.parse({ workspaceId: 'not-a-uuid' })).toThrow();
   });

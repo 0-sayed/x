@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { DatabaseClient } from '@materiabill/db';
 import { sessionRecords, workspaceMembershipRefs, workspaceRefs } from '@materiabill/db';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
 
@@ -78,6 +78,7 @@ export class WorkspaceContextRepository {
           eq(sessionRecords.id, sessionId),
           eq(sessionRecords.userId, userId),
           isNull(sessionRecords.revokedAt),
+          gt(sessionRecords.expiresAt, new Date()),
         ),
       )
       .returning({ id: sessionRecords.id });

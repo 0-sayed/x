@@ -18,6 +18,10 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<SignedCookieRequest>();
+    if (request.user) {
+      return true;
+    }
+
     const sessionId = request.signedCookies?.[this.#cookieName];
     request.sessionId = sessionId;
     request.user = await this.sessionService.getCurrentUser(sessionId);

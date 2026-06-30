@@ -11,10 +11,12 @@ import {
   type WorkspaceSwitcherResponse,
 } from '@materiabill/contracts';
 
+import { SessionService } from '../session/session.service.js';
 import type { WorkspaceMembershipRecord } from './workspace-context.repository.js';
 import { WorkspaceContextRepository } from './workspace-context.repository.js';
 
 type ResolveWorkspaceInput = {
+  readonly sessionId: string | undefined;
   readonly user: CurrentSessionUser;
   readonly requestedWorkspaceId: string | undefined;
 };
@@ -27,7 +29,10 @@ type SwitchWorkspaceInput = {
 
 @Injectable()
 export class WorkspaceContextService {
-  constructor(private readonly repository: WorkspaceContextRepository) {}
+  constructor(
+    private readonly repository: WorkspaceContextRepository,
+    private readonly sessionService: SessionService,
+  ) {}
 
   async resolveForRequest(input: ResolveWorkspaceInput): Promise<WorkspaceContext> {
     const workspaceId = this.#resolveWorkspaceId(input);
@@ -37,7 +42,9 @@ export class WorkspaceContextService {
       throw new ForbiddenException('Workspace access denied');
     }
 
-    return toWorkspaceContext(membership);
+    const integrationAccess = await this.sessionService.assertWorkspaceAccess(input.sessionId);
+
+    return toWorkspaceContext(membership, integrationAccess);
   }
 
   buildSwitcherResponse(
@@ -61,6 +68,8 @@ export class WorkspaceContextService {
       throw new ForbiddenException('Workspace access denied');
     }
 
+    await this.sessionService.assertWorkspaceAccess(input.sessionId);
+
     const wasUpdated = await this.repository.updateActiveWorkspace(
       input.sessionId,
       input.user.id,
@@ -75,7 +84,7 @@ export class WorkspaceContextService {
   }
 
   #resolveWorkspaceId(input: ResolveWorkspaceInput): string {
-    if (input.requestedWorkspaceId) {
+    if (input.requestedWorkspaceId !== undefined) {
       return this.#parseWorkspaceId(input.requestedWorkspaceId);
     }
 
@@ -99,7 +108,10 @@ export class WorkspaceContextService {
   }
 }
 
-function toWorkspaceContext(record: WorkspaceMembershipRecord): WorkspaceContext {
+function toWorkspaceContext(
+  record: WorkspaceMembershipRecord,
+  integrationAccess: Pick<WorkspaceContext['access'], 'appInstalled' | 'subscriptionActive'>,
+): WorkspaceContext {
   return {
     workspace: {
       id: record.workspaceId,
@@ -114,8 +126,8 @@ function toWorkspaceContext(record: WorkspaceMembershipRecord): WorkspaceContext
       isAdmin: record.isAdmin,
     },
     access: {
-      appInstalled: true,
-      subscriptionActive: true,
+      appInstalled: integrationAccess.appInstalled,
+      subscriptionActive: integrationAccess.subscriptionActive,
       membershipActive: true,
     },
   };

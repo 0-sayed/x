@@ -1,14 +1,16 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { CurrentSessionUser } from '@materiabill/contracts';
+import type { CurrentSessionUser, WorkspaceAccess } from '@materiabill/contracts';
 
 import {
   InframodernOAuthClient,
   InframodernOAuthTokenRequestError,
+  InframodernOAuthUserRequestError,
 } from './inframodern-oauth.client.js';
 import { SessionCrypto } from './session.crypto.js';
 import { NestSessionRepository } from './session.repository.js';
@@ -16,6 +18,13 @@ import type { OAuthTokenResponse, StoredOAuthTokens } from './session.types.js';
 
 type ServiceConfig = {
   readonly sessionTtlSeconds: number;
+};
+
+type WorkspaceIntegrationAccess = Pick<WorkspaceAccess, 'appInstalled' | 'subscriptionActive'>;
+
+const activeWorkspaceIntegrationAccess: WorkspaceIntegrationAccess = {
+  appInstalled: true,
+  subscriptionActive: true,
 };
 
 @Injectable()
@@ -60,27 +69,44 @@ export class SessionService {
   }
 
   async getCurrentUser(sessionId: string | undefined): Promise<CurrentSessionUser> {
-    if (!sessionId) {
-      throw new UnauthorizedException('Not authenticated');
+    return (await this.#requireCurrentSession(requireSessionId(sessionId))).user;
+  }
+
+  async assertWorkspaceAccess(
+    sessionId: string | undefined,
+  ): Promise<WorkspaceIntegrationAccess> {
+    const currentSessionId = requireSessionId(sessionId);
+    const session = await this.#requireCurrentSession(currentSessionId);
+    const storedTokens = this.crypto.decrypt(session.encryptedTokens);
+
+    try {
+      await this.oauthClient.fetchUser(storedTokens.accessToken);
+      return activeWorkspaceIntegrationAccess;
+    } catch (error) {
+      if (!isExpiredAccessTokenError(error)) {
+        throw mapWorkspaceAccessError(error);
+      }
     }
 
-    const session = await this.repository.findCurrentUserBySessionId(sessionId);
-    if (!session) {
-      throw new UnauthorizedException('Not authenticated');
-    }
+    try {
+      const tokenResponse = await this.oauthClient.refresh(storedTokens.refreshToken);
+      const rotatedTokens = toStoredTokens(tokenResponse, storedTokens.refreshToken);
+      await this.repository.updateTokens(currentSessionId, {
+        encryptedTokens: this.crypto.encrypt(rotatedTokens),
+        accessTokenExpiresAt: expiresAt(tokenResponse.expires_in),
+        refreshTokenExpiresAt: expiresAt(tokenResponse.refresh_token_expires_in),
+      });
+      await this.oauthClient.fetchUser(rotatedTokens.accessToken);
 
-    return session.user;
+      return activeWorkspaceIntegrationAccess;
+    } catch (error) {
+      throw mapWorkspaceAccessError(error);
+    }
   }
 
   async refresh(sessionId: string | undefined): Promise<CurrentSessionUser> {
-    if (!sessionId) {
-      throw new UnauthorizedException('Not authenticated');
-    }
-
-    const session = await this.repository.findCurrentUserBySessionId(sessionId);
-    if (!session) {
-      throw new UnauthorizedException('Not authenticated');
-    }
+    const currentSessionId = requireSessionId(sessionId);
+    const session = await this.#requireCurrentSession(currentSessionId);
 
     const storedTokens = this.crypto.decrypt(session.encryptedTokens);
     let tokenResponse: OAuthTokenResponse;
@@ -94,7 +120,7 @@ export class SessionService {
       throw new ServiceUnavailableException('OAuth provider unavailable');
     }
 
-    await this.repository.updateTokens(sessionId, {
+    await this.repository.updateTokens(currentSessionId, {
       encryptedTokens: this.crypto.encrypt(
         toStoredTokens(tokenResponse, storedTokens.refreshToken),
       ),
@@ -112,6 +138,23 @@ export class SessionService {
 
     await this.repository.revokeSession(sessionId);
   }
+
+  async #requireCurrentSession(sessionId: string) {
+    const session = await this.repository.findCurrentUserBySessionId(sessionId);
+    if (!session) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+
+    return session;
+  }
+}
+
+function requireSessionId(sessionId: string | undefined): string {
+  if (!sessionId) {
+    throw new UnauthorizedException('Not authenticated');
+  }
+
+  return sessionId;
 }
 
 function toStoredTokens(
@@ -137,6 +180,25 @@ function isInvalidRefreshTokenError(error: unknown): boolean {
     error instanceof InframodernOAuthTokenRequestError &&
     (error.status === 400 || error.status === 401)
   );
+}
+
+function isExpiredAccessTokenError(error: unknown): boolean {
+  return error instanceof InframodernOAuthUserRequestError && error.status === 401;
+}
+
+function mapWorkspaceAccessError(error: unknown): Error {
+  if (
+    error instanceof InframodernOAuthUserRequestError &&
+    (error.status === 401 || error.status === 403)
+  ) {
+    return new ForbiddenException('Workspace access denied');
+  }
+
+  if (isInvalidRefreshTokenError(error)) {
+    return new ForbiddenException('Workspace access denied');
+  }
+
+  return new ServiceUnavailableException('OAuth provider unavailable');
 }
 
 function expiresAt(seconds: number | null | undefined): Date | null {

@@ -48,10 +48,17 @@ function createService(record: WorkspaceMembershipRecord | null = membership) {
     findMembershipContext: vi.fn().mockResolvedValue(record),
     updateActiveWorkspace: vi.fn().mockResolvedValue(true),
   };
+  const sessionService = {
+    assertWorkspaceAccess: vi.fn().mockResolvedValue({
+      appInstalled: true,
+      subscriptionActive: true,
+    }),
+  };
 
   return {
     repository,
-    service: new WorkspaceContextService(repository as never),
+    service: new WorkspaceContextService(repository as never, sessionService as never),
+    sessionService,
   };
 }
 
@@ -61,6 +68,7 @@ describe('WorkspaceContextService', () => {
 
     await expect(
       service.resolveForRequest({
+        sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
         user,
         requestedWorkspaceId: '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
       }),
@@ -101,6 +109,7 @@ describe('WorkspaceContextService', () => {
     });
 
     await service.resolveForRequest({
+      sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
       user: { ...user, activeWorkspaceId: null },
       requestedWorkspaceId: undefined,
     });
@@ -112,23 +121,17 @@ describe('WorkspaceContextService', () => {
   });
 
   it('uses the active session workspace before the first workspace fallback', async () => {
-    const { repository, service } = createService({
-      ...membership,
-      workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
-      workspaceName: 'Demo Workspace',
-      workspaceSlug: 'demo-workspace',
-      roleKey: 'workspace_admin',
-      isAdmin: true,
-    });
+    const { repository, service } = createService();
 
     await service.resolveForRequest({
-      user,
+      sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
+      user: { ...user, activeWorkspaceId: '219cc5f7-6bf0-40fe-87c8-c550ee501af6' },
       requestedWorkspaceId: undefined,
     });
 
     expect(repository.findMembershipContext).toHaveBeenCalledWith(
       user.id,
-      '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
     );
   });
 
@@ -136,7 +139,23 @@ describe('WorkspaceContextService', () => {
     const { service } = createService();
 
     await expect(
-      service.resolveForRequest({ user, requestedWorkspaceId: 'not-a-uuid' }),
+      service.resolveForRequest({
+        sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
+        user,
+        requestedWorkspaceId: 'not-a-uuid',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects blank explicit workspace ids instead of falling back', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.resolveForRequest({
+        sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
+        user,
+        requestedWorkspaceId: '',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -144,7 +163,11 @@ describe('WorkspaceContextService', () => {
     const uuidV7 = '01890f8e-5f47-7cc3-98c4-dc0c0c07398f';
     const { repository, service } = createService({ ...membership, workspaceId: uuidV7 });
 
-    await service.resolveForRequest({ user, requestedWorkspaceId: uuidV7 });
+    await service.resolveForRequest({
+      sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
+      user,
+      requestedWorkspaceId: uuidV7,
+    });
 
     expect(repository.findMembershipContext).toHaveBeenCalledWith(user.id, uuidV7);
   });
@@ -154,6 +177,22 @@ describe('WorkspaceContextService', () => {
 
     await expect(
       service.resolveForRequest({
+        sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
+        user,
+        requestedWorkspaceId: '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('requires current Inframodern app and subscription access', async () => {
+    const { service, sessionService } = createService();
+    sessionService.assertWorkspaceAccess.mockRejectedValue(
+      new ForbiddenException('Workspace access denied'),
+    );
+
+    await expect(
+      service.resolveForRequest({
+        sessionId: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
         user,
         requestedWorkspaceId: '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
       }),
@@ -161,7 +200,7 @@ describe('WorkspaceContextService', () => {
   });
 
   it('updates the active workspace only after membership is verified', async () => {
-    const { repository, service } = createService();
+    const { repository, service, sessionService } = createService();
 
     await expect(
       service.switchActiveWorkspace({
@@ -178,6 +217,9 @@ describe('WorkspaceContextService', () => {
       'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
       user.id,
       '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
+    );
+    expect(sessionService.assertWorkspaceAccess).toHaveBeenCalledWith(
+      'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2',
     );
     expect(repository.findMembershipContext.mock.invocationCallOrder[0]).toBeLessThan(
       repository.updateActiveWorkspace.mock.invocationCallOrder[0] ?? 0,

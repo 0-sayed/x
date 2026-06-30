@@ -6,6 +6,7 @@ import {
   Inject,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -31,7 +32,7 @@ export class WorkspaceContextController {
   @UseGuards(SessionGuard)
   workspaces(@Req() request: WorkspaceScopedRequest): WorkspaceSwitcherResponse {
     if (!request.user) {
-      throw new BadRequestException('Missing authenticated user');
+      throw new UnauthorizedException('Not authenticated');
     }
 
     return this.workspaceContextService.buildSwitcherResponse(request.user);
@@ -52,7 +53,7 @@ export class WorkspaceContextController {
     @Body() body: unknown,
   ): Promise<WorkspaceSwitcherResponse> {
     if (!request.user || !request.sessionId) {
-      throw new BadRequestException('Missing authenticated session');
+      throw new UnauthorizedException('Not authenticated');
     }
 
     const parsedBody = switchWorkspaceRequestSchema.safeParse(body);
