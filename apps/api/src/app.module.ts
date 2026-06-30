@@ -5,12 +5,14 @@ import { LoggerModule } from 'nestjs-pino';
 import { BootstrapInfoController } from './bootstrap-info.controller.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
+import { SyncAdminModule } from './sync-admin/sync-admin.module.js';
 import { SessionModule } from './session/session.module.js';
 
 @Module({
   imports: [
     LoggerModule.forRoot(getApiLoggerOptions(getApiRuntimeConfig(process.env))),
     DatabaseModule,
+    SyncAdminModule,
     SessionModule,
   ],
   controllers: [HealthController, BootstrapInfoController],

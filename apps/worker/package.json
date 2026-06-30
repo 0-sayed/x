@@ -12,8 +12,12 @@
   },
   "dependencies": {
     "@materiabill/config": "workspace:*",
+    "@materiabill/contracts": "workspace:*",
+    "@materiabill/db": "workspace:*",
     "@nestjs/common": "^11.1.8",
     "@nestjs/core": "^11.1.8",
+    "amqplib": "^0.10.9",
+    "drizzle-orm": "^0.45.2",
     "nestjs-pino": "^4.6.1",
     "pino": "^10.1.0",
     "pino-http": "^11.0.0",

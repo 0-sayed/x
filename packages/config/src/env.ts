@@ -7,6 +7,15 @@ const optionalUrlSchema = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.url().optional(),
 );
+const namespaceTokenSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9-]+$/)
+  .default('testing');
+const optionalSecretSchema = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
 const booleanStringSchema = z.preprocess((value) => {
   if (value === 'true') {
     return true;
@@ -28,6 +37,10 @@ const runtimeEnvSchema = z.object({
   APP_VERSION: z.string().trim().min(1).default('0.0.0-bootstrap'),
   DATABASE_URL: optionalUrlSchema,
   RABBITMQ_URL: optionalUrlSchema,
+  RABBITMQ_ENVIRONMENT: namespaceTokenSchema,
+  RABBITMQ_APP_CODE: namespaceTokenSchema.default('materiabill'),
+  SYNC_ADMIN_TOKEN: optionalSecretSchema,
+  INFRAMODERN_DB_URL: optionalUrlSchema,
   SESSION_SECRET: z.string().trim().min(32).optional(),
   SESSION_ENCRYPTION_KEY: z.string().trim().optional(),
   SESSION_COOKIE_NAME: z.string().trim().min(1).default('materiabill.sid'),
@@ -71,6 +84,13 @@ export type DatabaseRuntimeConfig = {
 
 export type QueueRuntimeConfig = {
   readonly rabbitMqUrl: string | undefined;
+  readonly environmentName: string;
+  readonly appCode: string;
+};
+
+export type SyncAdminRuntimeConfig = {
+  readonly syncAdminToken: string | undefined;
+  readonly inframodernDbUrl: string | undefined;
 };
 
 export type SessionOAuthMode = 'production' | 'sandbox';
@@ -213,6 +233,17 @@ export function getQueueRuntimeConfig(env: NodeJS.ProcessEnv): QueueRuntimeConfi
 
   return {
     rabbitMqUrl: parsed.RABBITMQ_URL,
+    environmentName: parsed.RABBITMQ_ENVIRONMENT,
+    appCode: parsed.RABBITMQ_APP_CODE,
+  };
+}
+
+export function getSyncAdminRuntimeConfig(env: NodeJS.ProcessEnv): SyncAdminRuntimeConfig {
+  const parsed = parseRuntimeEnv(env);
+
+  return {
+    syncAdminToken: parsed.SYNC_ADMIN_TOKEN,
+    inframodernDbUrl: parsed.INFRAMODERN_DB_URL,
   };
 }
 

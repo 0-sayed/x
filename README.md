@@ -43,26 +43,26 @@ make web
 
 Copy `.env.example` to `.env`. Defaults are fake and safe for local bootstrap, and they match `docker-compose.yml`.
 
-| Variable                   | Purpose                         | Default                 |
-| -------------------------- | ------------------------------- | ----------------------- |
-| `NODE_ENV`                 | runtime mode                    | `development`           |
-| `API_PORT`                 | local API port                  | `3000`                  |
-| `ADMIN_PORT`               | local admin shell port          | `4173`                  |
-| `LOG_LEVEL`                | shared log level fallback       | `info`                  |
-| `API_LOG_LEVEL`            | API log override                | `info`                  |
-| `WORKER_LOG_LEVEL`         | worker log override             | `info`                  |
-| `APP_VERSION`              | bootstrap version label         | `0.0.0-bootstrap`       |
-| `POSTGRES_DB`              | Postgres database name          | `materiabill`           |
-| `POSTGRES_USER`            | Postgres username placeholder   | `local_user`            |
-| `POSTGRES_PASSWORD`        | Postgres password placeholder   | `changeme-local-only`   |
-| `POSTGRES_PORT`            | host Postgres port              | `55432`                 |
-| `RABBITMQ_DEFAULT_USER`    | RabbitMQ username placeholder   | `local_user`            |
-| `RABBITMQ_DEFAULT_PASS`    | RabbitMQ password placeholder   | `changeme-local-only`   |
-| `RABBITMQ_PORT`            | host RabbitMQ AMQP port         | `55672`                 |
-| `RABBITMQ_MANAGEMENT_PORT` | host RabbitMQ UI port           | `55673`                 |
-| `DATABASE_URL`             | reserved for later DB wiring    | empty                   |
-| `RABBITMQ_URL`             | reserved for later queue wiring | empty                   |
-| `VITE_API_BASE_URL`        | admin shell API base URL        | derived from `API_PORT` |
+| Variable                   | Purpose                       | Default                                                 |
+| -------------------------- | ----------------------------- | ------------------------------------------------------- |
+| `NODE_ENV`                 | runtime mode                  | `development`                                           |
+| `API_PORT`                 | local API port                | `3000`                                                  |
+| `ADMIN_PORT`               | local admin shell port        | `4173`                                                  |
+| `LOG_LEVEL`                | shared log level fallback     | `info`                                                  |
+| `API_LOG_LEVEL`            | API log override              | `info`                                                  |
+| `WORKER_LOG_LEVEL`         | worker log override           | `info`                                                  |
+| `APP_VERSION`              | bootstrap version label       | `0.0.0-bootstrap`                                       |
+| `POSTGRES_DB`              | Postgres database name        | `materiabill`                                           |
+| `POSTGRES_USER`            | Postgres username placeholder | `local_user`                                            |
+| `POSTGRES_PASSWORD`        | Postgres password placeholder | `changeme-local-only`                                   |
+| `POSTGRES_PORT`            | host Postgres port            | `55432`                                                 |
+| `RABBITMQ_DEFAULT_USER`    | RabbitMQ username placeholder | `local_user`                                            |
+| `RABBITMQ_DEFAULT_PASS`    | RabbitMQ password placeholder | `changeme-local-only`                                   |
+| `RABBITMQ_PORT`            | host RabbitMQ AMQP port       | `55672`                                                 |
+| `RABBITMQ_MANAGEMENT_PORT` | host RabbitMQ UI port         | `55673`                                                 |
+| `DATABASE_URL`             | reserved for later DB wiring  | empty                                                   |
+| `RABBITMQ_URL`             | local worker/admin queue URL  | `amqp://local_user:changeme-local-only@127.0.0.1:55672` |
+| `VITE_API_BASE_URL`        | admin shell API base URL      | derived from `API_PORT`                                 |
 
 ## Validation
 
