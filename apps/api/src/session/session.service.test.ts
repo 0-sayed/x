@@ -112,6 +112,22 @@ describe('SessionService', () => {
     );
   });
 
+  it('maps callback token responses without refresh tokens to provider unavailable', async () => {
+    const { oauthClient, repository, service } = makeService();
+    oauthClient.exchangeCode.mockResolvedValue({
+      access_token: 'access-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token_expires_in: null,
+      scope: 'openid profile email',
+    });
+
+    await expect(service.handleCallback('code-1', 'stored-state', 'stored-state')).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+    expect(repository.createSession).not.toHaveBeenCalled();
+  });
+
   it('rejects missing sessions', async () => {
     const { repository, service } = makeService();
     repository.findCurrentUserBySessionId.mockResolvedValue(null);

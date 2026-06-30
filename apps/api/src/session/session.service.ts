@@ -121,7 +121,7 @@ function toStoredTokens(
   const refreshToken = tokenResponse.refresh_token ?? fallbackRefreshToken;
 
   if (!refreshToken) {
-    throw new Error('Invalid Inframodern token response');
+    throw new ServiceUnavailableException('Invalid Inframodern token response');
   }
 
   return {
