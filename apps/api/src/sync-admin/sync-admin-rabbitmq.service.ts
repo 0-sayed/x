@@ -70,6 +70,13 @@ export class SyncAdminRabbitMqService implements OnApplicationShutdown {
 
     const topology = getInframodernTopology(this.config, syncResources);
     await this.channel.assertExchange(topology.exchange, 'topic', { durable: true });
+    await this.channel.assertExchange(topology.deadLetterExchange, 'topic', { durable: true });
+
+    for (const resource of syncResources) {
+      const queue = topology.queues[resource];
+      await this.channel.assertQueue(queue.queue, topology.queueOptions(resource));
+      await this.channel.bindQueue(queue.queue, topology.exchange, queue.routingKey);
+    }
 
     return this.channel;
   }
