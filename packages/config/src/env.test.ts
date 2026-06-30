@@ -4,6 +4,7 @@ import {
   getApiRuntimeConfig,
   getDatabaseRuntimeConfig,
   getQueueRuntimeConfig,
+  getSessionRuntimeConfig,
   getWorkerRuntimeConfig,
   parseRuntimeEnv,
 } from './env.js';
@@ -59,5 +60,63 @@ describe('runtime connection config', () => {
   it('rejects malformed non-empty connection URLs', () => {
     expect(() => parseRuntimeEnv({ DATABASE_URL: 'not a url' })).toThrow();
     expect(() => parseRuntimeEnv({ RABBITMQ_URL: 'not a url' })).toThrow();
+  });
+});
+
+describe('session runtime config', () => {
+  const baseEnv = {
+    SESSION_SECRET: '12345678901234567890123456789012',
+    SESSION_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
+    INFRAMODERN_URL: 'http://inframodern.test',
+    INFRAMODERN_OAUTH_CLIENT_ID: 'prod-client',
+    INFRAMODERN_OAUTH_CLIENT_SECRET: 'prod-secret',
+    INFRAMODERN_OAUTH_CALLBACK_URL: 'http://api.test/auth/callback',
+  };
+
+  it('selects the production OAuth client by default', () => {
+    expect(getSessionRuntimeConfig(baseEnv)).toMatchObject({
+      encryptionKey: baseEnv.SESSION_ENCRYPTION_KEY,
+      cookieName: 'materiabill.sid',
+      oauthStateCookieName: 'materiabill.oauth_state',
+      sessionTtlSeconds: 28_800,
+      oauthStateTtlSeconds: 600,
+      oauthMode: 'production',
+      inframodernUrl: 'http://inframodern.test',
+      inframodernFrontendUrl: 'http://localhost:5174',
+      adminUrl: 'http://localhost:4173',
+      oauthClient: {
+        clientId: 'prod-client',
+        clientSecret: 'prod-secret',
+        callbackUrl: 'http://api.test/auth/callback',
+      },
+    });
+  });
+
+  it('selects the sandbox OAuth client when sandbox mode is enabled', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        INFRAMODERN_OAUTH_MODE: 'sandbox',
+        INFRAMODERN_SANDBOX_OAUTH_CLIENT_ID: 'sandbox-client',
+        INFRAMODERN_SANDBOX_OAUTH_CLIENT_SECRET: 'sandbox-secret',
+        INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL: 'http://api.test/auth/sandbox/callback',
+      }),
+    ).toMatchObject({
+      oauthMode: 'sandbox',
+      oauthClient: {
+        clientId: 'sandbox-client',
+        clientSecret: 'sandbox-secret',
+        callbackUrl: 'http://api.test/auth/sandbox/callback',
+      },
+    });
+  });
+
+  it('rejects sandbox mode without sandbox client credentials', () => {
+    expect(() =>
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        INFRAMODERN_OAUTH_MODE: 'sandbox',
+      }),
+    ).toThrow('Missing sandbox OAuth configuration');
   });
 });

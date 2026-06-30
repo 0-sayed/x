@@ -1,9 +1,10 @@
 import 'reflect-metadata';
 
+import cookieParser from 'cookie-parser';
+import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { getApiRuntimeConfig } from '@materiabill/config';
-import type { INestApplication } from '@nestjs/common';
+import { getApiRuntimeConfig, getSessionRuntimeConfig } from '@materiabill/config';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
@@ -25,9 +26,15 @@ export function configureApiDocumentation(app: INestApplication): void {
 
 export async function bootstrapApi() {
   const config = getApiRuntimeConfig(process.env);
+  const sessionConfig = getSessionRuntimeConfig(process.env);
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.useLogger(app.get(Logger));
+  app.use(cookieParser(sessionConfig.sessionSecret));
+  app.enableCors({
+    credentials: true,
+    origin: sessionConfig.adminUrl,
+  });
   app.enableShutdownHooks();
   configureApiDocumentation(app);
   await app.listen(config.port);

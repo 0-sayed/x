@@ -17,6 +17,22 @@ const runtimeEnvSchema = z.object({
   APP_VERSION: z.string().trim().min(1).default('0.0.0-bootstrap'),
   DATABASE_URL: optionalUrlSchema,
   RABBITMQ_URL: optionalUrlSchema,
+  SESSION_SECRET: z.string().trim().min(32).optional(),
+  SESSION_ENCRYPTION_KEY: z.string().trim().optional(),
+  SESSION_COOKIE_NAME: z.string().trim().min(1).default('materiabill.sid'),
+  OAUTH_STATE_COOKIE_NAME: z.string().trim().min(1).default('materiabill.oauth_state'),
+  SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(28_800),
+  OAUTH_STATE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  INFRAMODERN_URL: optionalUrlSchema,
+  INFRAMODERN_FRONTEND_URL: optionalUrlSchema.default('http://localhost:5174'),
+  ADMIN_URL: optionalUrlSchema.default('http://localhost:4173'),
+  INFRAMODERN_OAUTH_MODE: z.enum(['production', 'sandbox']).default('production'),
+  INFRAMODERN_OAUTH_CLIENT_ID: z.string().trim().min(1).optional(),
+  INFRAMODERN_OAUTH_CLIENT_SECRET: z.string().trim().min(1).optional(),
+  INFRAMODERN_OAUTH_CALLBACK_URL: optionalUrlSchema,
+  INFRAMODERN_SANDBOX_OAUTH_CLIENT_ID: z.string().trim().min(1).optional(),
+  INFRAMODERN_SANDBOX_OAUTH_CLIENT_SECRET: z.string().trim().min(1).optional(),
+  INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL: optionalUrlSchema,
 });
 
 export type RuntimeEnv = z.infer<typeof runtimeEnvSchema>;
@@ -43,6 +59,28 @@ export type DatabaseRuntimeConfig = {
 
 export type QueueRuntimeConfig = {
   readonly rabbitMqUrl: string | undefined;
+};
+
+export type SessionOAuthMode = 'production' | 'sandbox';
+
+export type SessionOAuthClientConfig = {
+  readonly clientId: string;
+  readonly clientSecret: string;
+  readonly callbackUrl: string;
+};
+
+export type SessionRuntimeConfig = {
+  readonly sessionSecret: string;
+  readonly encryptionKey: string;
+  readonly cookieName: string;
+  readonly oauthStateCookieName: string;
+  readonly sessionTtlSeconds: number;
+  readonly oauthStateTtlSeconds: number;
+  readonly inframodernUrl: string;
+  readonly inframodernFrontendUrl: string;
+  readonly adminUrl: string;
+  readonly oauthMode: SessionOAuthMode;
+  readonly oauthClient: SessionOAuthClientConfig;
 };
 
 function normalizeLogLevel(level: z.infer<typeof runtimeLogLevelSchema>): PinoLogLevel {
@@ -74,6 +112,44 @@ function selectRuntimeLogLevel(
   }
 
   return parsed.NODE_ENV === 'test' ? 'silent' : 'info';
+}
+
+function requireConfigValue(value: string | undefined, message: string): string {
+  if (!value) {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+function assertBase64Key(value: string): string {
+  const decoded = Buffer.from(value, 'base64');
+
+  if (decoded.length !== 32) {
+    throw new Error('SESSION_ENCRYPTION_KEY must decode to 32 bytes');
+  }
+
+  return value;
+}
+
+function getRequiredSessionOAuthClient(parsed: RuntimeEnv): SessionOAuthClientConfig {
+  const isSandbox = parsed.INFRAMODERN_OAUTH_MODE === 'sandbox';
+  const clientId = isSandbox
+    ? parsed.INFRAMODERN_SANDBOX_OAUTH_CLIENT_ID
+    : parsed.INFRAMODERN_OAUTH_CLIENT_ID;
+  const clientSecret = isSandbox
+    ? parsed.INFRAMODERN_SANDBOX_OAUTH_CLIENT_SECRET
+    : parsed.INFRAMODERN_OAUTH_CLIENT_SECRET;
+  const callbackUrl = isSandbox
+    ? parsed.INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL
+    : parsed.INFRAMODERN_OAUTH_CALLBACK_URL;
+  const modeLabel = isSandbox ? 'sandbox' : 'production';
+
+  return {
+    clientId: requireConfigValue(clientId, `Missing ${modeLabel} OAuth configuration`),
+    clientSecret: requireConfigValue(clientSecret, `Missing ${modeLabel} OAuth configuration`),
+    callbackUrl: requireConfigValue(callbackUrl, `Missing ${modeLabel} OAuth configuration`),
+  };
 }
 
 export function parseRuntimeEnv(env: NodeJS.ProcessEnv): RuntimeEnv {
@@ -124,5 +200,35 @@ export function getQueueRuntimeConfig(env: NodeJS.ProcessEnv): QueueRuntimeConfi
 
   return {
     rabbitMqUrl: parsed.RABBITMQ_URL,
+  };
+}
+
+export function getSessionRuntimeConfig(env: NodeJS.ProcessEnv): SessionRuntimeConfig {
+  const parsed = parseRuntimeEnv(env);
+
+  if (!parsed.SESSION_SECRET) {
+    throw new Error('Missing session secret');
+  }
+
+  if (!parsed.SESSION_ENCRYPTION_KEY) {
+    throw new Error('Missing session encryption key');
+  }
+
+  if (!parsed.INFRAMODERN_URL) {
+    throw new Error('Missing Inframodern URL');
+  }
+
+  return {
+    sessionSecret: parsed.SESSION_SECRET,
+    encryptionKey: assertBase64Key(parsed.SESSION_ENCRYPTION_KEY),
+    cookieName: parsed.SESSION_COOKIE_NAME,
+    oauthStateCookieName: parsed.OAUTH_STATE_COOKIE_NAME,
+    sessionTtlSeconds: parsed.SESSION_TTL_SECONDS,
+    oauthStateTtlSeconds: parsed.OAUTH_STATE_TTL_SECONDS,
+    inframodernUrl: parsed.INFRAMODERN_URL,
+    inframodernFrontendUrl: parsed.INFRAMODERN_FRONTEND_URL,
+    adminUrl: parsed.ADMIN_URL,
+    oauthMode: parsed.INFRAMODERN_OAUTH_MODE,
+    oauthClient: getRequiredSessionOAuthClient(parsed),
   };
 }
