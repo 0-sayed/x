@@ -27,7 +27,7 @@ const defaultPullResources = [
 
 export type SyncAdminDatabase = {
   readonly query: MateriabillDatabase['query'];
-  updateFailureRetryCount(failureId: string, retryCount: number): Promise<void>;
+  incrementFailureRetryCount(failureId: string): Promise<void>;
 };
 
 @Injectable()
@@ -65,11 +65,16 @@ export class SyncAdminService {
       throw new NotFoundException('Sync failure is not retryable');
     }
 
-    const resource = syncResourceSchema.parse(failure.resource);
+    const resource = syncResourceSchema.safeParse(failure.resource);
+
+    if (!resource.success) {
+      throw new NotFoundException('Sync failure is not retryable');
+    }
+
     const envelope: SyncEnvelope = syncEnvelopeSchema.parse(failure.payload);
 
-    await this.rabbit.publishEnvelope(resource, envelope);
-    await this.db.updateFailureRetryCount(failureId, failure.retryCount + 1);
+    await this.rabbit.publishEnvelope(resource.data, envelope);
+    await this.db.incrementFailureRetryCount(failureId);
 
     return { status: 'queued', failureId };
   }
@@ -81,7 +86,7 @@ export class SyncAdminService {
       throw new ServiceUnavailableException('INFRAMODERN_DB_URL is required');
     }
 
-    const resources = request.resources ?? [...defaultPullResources];
+    const resources = [...new Set(request.resources ?? defaultPullResources)];
     const batches = await this.pullSource.readBatches(inframodernDbUrl, resources);
 
     for (const batch of batches) {

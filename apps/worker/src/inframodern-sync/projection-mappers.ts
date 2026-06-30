@@ -71,20 +71,20 @@ function mapUser(batch: ProjectionBatch, item: Record<string, unknown>): void {
   batch.users.push({
     id: userId,
     email: requireString(rawItem, 'email', 'users'),
-    displayName: optionalString(rawItem.displayName) ?? optionalString(rawItem.name),
-    phone: optionalString(rawItem.phone),
-    avatarUrl: optionalString(rawItem.avatarUrl),
-    locale: optionalString(rawItem.locale),
-    deletedAt: optionalDate(rawItem.deletedAt),
+    displayName: optionalString(rawItem, 'displayName') ?? optionalString(rawItem, 'name'),
+    phone: optionalString(rawItem, 'phone'),
+    avatarUrl: optionalString(rawItem, 'avatarUrl'),
+    locale: optionalString(rawItem, 'locale'),
+    deletedAt: optionalDate(rawItem, 'deletedAt'),
     rawPayload: rawItem,
   });
 
-  for (const workspaceItem of getArrayItems(rawItem.workspaces)) {
+  for (const workspaceItem of getArrayItems(getValue(rawItem, 'workspaces'))) {
     batch.workspaces.push(mapWorkspace(workspaceItem));
     batch.memberships.push(mapMembership(userId, workspaceItem, false));
   }
 
-  for (const workspaceItem of getArrayItems(rawItem.adminWorkspaces)) {
+  for (const workspaceItem of getArrayItems(getValue(rawItem, 'adminWorkspaces'))) {
     batch.workspaces.push(mapWorkspace(workspaceItem));
     batch.memberships.push(mapMembership(userId, workspaceItem, true));
   }
@@ -94,9 +94,9 @@ function mapWorkspace(item: RawItem): NewWorkspaceRef {
   return {
     id: requireString(item, 'id', 'users'),
     name: requireString(item, 'name', 'users'),
-    slug: optionalString(item.slug),
-    paymentCurrency: optionalString(item.paymentCurrency),
-    deletedAt: optionalDate(item.deletedAt),
+    slug: optionalString(item, 'slug'),
+    paymentCurrency: optionalString(item, 'paymentCurrency'),
+    deletedAt: optionalDate(item, 'deletedAt'),
     rawPayload: item,
   };
 }
@@ -105,12 +105,12 @@ function mapMembership(userId: string, item: RawItem, isAdmin: boolean): NewWork
   return {
     workspaceId: requireString(item, 'id', 'users'),
     userId,
-    roleKey: optionalString(item.role) ?? optionalString(item.roleKey),
-    permissions: getPermissions(item.permissions),
+    roleKey: optionalString(item, 'role') ?? optionalString(item, 'roleKey'),
+    permissions: getPermissions(getValue(item, 'permissions')),
     isAdmin,
-    isActive: optionalBoolean(item.isActive) ?? true,
+    isActive: optionalBoolean(item, 'isActive') ?? true,
     rawPayload: item,
-    deletedAt: optionalDate(item.deletedAt),
+    deletedAt: optionalDate(item, 'deletedAt'),
   };
 }
 
@@ -119,12 +119,12 @@ function mapBrand(item: Record<string, unknown>): NewBrandRef {
 
   return {
     id: requireString(rawItem, 'id', 'brands'),
-    workspaceId: optionalString(rawItem.workspaceId),
+    workspaceId: optionalString(rawItem, 'workspaceId'),
     name: requireString(rawItem, 'name', 'brands'),
-    accentColor: optionalString(rawItem.accentColor),
-    logoUrl: optionalString(rawItem.logoUrl),
-    customDomain: optionalString(rawItem.customDomain),
-    deletedAt: optionalDate(rawItem.deletedAt),
+    accentColor: optionalString(rawItem, 'accentColor'),
+    logoUrl: optionalString(rawItem, 'logoUrl'),
+    customDomain: optionalString(rawItem, 'customDomain'),
+    deletedAt: optionalDate(rawItem, 'deletedAt'),
     rawPayload: rawItem,
   };
 }
@@ -134,16 +134,16 @@ function mapLocation(item: Record<string, unknown>): NewLocationRef {
 
   return {
     id: requireString(rawItem, 'id', 'locations'),
-    workspaceId: optionalString(rawItem.workspaceId),
+    workspaceId: optionalString(rawItem, 'workspaceId'),
     name: requireString(rawItem, 'name', 'locations'),
-    addressLine1: optionalString(rawItem.addressLine1),
-    addressLine2: optionalString(rawItem.addressLine2),
-    city: optionalString(rawItem.city),
-    region: optionalString(rawItem.region),
-    countryCode: optionalString(rawItem.countryCode),
-    latitude: optionalNumeric(rawItem.latitude),
-    longitude: optionalNumeric(rawItem.longitude),
-    deletedAt: optionalDate(rawItem.deletedAt),
+    addressLine1: optionalString(rawItem, 'addressLine1'),
+    addressLine2: optionalString(rawItem, 'addressLine2'),
+    city: optionalString(rawItem, 'city'),
+    region: optionalString(rawItem, 'region'),
+    countryCode: optionalString(rawItem, 'countryCode'),
+    latitude: optionalNumeric(rawItem, 'latitude'),
+    longitude: optionalNumeric(rawItem, 'longitude'),
+    deletedAt: optionalDate(rawItem, 'deletedAt'),
     rawPayload: rawItem,
   };
 }
@@ -157,8 +157,8 @@ function mapExchangeRate(item: Record<string, unknown>): NewExchangeRateRef {
     quoteCurrency: requireString(rawItem, 'quoteCurrency', 'exchange-rates'),
     rate: requireNumeric(rawItem, 'rate', 'exchange-rates'),
     effectiveAt: requireDate(rawItem, 'effectiveAt', 'exchange-rates'),
-    source: optionalString(rawItem.source),
-    deletedAt: optionalDate(rawItem.deletedAt),
+    source: optionalString(rawItem, 'source'),
+    deletedAt: optionalDate(rawItem, 'deletedAt'),
     rawPayload: rawItem,
   };
 }
@@ -183,15 +183,19 @@ function getPermissions(value: unknown): readonly string[] {
   return value.filter((item): item is string => typeof item === 'string');
 }
 
-function optionalString(value: unknown): string | null {
+function optionalString(item: RawItem, key: string): string | null {
+  const value = getValue(item, key);
   return typeof value === 'string' && value.trim() !== '' ? value : null;
 }
 
-function optionalBoolean(value: unknown): boolean | null {
+function optionalBoolean(item: RawItem, key: string): boolean | null {
+  const value = getValue(item, key);
   return typeof value === 'boolean' ? value : null;
 }
 
-function optionalNumeric(value: unknown): string | null {
+function optionalNumeric(item: RawItem, key: string): string | null {
+  const value = getValue(item, key);
+
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value.toString();
   }
@@ -200,7 +204,7 @@ function optionalNumeric(value: unknown): string | null {
 }
 
 function requireNumeric(item: RawItem, key: string, resource: SyncResource): string {
-  const value = optionalNumeric(item[key]);
+  const value = optionalNumeric(item, key);
   if (value === null) {
     throw new Error(`${resource} item is missing ${key}`);
   }
@@ -208,7 +212,7 @@ function requireNumeric(item: RawItem, key: string, resource: SyncResource): str
 }
 
 function requireDate(item: RawItem, key: string, resource: SyncResource): Date {
-  const value = optionalDate(item[key]);
+  const value = optionalDate(item, key);
   if (value === null) {
     throw new Error(`${resource} item is missing ${key}`);
   }
@@ -216,20 +220,34 @@ function requireDate(item: RawItem, key: string, resource: SyncResource): Date {
 }
 
 function requireString(item: RawItem, key: string, resource: SyncResource): string {
-  const value = item[key];
+  const value = getValue(item, key);
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${resource} item is missing ${key}`);
   }
   return value;
 }
 
-function optionalDate(value: unknown): Date | null {
+function optionalDate(item: RawItem, key: string): Date | null {
+  const value = getValue(item, key);
+
   if (typeof value !== 'string' || value.trim() === '') {
     return null;
   }
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getValue(item: RawItem, key: string): unknown {
+  if (key in item) {
+    return item[key];
+  }
+
+  return item[toSnakeCase(key)];
+}
+
+function toSnakeCase(key: string): string {
+  return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 function dedupeByLastOccurrence<T>(rows: readonly T[], getKey: (row: T) => string): T[] {

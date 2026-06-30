@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -102,7 +103,7 @@ describe('sync admin endpoints', () => {
 
     expect(response.body).toEqual({ status: 'queued', failureId: unresolvedFailure.id });
     expect(rabbit.publishEnvelope).toHaveBeenCalledWith('users', unresolvedFailure.payload);
-    expect(db.updateFailureRetryCount).toHaveBeenCalledWith(unresolvedFailure.id, 3);
+    expect(db.incrementFailureRetryCount).toHaveBeenCalledWith(unresolvedFailure.id);
 
     await harness.app.close();
   });
@@ -147,6 +148,63 @@ describe('sync admin endpoints', () => {
     await harness.app.close();
   });
 
+  it('deduplicates pull resources before reading source batches', async () => {
+    const rabbit = { publishEnvelope: vi.fn(() => Promise.resolve()) };
+    const pullSource = {
+      readBatches: vi.fn(() => Promise.resolve([])),
+    };
+    const harness = await createApp(
+      {
+        SYNC_ADMIN_TOKEN: 'secret',
+        INFRAMODERN_DB_URL: 'postgres://source_user:source_pass@127.0.0.1:5432/source',
+      },
+      { rabbit, pullSource },
+    );
+    restoreEnv = harness.restoreEnv;
+
+    const response = await request(harness.app.getHttpServer())
+      .post('/sync/pull')
+      .set('x-sync-admin-token', 'secret')
+      .send({ resources: ['brands', 'users', 'brands'] })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      resources: ['brands', 'users'],
+      publishedMessages: 0,
+    });
+    expect(pullSource.readBatches).toHaveBeenCalledWith(
+      'postgres://source_user:source_pass@127.0.0.1:5432/source',
+      ['brands', 'users'],
+    );
+
+    await harness.app.close();
+  });
+
+  it('does not retry poison failures marked with an unknown resource', async () => {
+    const db = createDbMock({
+      findFirst: vi.fn(() =>
+        Promise.resolve({
+          ...unresolvedFailure,
+          resource: 'unknown',
+          payload: { correlationId: 'unknown', items: [{ rawMessage: '{"items":' }] },
+        }),
+      ),
+    });
+    const rabbit = { publishEnvelope: vi.fn(() => Promise.resolve()) };
+    const harness = await createApp({ SYNC_ADMIN_TOKEN: 'secret' }, { db, rabbit });
+    restoreEnv = harness.restoreEnv;
+
+    await request(harness.app.getHttpServer())
+      .post(`/sync/failures/${unresolvedFailure.id}/retry`)
+      .set('x-sync-admin-token', 'secret')
+      .expect(404);
+
+    expect(rabbit.publishEnvelope).not.toHaveBeenCalled();
+    expect(db.incrementFailureRetryCount).not.toHaveBeenCalled();
+
+    await harness.app.close();
+  });
+
   it('rejects pull when INFRAMODERN_DB_URL is not configured', async () => {
     const harness = await createApp({ SYNC_ADMIN_TOKEN: 'secret', INFRAMODERN_DB_URL: '' });
     restoreEnv = harness.restoreEnv;
@@ -158,6 +216,29 @@ describe('sync admin endpoints', () => {
 
     await harness.app.close();
   });
+
+  it('restores env changes when app creation throws', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    Reflect.deleteProperty(process.env, 'SYNC_ADMIN_TOKEN');
+
+    await expect(
+      createApp(
+        { SYNC_ADMIN_TOKEN: 'secret' },
+        {
+          beforeCompile: (builder) => {
+            builder.overrideProvider(SyncAdminRabbitMqService).useFactory({
+              factory: () => {
+                throw new Error('compile failed');
+              },
+            });
+          },
+        },
+      ),
+    ).rejects.toThrow('compile failed');
+
+    expect(process.env.NODE_ENV).toBe(previousNodeEnv);
+    expect(process.env.SYNC_ADMIN_TOKEN).toBeUndefined();
+  });
 });
 
 type DbMock = ReturnType<typeof createDbMock>;
@@ -166,6 +247,7 @@ type AppOverrides = {
   readonly db?: DbMock;
   readonly rabbit?: { readonly publishEnvelope: ReturnType<typeof vi.fn> };
   readonly pullSource?: { readonly readBatches: ReturnType<typeof vi.fn> };
+  readonly beforeCompile?: (builder: TestingModuleBuilder) => void;
 };
 
 async function createApp(
@@ -188,22 +270,30 @@ async function createApp(
   builder
     .overrideProvider(InframodernPullSource)
     .useValue(overrides.pullSource ?? { readBatches: vi.fn(() => Promise.resolve([])) });
+  overrides.beforeCompile?.(builder);
 
-  const moduleRef = await builder.compile();
-  const app = moduleRef.createNestApplication();
-  await app.init();
+  try {
+    const moduleRef = await builder.compile();
+    const app = moduleRef.createNestApplication();
+    await app.init();
 
-  return {
-    app,
-    restoreEnv: () => {
-      for (const key of Object.keys(process.env)) {
-        if (!(key in previousEnv)) {
-          Reflect.deleteProperty(process.env, key);
-        }
+    return {
+      app,
+      restoreEnv,
+    };
+  } catch (error) {
+    restoreEnv();
+    throw error;
+  }
+
+  function restoreEnv(): void {
+    for (const key of Object.keys(process.env)) {
+      if (!(key in previousEnv)) {
+        Reflect.deleteProperty(process.env, key);
       }
-      Object.assign(process.env, previousEnv);
-    },
-  };
+    }
+    Object.assign(process.env, previousEnv);
+  }
 }
 
 function createDbMock(
@@ -216,6 +306,6 @@ function createDbMock(
         findFirst: overrides.findFirst ?? vi.fn(() => Promise.resolve(undefined)),
       },
     },
-    updateFailureRetryCount: vi.fn(() => Promise.resolve()),
+    incrementFailureRetryCount: vi.fn(() => Promise.resolve()),
   };
 }

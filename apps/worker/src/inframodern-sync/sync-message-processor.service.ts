@@ -102,21 +102,19 @@ export class SyncMessageProcessorService implements InframodernSyncMessageProces
       .insert(syncInbox)
       .values({
         eventId,
-        resource,
+        resource: 'unknown',
         correlationId: UNKNOWN_CORRELATION_ID,
         payload,
       })
       .onConflictDoNothing();
 
-    await this.recordFailure(resource, eventId, payload, error);
+    await this.recordFailure('unknown', eventId, payload, error);
 
     return { status: 'failed', eventId };
   }
 
   private async markProcessed(resource: SyncResource, eventId: string): Promise<void> {
     const now = new Date();
-
-    await this.db.update(syncInbox).set({ processedAt: now }).where(eq(syncInbox.eventId, eventId));
 
     await this.db
       .insert(syncCheckpoints)
@@ -138,10 +136,12 @@ export class SyncMessageProcessorService implements InframodernSyncMessageProces
       .update(syncFailures)
       .set({ resolvedAt: now })
       .where(eq(syncFailures.eventId, eventId));
+
+    await this.db.update(syncInbox).set({ processedAt: now }).where(eq(syncInbox.eventId, eventId));
   }
 
   private async recordFailure(
-    resource: SyncResource,
+    resource: string,
     eventId: string,
     payload: SyncEnvelope | SyncEnvelopePayload,
     error: unknown,

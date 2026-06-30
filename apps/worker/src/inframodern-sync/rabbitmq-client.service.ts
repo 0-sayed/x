@@ -5,7 +5,7 @@ import {
   type SyncEnvelope,
   type SyncResource,
 } from '@materiabill/contracts';
-import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
+import type { ChannelModel, ConfirmChannel, ConsumeMessage } from 'amqplib';
 
 import { requiredSyncResources } from './sync-resources.js';
 
@@ -29,7 +29,7 @@ export type InframodernSyncMessageProcessor = {
 @Injectable()
 export class InframodernRabbitMqClientService implements OnModuleInit, OnApplicationShutdown {
   private connection: ChannelModel | undefined;
-  private channel: Channel | undefined;
+  private channel: ConfirmChannel | undefined;
 
   constructor(
     @Inject(QUEUE_RUNTIME_CONFIG) private readonly config: QueueRuntimeConfig,
@@ -54,7 +54,7 @@ export class InframodernRabbitMqClientService implements OnModuleInit, OnApplica
     }
 
     this.connection = await this.connectionFactory.connect(this.config.rabbitMqUrl);
-    const channel = await this.connection.createChannel();
+    const channel = await this.connection.createConfirmChannel();
     this.channel = channel;
 
     const topology = getInframodernTopology(this.config, requiredSyncResources);
@@ -67,6 +67,12 @@ export class InframodernRabbitMqClientService implements OnModuleInit, OnApplica
       const queue = topology.queues[resource];
       await channel.assertQueue(queue.queue, topology.queueOptions(resource));
       await channel.bindQueue(queue.queue, topology.exchange, queue.routingKey);
+      await channel.assertQueue(queue.deadLetterQueue, { durable: true });
+      await channel.bindQueue(
+        queue.deadLetterQueue,
+        topology.deadLetterExchange,
+        queue.deadLetterRoutingKey,
+      );
       await channel.consume(queue.queue, (message) => void this.handleMessage(resource, message));
     }
   }
@@ -81,6 +87,7 @@ export class InframodernRabbitMqClientService implements OnModuleInit, OnApplica
       Buffer.from(JSON.stringify(envelope)),
       { contentType: 'application/json', persistent: true },
     );
+    await channel.waitForConfirms();
   }
 
   async publishCompletion(envelope: SyncEnvelope): Promise<void> {
@@ -104,6 +111,7 @@ export class InframodernRabbitMqClientService implements OnModuleInit, OnApplica
       ),
       { contentType: 'application/json', persistent: true },
     );
+    await channel.waitForConfirms();
   }
 
   private async handleMessage(
@@ -141,7 +149,7 @@ export class InframodernRabbitMqClientService implements OnModuleInit, OnApplica
     }
   }
 
-  private async getPublishChannel(): Promise<Channel> {
+  private async getPublishChannel(): Promise<ConfirmChannel> {
     if (!this.channel) {
       await this.startConsumers();
     }

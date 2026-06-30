@@ -9,10 +9,11 @@ function createHarness() {
     assertQueue: vi.fn(),
     bindQueue: vi.fn(),
     publish: vi.fn(),
+    waitForConfirms: vi.fn(() => Promise.resolve()),
     close: vi.fn(),
   };
   const connection = {
-    createChannel: vi.fn(() => Promise.resolve(channel as unknown as Channel)),
+    createConfirmChannel: vi.fn(() => Promise.resolve(channel as unknown as Channel)),
     close: vi.fn(),
   } as unknown as ChannelModel;
   const service = new SyncAdminRabbitMqService(
@@ -46,11 +47,20 @@ describe('SyncAdminRabbitMqService', () => {
     expect(channel.assertExchange).toHaveBeenCalledWith('dlx.inframodern-testing', 'topic', {
       durable: true,
     });
-    expect(channel.assertQueue).toHaveBeenCalledTimes(4);
+    expect(channel.assertQueue).toHaveBeenCalledTimes(8);
+    expect(channel.assertQueue).toHaveBeenCalledWith(
+      'dlq.inframodern-testing.materiabill-testing.users',
+      { durable: true },
+    );
     expect(channel.bindQueue).toHaveBeenCalledWith(
       'q.inframodern-testing.materiabill-testing.users',
       'x.inframodern-testing',
       'inframodern-testing.users',
+    );
+    expect(channel.bindQueue).toHaveBeenCalledWith(
+      'dlq.inframodern-testing.materiabill-testing.users',
+      'dlx.inframodern-testing',
+      'dead.inframodern-testing.users',
     );
     expect(channel.publish).toHaveBeenCalledWith(
       'x.inframodern-testing',
@@ -58,5 +68,6 @@ describe('SyncAdminRabbitMqService', () => {
       expect.any(Buffer),
       { contentType: 'application/json', persistent: true },
     );
+    expect(channel.waitForConfirms).toHaveBeenCalledTimes(1);
   });
 });

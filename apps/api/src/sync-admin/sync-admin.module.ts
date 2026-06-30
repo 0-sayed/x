@@ -6,7 +6,7 @@ import {
   type DbClient,
   type MateriabillDatabase,
 } from '@materiabill/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { InframodernPullSource } from './inframodern-pull-source.js';
 import { SyncAdminController } from './sync-admin.controller.js';
@@ -85,11 +85,11 @@ function createLazySyncAdminDatabase(client: LazySyncAdminDbClient): SyncAdminDa
     get query() {
       return client.getDb().query;
     },
-    async updateFailureRetryCount(failureId: string, retryCount: number): Promise<void> {
+    async incrementFailureRetryCount(failureId: string): Promise<void> {
       await client
         .getDb()
         .update(syncFailures)
-        .set({ retryCount })
+        .set({ retryCount: sql`${syncFailures.retryCount} + 1` })
         .where(eq(syncFailures.id, failureId));
     },
   };

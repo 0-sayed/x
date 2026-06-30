@@ -68,6 +68,30 @@ describe('projection mappers', () => {
     });
   });
 
+  it('accepts snake_case rows from pull-source SQL queries', () => {
+    const batch = mapProjectionBatch('exchange-rates', [
+      {
+        id: '018f3f91-1b79-71ec-9d83-000000000401',
+        base_currency: 'USD',
+        quote_currency: 'SAR',
+        rate: 3.75,
+        effective_at: '2026-06-30T10:00:00.000Z',
+        deleted_at: '2026-06-30T11:00:00.000Z',
+      },
+    ]);
+
+    expect(batch.exchangeRates).toEqual([
+      expect.objectContaining({
+        id: '018f3f91-1b79-71ec-9d83-000000000401',
+        baseCurrency: 'USD',
+        quoteCurrency: 'SAR',
+        rate: '3.75',
+        effectiveAt: new Date('2026-06-30T10:00:00.000Z'),
+        deletedAt: new Date('2026-06-30T11:00:00.000Z'),
+      }),
+    ]);
+  });
+
   it('ignores malformed optional date values', () => {
     const batch = mapProjectionBatch('brands', [
       {

@@ -29,7 +29,7 @@ function canonicalJson(value: unknown): string {
 
 export function getSyncEventId(resource: SyncResource, envelope: SyncEnvelope): string {
   if (envelope.operationId) {
-    return envelope.operationId;
+    return `${resource}:${envelope.operationId}`;
   }
 
   const digest = getDigest([resource, envelope.correlationId, canonicalJson(envelope.items)]);

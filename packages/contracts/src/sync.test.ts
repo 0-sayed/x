@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   syncEnvelopeSchema,
+  syncFailureListItemSchema,
   syncPullRequestSchema,
   syncResourceSchema,
   syncRetryResponseSchema,
@@ -44,5 +45,26 @@ describe('sync contracts', () => {
     expect(syncPullRequestSchema.parse({ resources: ['users'] })).toEqual({
       resources: ['users'],
     });
+  });
+
+  it('rejects failure list items with blank event or correlation ids', () => {
+    const failure = {
+      id: '11111111-1111-4111-8111-111111111111',
+      eventId: 'event-1',
+      resource: 'users',
+      correlationId: 'corr-1',
+      operationId: null,
+      jobId: null,
+      retryCount: 0,
+      errorMessage: 'failed',
+      failedAt: '2026-06-30T10:15:00.000Z',
+    };
+
+    expect(syncFailureListItemSchema.parse(failure)).toMatchObject({
+      eventId: 'event-1',
+      correlationId: 'corr-1',
+    });
+    expect(() => syncFailureListItemSchema.parse({ ...failure, eventId: ' ' })).toThrow();
+    expect(() => syncFailureListItemSchema.parse({ ...failure, correlationId: ' ' })).toThrow();
   });
 });

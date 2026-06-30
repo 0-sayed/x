@@ -21,14 +21,16 @@ describe('InframodernPullSource', () => {
       id: `user-${String(index + 1)}`,
     }));
     postgresMock.sql.mockImplementation((_strings: TemplateStringsArray, ...values: unknown[]) => {
-      const limit = typeof values[0] === 'number' ? values[0] : undefined;
-      const offset = typeof values[1] === 'number' ? values[1] : undefined;
+      const lastId = typeof values[0] === 'string' ? values[0] : undefined;
+      const limitValue = values.at(-1);
+      const limit = typeof limitValue === 'number' ? limitValue : undefined;
 
-      if (limit === undefined || offset === undefined) {
+      if (limit === undefined) {
         return Promise.resolve(rows);
       }
 
-      return Promise.resolve(rows.slice(offset, offset + limit));
+      const start = lastId ? rows.findIndex((row) => row.id === lastId) + 1 : 0;
+      return Promise.resolve(rows.slice(start, start + limit));
     });
 
     const batches = await new InframodernPullSource().readBatches('postgres://source', ['users']);
@@ -40,8 +42,8 @@ describe('InframodernPullSource', () => {
     ]);
     expect(postgresMock.sql).toHaveBeenCalledTimes(2);
     expect(postgresMock.sql.mock.calls.map(([, ...values]) => values)).toEqual([
-      [1000, 0],
-      [1000, 1000],
+      [1000],
+      ['user-1000', 1000],
     ]);
   });
 });

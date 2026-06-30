@@ -12,9 +12,9 @@ export const syncEnvelopeSchema = z.object({
 
 export const syncFailureListItemSchema = z.object({
   id: z.uuid(),
-  eventId: z.string(),
+  eventId: z.string().trim().min(1),
   resource: syncResourceSchema.or(z.literal('unknown')),
-  correlationId: z.string(),
+  correlationId: z.string().trim().min(1),
   operationId: z.string().nullable(),
   jobId: z.string().nullable(),
   retryCount: z.number().int().nonnegative(),

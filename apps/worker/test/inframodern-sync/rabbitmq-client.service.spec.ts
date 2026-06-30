@@ -18,12 +18,13 @@ function createHarness() {
     prefetch: vi.fn(),
     consume,
     publish: vi.fn(),
+    waitForConfirms: vi.fn(() => Promise.resolve()),
     ack: vi.fn(),
     nack: vi.fn(),
     close: vi.fn(),
   };
   const connection = {
-    createChannel: vi.fn(() => Promise.resolve(channel as unknown as Channel)),
+    createConfirmChannel: vi.fn(() => Promise.resolve(channel as unknown as Channel)),
     close: vi.fn(),
   } as unknown as ChannelModel;
   const processor = {
@@ -90,7 +91,14 @@ describe('InframodernRabbitMqClientService', () => {
 
     expect(processor.processMessage).toHaveBeenCalledWith('users', '{"id":"1"}');
     expect(channel.publish).toHaveBeenCalledTimes(1);
+    expect(channel.waitForConfirms).toHaveBeenCalledTimes(1);
     expect(channel.ack).toHaveBeenCalledWith(message);
+    const [confirmOrder] = channel.waitForConfirms.mock.invocationCallOrder;
+    const [ackOrder] = channel.ack.mock.invocationCallOrder;
+    if (confirmOrder === undefined || ackOrder === undefined) {
+      throw new Error('expected completion confirmation and ack to be called');
+    }
+    expect(confirmOrder).toBeLessThan(ackOrder);
     expect(channel.nack).not.toHaveBeenCalled();
   });
 
@@ -127,6 +135,7 @@ describe('InframodernRabbitMqClientService', () => {
     await handleMessage(service, message);
 
     expect(channel.publish).toHaveBeenCalledTimes(1);
+    expect(channel.waitForConfirms).toHaveBeenCalledTimes(1);
     expect(channel.ack).toHaveBeenCalledWith(message);
     expect(channel.nack).not.toHaveBeenCalled();
   });
@@ -198,6 +207,28 @@ describe('InframodernRabbitMqClientService', () => {
     await service.startConsumers();
 
     const message = createMessage('{"id":"6"}');
+
+    await handleMessage(service, message);
+
+    expect(channel.ack).not.toHaveBeenCalled();
+    expect(channel.nack).toHaveBeenCalledWith(message, false, true);
+  });
+
+  it('nacks with requeueing when completion confirmation fails', async () => {
+    const { channel, processor, service } = createHarness();
+    processor.processMessage.mockResolvedValue({
+      status: 'processed',
+      envelope: {
+        correlationId: 'corr-4',
+        jobId: 'job-4',
+        operationId: 'op-4',
+      },
+    });
+    channel.waitForConfirms.mockRejectedValue(new Error('confirm failed'));
+
+    await service.startConsumers();
+
+    const message = createMessage('{"id":"7"}');
 
     await handleMessage(service, message);
 

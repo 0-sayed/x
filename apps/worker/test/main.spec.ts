@@ -21,6 +21,7 @@ function createChannel(): Channel {
     prefetch: vi.fn(),
     consume: vi.fn(),
     publish: vi.fn(),
+    waitForConfirms: vi.fn(() => Promise.resolve()),
     close: vi.fn(),
   } as unknown as Channel;
 }
@@ -46,7 +47,7 @@ function createChannel(): Channel {
       useValue: {
         connect: vi.fn(() =>
           Promise.resolve({
-            createChannel: vi.fn(() => Promise.resolve(createChannel())),
+            createConfirmChannel: vi.fn(() => Promise.resolve(createChannel())),
             close: vi.fn(),
           } as unknown as ChannelModel),
         ),

@@ -6,7 +6,7 @@ import {
   type SyncResource,
 } from '@materiabill/contracts';
 import * as amqp from 'amqplib';
-import type { Channel, ChannelModel } from 'amqplib';
+import type { ChannelModel, ConfirmChannel } from 'amqplib';
 
 export const SYNC_ADMIN_QUEUE_RUNTIME_CONFIG = Symbol('SYNC_ADMIN_QUEUE_RUNTIME_CONFIG');
 export const SYNC_ADMIN_RABBITMQ_CONNECTION_FACTORY = Symbol(
@@ -27,7 +27,7 @@ const syncResources = [
 @Injectable()
 export class SyncAdminRabbitMqService implements OnApplicationShutdown {
   private connection: ChannelModel | undefined;
-  private channel: Channel | undefined;
+  private channel: ConfirmChannel | undefined;
 
   constructor(
     @Inject(SYNC_ADMIN_QUEUE_RUNTIME_CONFIG) private readonly config: QueueRuntimeConfig,
@@ -54,9 +54,10 @@ export class SyncAdminRabbitMqService implements OnApplicationShutdown {
       Buffer.from(JSON.stringify(envelope)),
       { contentType: 'application/json', persistent: true },
     );
+    await channel.waitForConfirms();
   }
 
-  private async getPublishChannel(): Promise<Channel> {
+  private async getPublishChannel(): Promise<ConfirmChannel> {
     if (this.channel) {
       return this.channel;
     }
@@ -66,7 +67,7 @@ export class SyncAdminRabbitMqService implements OnApplicationShutdown {
     }
 
     this.connection = await this.connectionFactory.connect(this.config.rabbitMqUrl);
-    this.channel = await this.connection.createChannel();
+    this.channel = await this.connection.createConfirmChannel();
 
     const topology = getInframodernTopology(this.config, syncResources);
     await this.channel.assertExchange(topology.exchange, 'topic', { durable: true });
@@ -76,6 +77,12 @@ export class SyncAdminRabbitMqService implements OnApplicationShutdown {
       const queue = topology.queues[resource];
       await this.channel.assertQueue(queue.queue, topology.queueOptions(resource));
       await this.channel.bindQueue(queue.queue, topology.exchange, queue.routingKey);
+      await this.channel.assertQueue(queue.deadLetterQueue, { durable: true });
+      await this.channel.bindQueue(
+        queue.deadLetterQueue,
+        topology.deadLetterExchange,
+        queue.deadLetterRoutingKey,
+      );
     }
 
     return this.channel;

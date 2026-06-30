@@ -18,6 +18,7 @@ describe('Inframodern RabbitMQ topology', () => {
       queue: 'q.inframodern-testing.materiabill-testing.locations',
       routingKey: 'inframodern-testing.locations',
       deadLetterRoutingKey: 'dead.inframodern-testing.locations',
+      deadLetterQueue: 'dlq.inframodern-testing.materiabill-testing.locations',
     });
   });
 
@@ -34,5 +35,26 @@ describe('Inframodern RabbitMQ topology', () => {
         'x-dead-letter-routing-key': 'dead.inframodern-testing.users',
       },
     });
+  });
+
+  it('exposes DLQs bound by dead-letter routing keys', () => {
+    const topology = getInframodernTopology(
+      { environmentName: 'testing', appCode: 'materiabill' },
+      ['users'],
+    );
+
+    expect(topology.queues.users.deadLetterQueue).toBe(
+      'dlq.inframodern-testing.materiabill-testing.users',
+    );
+    expect(topology.queueOptions('users').arguments['x-dead-letter-routing-key']).toBe(
+      'dead.inframodern-testing.users',
+    );
+    type QueueOptionsResource = Parameters<typeof topology.queueOptions>[0];
+    const validResourceSubsetCheck: QueueOptionsResource = 'users';
+    // @ts-expect-error subset topologies only expose declared resources
+    const invalidResourceSubsetCheck: QueueOptionsResource = 'brands';
+
+    expect(validResourceSubsetCheck).toBe('users');
+    expect(invalidResourceSubsetCheck).toBe('brands');
   });
 });

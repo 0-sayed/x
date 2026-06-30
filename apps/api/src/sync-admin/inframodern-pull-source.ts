@@ -18,8 +18,8 @@ export class InframodernPullSource {
       const batches: PullBatch[] = [];
 
       for (const resource of resources) {
-        let offset = 0;
-        let items = await this.readResource(sql, resource, pullBatchSize, offset);
+        let lastId: string | null = null;
+        let items = await this.readResource(sql, resource, pullBatchSize, lastId);
 
         while (items.length > 0) {
           batches.push({
@@ -27,7 +27,7 @@ export class InframodernPullSource {
             envelope: {
               items,
               correlationId: `pull:${resource}:${new Date().toISOString()}`,
-              operationId: `pull:${resource}:${Date.now().toString()}:${offset.toString()}`,
+              operationId: `pull:${resource}:${Date.now().toString()}:${lastId ?? 'start'}`,
               targetApp: 'materiabill',
             },
           });
@@ -36,8 +36,8 @@ export class InframodernPullSource {
             break;
           }
 
-          offset += pullBatchSize;
-          items = await this.readResource(sql, resource, pullBatchSize, offset);
+          lastId = getRowId(items.at(-1), resource);
+          items = await this.readResource(sql, resource, pullBatchSize, lastId);
         }
       }
 
@@ -51,17 +51,33 @@ export class InframodernPullSource {
     sql: postgres.Sql,
     resource: SyncResource,
     limit: number,
-    offset: number,
+    lastId: string | null,
   ): Promise<Record<string, unknown>[]> {
     switch (resource) {
       case 'users':
-        return sql`select * from users order by id limit ${limit} offset ${offset}`;
+        return lastId
+          ? sql`select * from users where id > ${lastId} order by id limit ${limit}`
+          : sql`select * from users order by id limit ${limit}`;
       case 'brands':
-        return sql`select * from brands order by id limit ${limit} offset ${offset}`;
+        return lastId
+          ? sql`select * from brands where id > ${lastId} order by id limit ${limit}`
+          : sql`select * from brands order by id limit ${limit}`;
       case 'locations':
-        return sql`select * from locations order by id limit ${limit} offset ${offset}`;
+        return lastId
+          ? sql`select * from locations where id > ${lastId} order by id limit ${limit}`
+          : sql`select * from locations order by id limit ${limit}`;
       case 'exchange-rates':
-        return sql`select * from exchange_rates order by id limit ${limit} offset ${offset}`;
+        return lastId
+          ? sql`select * from exchange_rates where id > ${lastId} order by id limit ${limit}`
+          : sql`select * from exchange_rates order by id limit ${limit}`;
     }
   }
+}
+
+function getRowId(row: Record<string, unknown> | undefined, resource: SyncResource): string {
+  if (typeof row?.id !== 'string' || row.id.trim() === '') {
+    throw new Error(`${resource} pull row is missing id`);
+  }
+
+  return row.id;
 }

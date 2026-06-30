@@ -3,14 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { getPoisonSyncEventId, getSyncEventId } from '../../src/inframodern-sync/sync-event-id.js';
 
 describe('sync event ids', () => {
-  it('uses operationId when Inframodern supplies it', () => {
+  it('namespaces operationId values by resource when Inframodern supplies them', () => {
     expect(
       getSyncEventId('users', {
         items: [{ id: 'u1' }],
         correlationId: 'corr-1',
         operationId: 'op-1',
       }),
-    ).toBe('op-1');
+    ).toBe('users:op-1');
+    expect(
+      getSyncEventId('brands', {
+        items: [{ id: 'b1' }],
+        correlationId: 'corr-2',
+        operationId: 'op-1',
+      }),
+    ).toBe('brands:op-1');
   });
 
   it('derives stable ids when operationId is absent', () => {

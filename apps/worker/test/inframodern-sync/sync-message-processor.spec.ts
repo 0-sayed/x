@@ -20,6 +20,7 @@ function createDbMock(options?: { existingInbox?: InboxRow | null }) {
     insertedCheckpoints: [] as Record<string, unknown>[],
     updatedInbox: [] as Record<string, unknown>[],
     updatedFailures: [] as Record<string, unknown>[],
+    writes: [] as string[],
   };
 
   const db = {
@@ -45,9 +46,11 @@ function createDbMock(options?: { existingInbox?: InboxRow | null }) {
           }) => {
             if (getTableName(table) === 'sync_failures') {
               state.insertedFailures.push(value);
+              state.writes.push('insert-failure');
             }
             if (getTableName(table) === 'sync_checkpoints') {
               state.insertedCheckpoints.push(value);
+              state.writes.push('insert-checkpoint');
             }
             return Promise.resolve(config);
           },
@@ -59,6 +62,7 @@ function createDbMock(options?: { existingInbox?: InboxRow | null }) {
         where: vi.fn(() => {
           if (getTableName(table) === 'sync_inbox') {
             state.updatedInbox.push(value);
+            state.writes.push('update-inbox');
             if (state.existingInbox) {
               const processedAt = value.processedAt;
               state.existingInbox = {
@@ -69,6 +73,7 @@ function createDbMock(options?: { existingInbox?: InboxRow | null }) {
           }
           if (getTableName(table) === 'sync_failures') {
             state.updatedFailures.push(value);
+            state.writes.push('update-failure');
           }
           return Promise.resolve();
         }),
@@ -82,7 +87,10 @@ function createDbMock(options?: { existingInbox?: InboxRow | null }) {
 describe('SyncMessageProcessorService', () => {
   it('skips already processed inbox events', async () => {
     const db = createDbMock({
-      existingInbox: { eventId: 'op-1', processedAt: new Date('2026-06-30T10:00:00.000Z') },
+      existingInbox: {
+        eventId: 'users:op-1',
+        processedAt: new Date('2026-06-30T10:00:00.000Z'),
+      },
     });
     const projection = { upsert: vi.fn() };
     const processor = new SyncMessageProcessorService(db as never, projection as never);
@@ -95,7 +103,7 @@ describe('SyncMessageProcessorService', () => {
 
     await expect(processor.processMessage('users', JSON.stringify(envelope))).resolves.toEqual({
       status: 'skipped',
-      eventId: 'op-1',
+      eventId: 'users:op-1',
       envelope,
     });
 
@@ -104,7 +112,7 @@ describe('SyncMessageProcessorService', () => {
 
   it('retries duplicate unprocessed inbox events through projection writes', async () => {
     const db = createDbMock({
-      existingInbox: { eventId: 'op-dup', processedAt: null },
+      existingInbox: { eventId: 'brands:op-dup', processedAt: null },
     });
     const projection = { upsert: vi.fn(() => Promise.resolve(1)) };
     const processor = new SyncMessageProcessorService(db as never, projection as never);
@@ -118,11 +126,14 @@ describe('SyncMessageProcessorService', () => {
           operationId: 'op-dup',
         }),
       ),
-    ).resolves.toMatchObject({ status: 'processed', eventId: 'op-dup' });
+    ).resolves.toMatchObject({ status: 'processed', eventId: 'brands:op-dup' });
 
     expect(projection.upsert).toHaveBeenCalledWith('brands', [{ id: 'b1', name: 'Brand' }]);
     expect(db.updatedInbox).toHaveLength(1);
-    expect(db.insertedCheckpoints[0]).toMatchObject({ resource: 'brands', lastEventId: 'op-dup' });
+    expect(db.insertedCheckpoints[0]).toMatchObject({
+      resource: 'brands',
+      lastEventId: 'brands:op-dup',
+    });
   });
 
   it('records failures and returns failed outcome', async () => {
@@ -139,10 +150,10 @@ describe('SyncMessageProcessorService', () => {
           operationId: 'op-2',
         }),
       ),
-    ).resolves.toEqual({ status: 'failed', eventId: 'op-2' });
+    ).resolves.toEqual({ status: 'failed', eventId: 'brands:op-2' });
 
     expect(db.insertedFailures[0]).toMatchObject({
-      eventId: 'op-2',
+      eventId: 'brands:op-2',
       resource: 'brands',
       errorMessage: 'write failed',
     });
@@ -160,7 +171,7 @@ describe('SyncMessageProcessorService', () => {
 
     expect(projection.upsert).not.toHaveBeenCalled();
     expect(db.insertedInbox[0]).toMatchObject({
-      resource: 'users',
+      resource: 'unknown',
       correlationId: 'unknown',
       payload: {
         correlationId: 'unknown',
@@ -168,7 +179,7 @@ describe('SyncMessageProcessorService', () => {
       },
     });
     expect(db.insertedFailures[0]).toMatchObject({
-      resource: 'users',
+      resource: 'unknown',
       correlationId: 'unknown',
       errorMessage: expect.stringContaining('JSON'),
       payload: {
@@ -198,7 +209,7 @@ describe('SyncMessageProcessorService', () => {
 
     expect(projection.upsert).not.toHaveBeenCalled();
     expect(db.insertedFailures[0]).toMatchObject({
-      resource: 'exchange-rates',
+      resource: 'unknown',
       correlationId: 'unknown',
       errorMessage: expect.stringContaining('correlationId'),
       payload: {
@@ -217,7 +228,7 @@ describe('SyncMessageProcessorService', () => {
 
   it('marks related failures resolved after a successful retry', async () => {
     const db = createDbMock({
-      existingInbox: { eventId: 'op-3', processedAt: null },
+      existingInbox: { eventId: 'locations:op-3', processedAt: null },
     });
     const projection = { upsert: vi.fn(() => Promise.resolve(1)) };
     const processor = new SyncMessageProcessorService(db as never, projection as never);
@@ -231,10 +242,11 @@ describe('SyncMessageProcessorService', () => {
           operationId: 'op-3',
         }),
       ),
-    ).resolves.toMatchObject({ status: 'processed', eventId: 'op-3' });
+    ).resolves.toMatchObject({ status: 'processed', eventId: 'locations:op-3' });
 
     expect(db.updatedFailures[0]).toMatchObject({
       resolvedAt: expect.any(Date),
     });
+    expect(db.writes).toEqual(['insert-checkpoint', 'update-failure', 'update-inbox']);
   });
 });

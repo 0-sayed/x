@@ -17,20 +17,21 @@ export type SyncQueueTopology = {
   readonly queue: string;
   readonly routingKey: string;
   readonly deadLetterRoutingKey: string;
+  readonly deadLetterQueue: string;
 };
 
-export type InframodernTopology = {
+export type InframodernTopology<Resource extends SyncResource = SyncResource> = {
   readonly exchange: string;
   readonly deadLetterExchange: string;
   readonly completionRoutingKey: string;
-  readonly queues: Record<SyncResource, SyncQueueTopology>;
-  queueOptions(resource: SyncResource): SyncQueueOptions;
+  readonly queues: Record<Resource, SyncQueueTopology>;
+  queueOptions(resource: Resource): SyncQueueOptions;
 };
 
-export function getInframodernTopology(
+export function getInframodernTopology<const Resource extends SyncResource>(
   config: SyncTopologyConfig,
-  resources: readonly SyncResource[],
-): InframodernTopology {
+  resources: readonly Resource[],
+): InframodernTopology<Resource> {
   const inframodernNamespace = `inframodern-${config.environmentName}`;
   const appNamespace = `${config.appCode}-${config.environmentName}`;
   const exchange = `x.${inframodernNamespace}`;
@@ -43,9 +44,10 @@ export function getInframodernTopology(
         queue: `q.${inframodernNamespace}.${appNamespace}.${resource}`,
         routingKey: `${inframodernNamespace}.${resource}`,
         deadLetterRoutingKey: `dead.${inframodernNamespace}.${resource}`,
+        deadLetterQueue: `dlq.${inframodernNamespace}.${appNamespace}.${resource}`,
       },
     ]),
-  ) as Record<SyncResource, SyncQueueTopology>;
+  ) as Record<Resource, SyncQueueTopology>;
 
   return {
     exchange,
