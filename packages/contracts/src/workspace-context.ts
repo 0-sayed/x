@@ -24,7 +24,11 @@ export const resolvedWorkspaceSchema = z
     id: z.uuid(),
     name: z.string().trim().min(1),
     slug: z.string().trim().min(1).nullable(),
-    paymentCurrency: z.string().trim().regex(/^[A-Z]{3}$/).nullable(),
+    paymentCurrency: z
+      .string()
+      .trim()
+      .regex(/^[A-Z]{3}$/)
+      .nullable(),
   })
   .strict();
 

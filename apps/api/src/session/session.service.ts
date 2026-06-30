@@ -72,9 +72,7 @@ export class SessionService {
     return (await this.#requireCurrentSession(requireSessionId(sessionId))).user;
   }
 
-  async assertWorkspaceAccess(
-    sessionId: string | undefined,
-  ): Promise<WorkspaceIntegrationAccess> {
+  async assertWorkspaceAccess(sessionId: string | undefined): Promise<WorkspaceIntegrationAccess> {
     const currentSessionId = requireSessionId(sessionId);
     const session = await this.#requireCurrentSession(currentSessionId);
     const storedTokens = this.crypto.decrypt(session.encryptedTokens);
