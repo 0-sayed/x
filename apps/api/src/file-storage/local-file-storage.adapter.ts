@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, posix, resolve, sep, win32 } from 'node:path';
 
 import type { FileStorageRuntimeConfig } from '@materiabill/config';
@@ -27,7 +27,10 @@ export class LocalFileStorageAdapter implements FileStorageAdapter {
   }
 
   async deleteObject(input: { readonly key: string }): Promise<void> {
-    await rm(resolveLocalStoragePath(this.#root, input.key), { force: true });
+    const targetPath = resolveLocalStoragePath(this.#root, input.key);
+
+    await assertLocalStorageParentPath(this.#root, targetPath);
+    await rm(targetPath, { force: true });
   }
 }
 
@@ -54,4 +57,27 @@ function resolveLocalStoragePath(root: string, key: string): string {
   }
 
   return targetPath;
+}
+
+async function assertLocalStorageParentPath(root: string, targetPath: string): Promise<void> {
+  let realRoot: string;
+  let realParent: string;
+
+  try {
+    [realRoot, realParent] = await Promise.all([realpath(root), realpath(dirname(targetPath))]);
+  } catch (error) {
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      return;
+    }
+
+    throw error;
+  }
+
+  if (realParent !== realRoot && !realParent.startsWith(`${realRoot}${sep}`)) {
+    throw new Error('Invalid local storage key');
+  }
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error;
 }

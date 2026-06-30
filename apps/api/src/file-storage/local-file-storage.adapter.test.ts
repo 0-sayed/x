@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -137,5 +137,29 @@ describe('LocalFileStorageAdapter', () => {
         checksumSha256: 'd'.repeat(64),
       }),
     ).rejects.toThrow('Invalid local storage key');
+  });
+
+  it('rejects delete keys that traverse a symlinked directory outside the local root', async () => {
+    const externalRoot = await mkdtemp(join(tmpdir(), 'materiabill-external-files-'));
+
+    try {
+      const adapter = new LocalFileStorageAdapter({
+        driver: 'local',
+        localRoot: root,
+        maxBytes: 10_485_760,
+        allowedMimeTypes: ['text/plain'],
+      });
+      const externalPath = join(externalRoot, 'victim.txt');
+
+      await writeFile(externalPath, 'keep-me');
+      await symlink(externalRoot, join(root, 'linked'), 'dir');
+
+      await expect(adapter.deleteObject({ key: 'linked/victim.txt' })).rejects.toThrow(
+        'Invalid local storage key',
+      );
+      await expect(readFile(externalPath, 'utf8')).resolves.toBe('keep-me');
+    } finally {
+      await rm(externalRoot, { force: true, recursive: true });
+    }
   });
 });
