@@ -8,6 +8,7 @@ export {
   workspaceMembershipRefs,
   workspaceRefs,
 } from './projections.js';
+export { sessionRecords } from './sessions.js';
 export type {
   BrandRef,
   ExchangeRateRef,
@@ -26,6 +27,7 @@ export type {
   WorkspaceMembershipRef,
   WorkspaceRef,
 } from './projections.js';
+export type { NewSessionRecord, SessionRecord } from './sessions.js';
 export { syncCheckpoints, syncFailures, syncInbox } from './sync.js';
 export type {
   NewSyncCheckpoint,

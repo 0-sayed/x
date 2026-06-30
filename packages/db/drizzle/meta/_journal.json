@@ -15,6 +15,13 @@
       "when": 1782817870227,
       "tag": "0001_projection_refs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782821034218,
+      "tag": "0002_session_records",
+      "breakpoints": true
     }
   ]
 }
