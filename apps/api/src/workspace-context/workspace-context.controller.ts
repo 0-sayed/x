@@ -9,7 +9,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  type SwitchWorkspaceRequest,
   type WorkspaceContext as WorkspaceContextValue,
   type WorkspaceSwitcherResponse,
   switchWorkspaceRequestSchema,
@@ -64,7 +63,7 @@ export class WorkspaceContextController {
     return this.workspaceContextService.switchActiveWorkspace({
       sessionId: request.sessionId,
       user: request.user,
-      workspaceId: (parsedBody.data as SwitchWorkspaceRequest).workspaceId,
+      workspaceId: parsedBody.data.workspaceId,
     });
   }
 }

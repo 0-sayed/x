@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { WorkspaceContextRepository } from './workspace-context.repository.js';
 
 function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly unknown[] = []) {
-  const updateCalls: Array<{ table: unknown; setArgs: unknown[]; whereArgs: unknown[] }> = [];
+  const updateCalls: { table: unknown; setArgs: unknown[]; whereArgs: unknown[] }[] = [];
   const selectBuilder = {
     from: vi.fn(),
     innerJoin: vi.fn(),
