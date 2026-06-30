@@ -1,0 +1,83 @@
+import { z } from 'zod';
+
+export const permissionKeys = [
+  'workspace.view',
+  'projects.view',
+  'projects.create',
+  'projects.edit',
+  'projects.archive',
+  'agreement_terms.view',
+  'agreement_terms.configure',
+  'schedule.view',
+  'schedule.manage',
+  'schedule.propose_baseline',
+  'milestones.complete',
+  'draws.view',
+  'draws.create',
+  'draws.submit',
+  'draws.release',
+  'draws.release_retention',
+  'payables.view',
+  'payables.create',
+  'payables.pay',
+  'continuity.view',
+  'continuity.pause',
+  'budget.view',
+  'budget.manage',
+  'budget.set_audience',
+  'materials.view',
+  'materials.create',
+  'materials.edit',
+  'materials.receive',
+  'materials.use',
+  'materials.manage_po',
+  'suggestions.view',
+  'suggestions.resolve',
+  'subcontractors.view',
+  'subcontractors.create',
+  'subcontractors.edit',
+  'subcontractors.manage_compliance',
+  'submittals.view',
+  'submittals.create',
+  'submittals.review',
+  'submittals.approve',
+  'variations.view',
+  'variations.create',
+  'variations.approve',
+  'documents.view',
+  'documents.create',
+  'documents.send_for_signature',
+  'documents.void',
+  'manage_documents',
+  'certificates.view',
+  'certificates.generate',
+  'signoffs.view',
+  'snags.view',
+  'snags.create',
+  'snags.assign',
+  'snags.fix',
+  'manage_snags',
+  'people.view',
+  'roles.view',
+  'roles.create',
+  'roles.edit',
+  'manage_roles',
+  'user_role_assignments.manage',
+  'branding.view',
+  'branding.manage',
+  'settings.view',
+  'settings.manage_defaults',
+  'audit.view',
+  'search.use',
+] as const;
+
+export const permissionKeySchema = z.enum(permissionKeys);
+export const permissionCatalogSchema = z.array(permissionKeySchema);
+
+export type PermissionKey = z.infer<typeof permissionKeySchema>;
+
+const permissionKeySet = new Set<string>(permissionKeys);
+
+export function isPermissionKey(value: string): value is PermissionKey {
+  return permissionKeySet.has(value);
+}

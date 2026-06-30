@@ -12,6 +12,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts --dir src"
+  },
+  "dependencies": {
+    "@materiabill/contracts": "workspace:*"
   }
 }

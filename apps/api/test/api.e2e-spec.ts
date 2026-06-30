@@ -40,6 +40,16 @@ describe('api bootstrap shell', () => {
     expect(response.body.paths['/bootstrap']).toBeDefined();
   });
 
+  it('serves bootstrap metadata with contractor permission catalog keys', async () => {
+    const response = await request(app.getHttpServer()).get('/bootstrap').expect(200);
+
+    expect(response.body.permissions).toContain('workspace.view');
+    expect(response.body.permissions).toContain('manage_roles');
+    expect(response.body.permissions).toContain('payables.pay');
+    expect(response.body.permissions).not.toContain('draws.approve');
+    expect(response.body.permissions).not.toContain('bootstrap.read');
+  });
+
   it('serves the swagger ui shell', async () => {
     const response = await request(app.getHttpServer()).get('/docs').expect(200);
 

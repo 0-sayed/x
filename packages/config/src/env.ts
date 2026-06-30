@@ -3,6 +3,10 @@ import { z } from 'zod';
 const pinoLogLevelSchema = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']);
 const legacyNestLogLevelSchema = z.enum(['log', 'error', 'warn', 'debug', 'verbose']);
 const runtimeLogLevelSchema = z.union([pinoLogLevelSchema, legacyNestLogLevelSchema]);
+const optionalUrlSchema = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.url().optional(),
+);
 
 const runtimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -11,6 +15,8 @@ const runtimeEnvSchema = z.object({
   API_LOG_LEVEL: runtimeLogLevelSchema.optional(),
   WORKER_LOG_LEVEL: runtimeLogLevelSchema.optional(),
   APP_VERSION: z.string().trim().min(1).default('0.0.0-bootstrap'),
+  DATABASE_URL: optionalUrlSchema,
+  RABBITMQ_URL: optionalUrlSchema,
 });
 
 export type RuntimeEnv = z.infer<typeof runtimeEnvSchema>;
@@ -29,6 +35,14 @@ export type WorkerRuntimeConfig = {
   readonly environment: RuntimeEnv['NODE_ENV'];
   readonly logLevel: PinoLogLevel;
   readonly version: string;
+};
+
+export type DatabaseRuntimeConfig = {
+  readonly databaseUrl: string | undefined;
+};
+
+export type QueueRuntimeConfig = {
+  readonly rabbitMqUrl: string | undefined;
 };
 
 function normalizeLogLevel(level: z.infer<typeof runtimeLogLevelSchema>): PinoLogLevel {
@@ -94,5 +108,21 @@ export function getWorkerRuntimeConfig(env: NodeJS.ProcessEnv): WorkerRuntimeCon
       hasDefinedEnvValue(env, 'LOG_LEVEL'),
     ),
     version: parsed.APP_VERSION,
+  };
+}
+
+export function getDatabaseRuntimeConfig(env: NodeJS.ProcessEnv): DatabaseRuntimeConfig {
+  const parsed = parseRuntimeEnv(env);
+
+  return {
+    databaseUrl: parsed.DATABASE_URL,
+  };
+}
+
+export function getQueueRuntimeConfig(env: NodeJS.ProcessEnv): QueueRuntimeConfig {
+  const parsed = parseRuntimeEnv(env);
+
+  return {
+    rabbitMqUrl: parsed.RABBITMQ_URL,
   };
 }
