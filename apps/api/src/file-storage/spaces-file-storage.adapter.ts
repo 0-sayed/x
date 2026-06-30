@@ -1,16 +1,17 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { OnApplicationShutdown } from '@nestjs/common';
 
 import type { FileStorageRuntimeConfig } from '@materiabill/config';
 
 import type { FileStorageAdapter, StoreFileInput, StoredFile } from './file-storage.types.js';
 
-type SpacesClientLike = Pick<S3Client, 'send'>;
+type SpacesClientLike = Pick<S3Client, 'send'> & Partial<Pick<S3Client, 'destroy'>>;
 
 type SpacesFileStorageAdapterConfig = Extract<FileStorageRuntimeConfig, { driver: 'spaces' }> & {
   readonly client?: SpacesClientLike;
 };
 
-export class SpacesFileStorageAdapter implements FileStorageAdapter {
+export class SpacesFileStorageAdapter implements FileStorageAdapter, OnApplicationShutdown {
   readonly #bucket: string;
   readonly #client: SpacesClientLike;
 
@@ -38,7 +39,6 @@ export class SpacesFileStorageAdapter implements FileStorageAdapter {
         ContentType: input.contentType,
         Metadata: {
           checksumSha256: input.checksumSha256,
-          originalFilename: input.originalFilename,
         },
       }),
     );
@@ -47,5 +47,18 @@ export class SpacesFileStorageAdapter implements FileStorageAdapter {
       provider: 'spaces',
       key: input.key,
     };
+  }
+
+  async deleteObject(input: { readonly key: string }): Promise<void> {
+    await this.#client.send(
+      new DeleteObjectCommand({
+        Bucket: this.#bucket,
+        Key: input.key,
+      }),
+    );
+  }
+
+  onApplicationShutdown(): void {
+    this.#client.destroy?.();
   }
 }

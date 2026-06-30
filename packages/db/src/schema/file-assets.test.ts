@@ -28,6 +28,10 @@ describe('file asset schema', () => {
     ]);
   });
 
+  it('stores file sizes in a 64-bit column', () => {
+    expect(getTableColumns(fileAssets).sizeBytes.getSQLType()).toBe('bigint');
+  });
+
   it('adds lookup indexes used by workspace-scoped uploads', () => {
     expect(
       getTableConfig(fileAssets)

@@ -37,7 +37,7 @@ describe('SpacesFileStorageAdapter', () => {
         key: 'workspaces/82bf0afe-b730-4046-ac0b-30f74ce1db7a/uploads/01890f8e-5f47-7cc3-98c4-dc0c0c07398f/progress.jpg',
         body: Buffer.from('image-bytes'),
         contentType: 'image/jpeg',
-        originalFilename: 'progress.jpg',
+        originalFilename: 'تقرير طويل.jpg',
         checksumSha256: 'a'.repeat(64),
       }),
     ).resolves.toEqual({
@@ -52,10 +52,30 @@ describe('SpacesFileStorageAdapter', () => {
       Key: 'workspaces/82bf0afe-b730-4046-ac0b-30f74ce1db7a/uploads/01890f8e-5f47-7cc3-98c4-dc0c0c07398f/progress.jpg',
       Body: Buffer.from('image-bytes'),
       ContentType: 'image/jpeg',
-      Metadata: {
-        checksumSha256: 'a'.repeat(64),
-        originalFilename: 'progress.jpg',
-      },
     });
+    expect(command.input.Metadata).toEqual({
+      checksumSha256: 'a'.repeat(64),
+    });
+  });
+
+  it('destroys the Spaces client during application shutdown', () => {
+    const send = vi.fn().mockResolvedValue({});
+    const destroy = vi.fn();
+    const adapter = new SpacesFileStorageAdapter({
+      driver: 'spaces',
+      bucket: 'materiabill-local',
+      endpoint: 'https://nyc3.digitaloceanspaces.com',
+      forcePathStyle: false,
+      region: 'nyc3',
+      accessKeyId: 'access-key',
+      secretAccessKey: 'secret-key',
+      maxBytes: 10_485_760,
+      allowedMimeTypes: ['image/jpeg'],
+      client: { destroy, send },
+    });
+
+    adapter.onApplicationShutdown();
+
+    expect(destroy).toHaveBeenCalledOnce();
   });
 });

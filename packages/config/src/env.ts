@@ -34,7 +34,7 @@ const mimeListSchema = z
   .transform((value) =>
     value
       .split(',')
-      .map((item) => item.trim())
+      .map((item) => item.trim().toLowerCase())
       .filter((item) => item.length > 0),
   )
   .pipe(z.array(z.string().regex(/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i)).min(1));

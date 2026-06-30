@@ -207,7 +207,7 @@ describe('file storage runtime config', () => {
         FILE_STORAGE_DRIVER: 'local',
         FILE_STORAGE_LOCAL_ROOT: '/tmp/materiabill-files',
         FILE_STORAGE_MAX_BYTES: '1024',
-        FILE_STORAGE_ALLOWED_MIME_TYPES: 'image/jpeg, application/pdf',
+        FILE_STORAGE_ALLOWED_MIME_TYPES: 'IMAGE/JPEG, application/pdf',
       }),
     ).toEqual({
       driver: 'local',

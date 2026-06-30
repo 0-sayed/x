@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  Logger,
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { WorkspaceContext } from '@materiabill/contracts';
+import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import { FileStorageService } from './file-storage.service.js';
@@ -28,12 +30,20 @@ const workspaceContext: WorkspaceContext = {
   },
 };
 
+const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x43, 0x00]);
+const pdfBytes = Buffer.from('%PDF-1.7\n');
+
+function sha256(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
 function createService() {
   const adapter = {
     putObject: vi.fn().mockResolvedValue({
       provider: 'local',
       key: 'stored-key',
     }),
+    deleteObject: vi.fn().mockResolvedValue(undefined),
   };
   const repository = {
     createAsset: vi.fn((input) =>
@@ -70,8 +80,8 @@ describe('FileStorageService', () => {
         file: {
           originalname: 'Progress Photo.JPG',
           mimetype: 'image/jpeg',
-          size: 11,
-          buffer: Buffer.from('image-bytes'),
+          size: 999,
+          buffer: jpegBytes,
         },
       }),
     ).resolves.toEqual({
@@ -80,17 +90,17 @@ describe('FileStorageService', () => {
       purpose: 'site_photo',
       originalFilename: 'Progress Photo.JPG',
       contentType: 'image/jpeg',
-      sizeBytes: 11,
-      checksumSha256: '2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c',
+      sizeBytes: jpegBytes.length,
+      checksumSha256: sha256(jpegBytes),
       createdAt: '2026-06-30T12:00:00.000Z',
     });
 
     expect(adapter.putObject).toHaveBeenCalledWith({
       key: 'workspaces/82bf0afe-b730-4046-ac0b-30f74ce1db7a/uploads/01890f8e-5f47-7cc3-98c4-dc0c0c07398f/progress-photo.jpg',
-      body: Buffer.from('image-bytes'),
+      body: jpegBytes,
       contentType: 'image/jpeg',
       originalFilename: 'Progress Photo.JPG',
-      checksumSha256: '2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c',
+      checksumSha256: sha256(jpegBytes),
     });
     expect(repository.createAsset).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,13 +124,39 @@ describe('FileStorageService', () => {
         originalname: '..',
         mimetype: 'image/jpeg',
         size: 11,
-        buffer: Buffer.from('image-bytes'),
+        buffer: jpegBytes,
       },
     });
 
     expect(adapter.putObject).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'workspaces/82bf0afe-b730-4046-ac0b-30f74ce1db7a/uploads/01890f8e-5f47-7cc3-98c4-dc0c0c07398f/upload',
+      }),
+    );
+  });
+
+  it('trims blank upload filenames before applying the fallback', async () => {
+    const { adapter, service } = createService();
+
+    await expect(
+      service.upload({
+        workspaceContext,
+        purpose: 'generic',
+        file: {
+          originalname: '   ',
+          mimetype: 'image/jpeg',
+          size: jpegBytes.length,
+          buffer: jpegBytes,
+        },
+      }),
+    ).resolves.toMatchObject({
+      originalFilename: 'upload',
+    });
+
+    expect(adapter.putObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'workspaces/82bf0afe-b730-4046-ac0b-30f74ce1db7a/uploads/01890f8e-5f47-7cc3-98c4-dc0c0c07398f/upload',
+        originalFilename: 'upload',
       }),
     );
   });
@@ -136,7 +172,7 @@ describe('FileStorageService', () => {
           originalname: 'avatar.jpg',
           mimetype: 'image/jpeg',
           size: 5,
-          buffer: Buffer.from('image'),
+          buffer: jpegBytes,
         },
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -169,15 +205,33 @@ describe('FileStorageService', () => {
         file: {
           originalname: 'large.pdf',
           mimetype: 'application/pdf',
-          size: 1025,
+          size: 1,
           buffer: Buffer.alloc(1025),
         },
       }),
     ).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 
+  it('rejects files whose contents do not match the declared MIME type', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.upload({
+        workspaceContext,
+        purpose: 'generic',
+        file: {
+          originalname: 'spoofed.jpg',
+          mimetype: 'image/jpeg',
+          size: pdfBytes.length,
+          buffer: pdfBytes,
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('maps adapter failures to a storage unavailable response', async () => {
     const { adapter, service } = createService();
+    const loggerSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     adapter.putObject.mockRejectedValue(new Error('spaces unavailable'));
 
     await expect(
@@ -187,10 +241,36 @@ describe('FileStorageService', () => {
         file: {
           originalname: 'doc.pdf',
           mimetype: 'application/pdf',
-          size: 3,
-          buffer: Buffer.from('pdf'),
+          size: pdfBytes.length,
+          buffer: pdfBytes,
         },
       }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      'Failed to upload file asset 01890f8e-5f47-7cc3-98c4-dc0c0c07398f to storage adapter',
+      expect.any(Error),
+    );
+    loggerSpy.mockRestore();
+  });
+
+  it('deletes the stored object when metadata persistence fails', async () => {
+    const { adapter, repository, service } = createService();
+    repository.createAsset.mockRejectedValue(new Error('database unavailable'));
+
+    await expect(
+      service.upload({
+        workspaceContext,
+        purpose: 'generic',
+        file: {
+          originalname: 'doc.pdf',
+          mimetype: 'application/pdf',
+          size: pdfBytes.length,
+          buffer: pdfBytes,
+        },
+      }),
+    ).rejects.toThrow('database unavailable');
+
+    expect(adapter.deleteObject).toHaveBeenCalledWith({ key: 'stored-key' });
   });
 });

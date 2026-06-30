@@ -1,6 +1,6 @@
 import {
+  bigint,
   index,
-  integer,
   pgTable,
   text,
   timestamp,
@@ -26,7 +26,7 @@ export const fileAssets = pgTable(
     storageKey: text('storage_key').notNull(),
     originalFilename: text('original_filename').notNull(),
     contentType: text('content_type').notNull(),
-    sizeBytes: integer('size_bytes').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
     checksumSha256: varchar('checksum_sha256', { length: 64 }).notNull(),
     status: varchar('status', { length: 16 }).notNull().default('uploaded'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

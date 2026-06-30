@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, isAbsolute, normalize, resolve, sep } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, isAbsolute, posix, resolve, sep, win32 } from 'node:path';
 
 import type { FileStorageRuntimeConfig } from '@materiabill/config';
 
@@ -15,15 +15,7 @@ export class LocalFileStorageAdapter implements FileStorageAdapter {
   }
 
   async putObject(input: StoreFileInput): Promise<StoredFile> {
-    if (isUnsafeLocalStorageKey(input.key)) {
-      throw new Error('Invalid local storage key');
-    }
-
-    const targetPath = resolve(this.#root, input.key);
-
-    if (targetPath !== this.#root && !targetPath.startsWith(`${this.#root}${sep}`)) {
-      throw new Error('Invalid local storage key');
-    }
+    const targetPath = resolveLocalStoragePath(this.#root, input.key);
 
     await mkdir(dirname(targetPath), { recursive: true });
     await writeFile(targetPath, input.body);
@@ -33,12 +25,33 @@ export class LocalFileStorageAdapter implements FileStorageAdapter {
       key: input.key,
     };
   }
+
+  async deleteObject(input: { readonly key: string }): Promise<void> {
+    await rm(resolveLocalStoragePath(this.#root, input.key), { force: true });
+  }
 }
 
 function isUnsafeLocalStorageKey(key: string): boolean {
   return (
+    key.length === 0 ||
+    key.includes('\\') ||
     isAbsolute(key) ||
-    normalize(key) !== key ||
-    key.split(/[\\/]+/).some((segment) => segment === '.' || segment === '..')
+    win32.isAbsolute(key) ||
+    posix.normalize(key) !== key ||
+    key.split('/').some((segment) => segment === '.' || segment === '..')
   );
+}
+
+function resolveLocalStoragePath(root: string, key: string): string {
+  if (isUnsafeLocalStorageKey(key)) {
+    throw new Error('Invalid local storage key');
+  }
+
+  const targetPath = resolve(root, key);
+
+  if (targetPath !== root && !targetPath.startsWith(`${root}${sep}`)) {
+    throw new Error('Invalid local storage key');
+  }
+
+  return targetPath;
 }

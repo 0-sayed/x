@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -35,6 +36,7 @@ export type UploadFileInput = {
 
 @Injectable()
 export class FileStorageService {
+  readonly #logger = new Logger(FileStorageService.name);
   readonly #idFactory: () => string;
 
   constructor(
@@ -55,17 +57,23 @@ export class FileStorageService {
       throw new BadRequestException('Invalid file upload');
     }
 
-    if (input.file.size > this.options.maxBytes) {
+    const fileSize = input.file.buffer.length;
+    if (fileSize > this.options.maxBytes) {
       throw new PayloadTooLargeException('File exceeds configured size limit');
     }
 
-    if (!this.options.allowedMimeTypes.includes(input.file.mimetype)) {
+    const contentType = input.file.mimetype.toLowerCase();
+    if (!this.options.allowedMimeTypes.includes(contentType)) {
       throw new BadRequestException('File type is not allowed');
+    }
+
+    if (detectMimeType(input.file.buffer) !== contentType) {
+      throw new BadRequestException('File contents do not match declared type');
     }
 
     const id = this.#idFactory();
     const checksumSha256 = createHash('sha256').update(input.file.buffer).digest('hex');
-    const originalFilename = input.file.originalname || 'upload';
+    const originalFilename = input.file.originalname.trim() || 'upload';
     const key = buildStorageKey(input.workspaceContext.workspace.id, id, originalFilename);
 
     let stored: Awaited<ReturnType<FileStorageAdapter['putObject']>>;
@@ -73,27 +81,72 @@ export class FileStorageService {
       stored = await this.adapter.putObject({
         key,
         body: input.file.buffer,
-        contentType: input.file.mimetype,
+        contentType,
         originalFilename,
         checksumSha256,
       });
-    } catch {
+    } catch (error) {
+      this.#logger.error(`Failed to upload file asset ${id} to storage adapter`, error);
       throw new ServiceUnavailableException('File storage unavailable');
     }
 
-    return this.repository.createAsset({
-      id,
-      workspaceId: input.workspaceContext.workspace.id,
-      uploadedByUserId: input.workspaceContext.membership.userId,
-      purpose: purposeResult.data,
-      storageProvider: stored.provider,
-      storageKey: stored.key,
-      originalFilename,
-      contentType: input.file.mimetype,
-      sizeBytes: input.file.size,
-      checksumSha256,
-    });
+    try {
+      return await this.repository.createAsset({
+        id,
+        workspaceId: input.workspaceContext.workspace.id,
+        uploadedByUserId: input.workspaceContext.membership.userId,
+        purpose: purposeResult.data,
+        storageProvider: stored.provider,
+        storageKey: stored.key,
+        originalFilename,
+        contentType,
+        sizeBytes: fileSize,
+        checksumSha256,
+      });
+    } catch (error) {
+      try {
+        await this.adapter.deleteObject({ key: stored.key });
+      } catch (cleanupError) {
+        this.#logger.error(
+          `Failed to delete orphaned file asset ${id} from storage adapter`,
+          cleanupError,
+        );
+      }
+
+      throw error;
+    }
   }
+}
+
+function detectMimeType(buffer: Buffer): string | undefined {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'image/jpeg';
+  }
+
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+
+  if (buffer.subarray(0, 5).toString('ascii') === '%PDF-') {
+    return 'application/pdf';
+  }
+
+  const prefix = buffer.subarray(0, 512).toString('utf8').trimStart().toLowerCase();
+  if (prefix.startsWith('<svg') || (prefix.startsWith('<?xml') && prefix.includes('<svg'))) {
+    return 'image/svg+xml';
+  }
+
+  return undefined;
 }
 
 function buildStorageKey(workspaceId: string, assetId: string, originalFilename: string): string {

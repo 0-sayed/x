@@ -12,6 +12,10 @@ export type StoreFileInput = {
   readonly checksumSha256: string;
 };
 
+type DeleteFileInput = {
+  readonly key: string;
+};
+
 export type StoredFile = {
   readonly provider: StorageProvider;
   readonly key: string;
@@ -19,6 +23,7 @@ export type StoredFile = {
 
 export type FileStorageAdapter = {
   putObject(input: StoreFileInput): Promise<StoredFile>;
+  deleteObject(input: DeleteFileInput): Promise<void>;
 };
 
 export type CreateFileAssetInput = {

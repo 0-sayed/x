@@ -7,7 +7,7 @@ CREATE TABLE "file_assets" (
 	"storage_key" text NOT NULL,
 	"original_filename" text NOT NULL,
 	"content_type" text NOT NULL,
-	"size_bytes" integer NOT NULL,
+	"size_bytes" bigint NOT NULL,
 	"checksum_sha256" varchar(64) NOT NULL,
 	"status" varchar(16) DEFAULT 'uploaded' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,

@@ -101,6 +101,25 @@ describe('LocalFileStorageAdapter', () => {
     ).rejects.toThrow('Invalid local storage key');
   });
 
+  it('rejects backslash-delimited keys instead of treating them as storage paths', async () => {
+    const adapter = new LocalFileStorageAdapter({
+      driver: 'local',
+      localRoot: root,
+      maxBytes: 10_485_760,
+      allowedMimeTypes: ['text/plain'],
+    });
+
+    await expect(
+      adapter.putObject({
+        key: 'workspaces\\82bf0afe-b730-4046-ac0b-30f74ce1db7a\\uploads\\01890f8e-5f47-7cc3-98c4-dc0c0c07398f\\progress.txt',
+        body: Buffer.from('bad'),
+        contentType: 'text/plain',
+        originalFilename: 'progress.txt',
+        checksumSha256: 'e'.repeat(64),
+      }),
+    ).rejects.toThrow('Invalid local storage key');
+  });
+
   it('rejects keys that normalize to a different local path', async () => {
     const adapter = new LocalFileStorageAdapter({
       driver: 'local',
