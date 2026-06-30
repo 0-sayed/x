@@ -56,5 +56,11 @@ jobs:
                 return;
               }
 
+              const message = error instanceof Error ? error.message : String(error);
+              if (error.status === 403 && message.includes('Resource not accessible by integration')) {
+                core.notice(`Skipping auto-assign for ${login}: GitHub token cannot assign users in this repository.`);
+                return;
+              }
+
               throw error;
             }

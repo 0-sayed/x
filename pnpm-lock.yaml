@@ -189,7 +189,11 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
-  packages/permissions: {}
+  packages/permissions:
+    dependencies:
+      '@materiabill/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
 packages:
 

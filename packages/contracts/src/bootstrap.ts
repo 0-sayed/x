@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
+import { permissionCatalogSchema, permissionKeySchema } from './permissions.js';
+
 export const databaseHealthSchema = z.object({
   status: z.enum(['not-configured']),
 });
 
-export const bootstrapPermissionSchema = z.enum(['bootstrap.read']);
-
-export const bootstrapPermissionCatalogSchema = z.array(bootstrapPermissionSchema);
+export const bootstrapPermissionSchema = permissionKeySchema;
+export const bootstrapPermissionCatalogSchema = permissionCatalogSchema;
 
 export const bootstrapInfoSchema = z.object({
   name: z.string().trim().min(1),

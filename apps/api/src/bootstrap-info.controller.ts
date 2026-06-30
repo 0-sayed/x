@@ -3,7 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { BootstrapInfo } from '@materiabill/contracts';
 import { getApiRuntimeConfig } from '@materiabill/config';
 import { getDatabaseHealth } from '@materiabill/db';
-import { bootstrapPermissions } from '@materiabill/permissions';
+import { contractorPermissionKeys } from '@materiabill/permissions';
 
 @ApiTags('bootstrap')
 @Controller()
@@ -21,7 +21,7 @@ export class BootstrapInfoController {
         openApiPath: { type: 'string', example: '/docs-json' },
         permissions: {
           type: 'array',
-          items: { type: 'string', example: 'bootstrap.read' },
+          items: { type: 'string', example: 'workspace.view' },
         },
         database: {
           type: 'object',
@@ -41,7 +41,7 @@ export class BootstrapInfoController {
       version: config.version,
       docsPath: '/docs',
       openApiPath: '/docs-json',
-      permissions: [...bootstrapPermissions],
+      permissions: [...contractorPermissionKeys],
       database: getDatabaseHealth(),
     };
   }
