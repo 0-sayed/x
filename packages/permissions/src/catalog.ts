@@ -119,7 +119,9 @@ export const permissionCatalog = [
   { key: 'search.use', area: 'search', labelEn: 'Use search' },
 ] as const satisfies readonly PermissionCatalogEntry[];
 
-export const contractorPermissionKeys = permissionCatalog.map((entry) => entry.key);
+export const contractorPermissionKeys: readonly PermissionKey[] = permissionCatalog.map(
+  (entry) => entry.key,
+);
 
 export type DefaultRoleTemplateKey = 'workspaceAdmin' | 'projectManager' | 'finance' | 'viewer';
 
@@ -134,7 +136,7 @@ function pickPermissions(keys: readonly PermissionKey[]): readonly PermissionKey
   return keys;
 }
 
-const viewPermissions = permissionKeys.filter(
+const viewPermissions: readonly PermissionKey[] = permissionKeys.filter(
   (key) => key.endsWith('.view') || key === 'search.use',
 );
 
