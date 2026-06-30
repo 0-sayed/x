@@ -11,6 +11,13 @@ export class InframodernOAuthTokenRequestError extends Error {
   }
 }
 
+export class InframodernOAuthUserRequestError extends Error {
+  constructor(readonly status: number) {
+    super(`Inframodern user request failed with status ${String(status)}`);
+    this.name = 'InframodernOAuthUserRequestError';
+  }
+}
+
 export class InframodernOAuthClient {
   readonly #config: InframodernOAuthClientConfig;
   readonly #fetch: typeof fetch;
@@ -68,7 +75,7 @@ export class InframodernOAuthClient {
     );
 
     if (!response.ok) {
-      throw new Error(`Inframodern user request failed with status ${String(response.status)}`);
+      throw new InframodernOAuthUserRequestError(response.status);
     }
 
     return parseInframodernOAuthUser(await response.json());

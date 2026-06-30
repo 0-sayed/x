@@ -1,11 +1,15 @@
 import {
   BadRequestException,
+  ForbiddenException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
-import { InframodernOAuthTokenRequestError } from './inframodern-oauth.client.js';
+import {
+  InframodernOAuthTokenRequestError,
+  InframodernOAuthUserRequestError,
+} from './inframodern-oauth.client.js';
 import { SessionService } from './session.service.js';
 
 function makeService() {
@@ -133,6 +137,71 @@ describe('SessionService', () => {
     repository.findCurrentUserBySessionId.mockResolvedValue(null);
 
     await expect(service.getCurrentUser('missing-session')).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('validates current workspace access against Inframodern', async () => {
+    const { oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+
+    await expect(service.assertWorkspaceAccess('session-id')).resolves.toEqual({
+      appInstalled: true,
+      subscriptionActive: true,
+    });
+
+    expect(oauthClient.fetchUser).toHaveBeenCalledWith('access-token');
+  });
+
+  it('refreshes an expired access token before validating workspace access', async () => {
+    const { crypto, oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+    oauthClient.fetchUser
+      .mockRejectedValueOnce(new InframodernOAuthUserRequestError(401))
+      .mockResolvedValueOnce({
+        id: user.id,
+        email: user.email,
+        workspaces: [],
+        adminWorkspaces: [],
+      });
+
+    await expect(service.assertWorkspaceAccess('session-id')).resolves.toEqual({
+      appInstalled: true,
+      subscriptionActive: true,
+    });
+
+    expect(oauthClient.refresh).toHaveBeenCalledWith('refresh-token');
+    expect(crypto.encrypt).toHaveBeenCalledWith({
+      accessToken: 'rotated-access-token',
+      refreshToken: 'rotated-refresh-token',
+      tokenType: 'Bearer',
+      scope: 'openid profile email',
+    });
+    expect(repository.updateTokens).toHaveBeenCalledWith(
+      'session-id',
+      expect.objectContaining({
+        encryptedTokens: 'encrypted-token-payload',
+        accessTokenExpiresAt: expect.any(Date),
+        refreshTokenExpiresAt: expect.any(Date),
+      }),
+    );
+    expect(oauthClient.fetchUser).toHaveBeenLastCalledWith('rotated-access-token');
+  });
+
+  it('denies workspace access when Inframodern rejects the app or subscription gate', async () => {
+    const { oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+    oauthClient.fetchUser.mockRejectedValue(new InframodernOAuthUserRequestError(403));
+
+    await expect(service.assertWorkspaceAccess('session-id')).rejects.toThrow(ForbiddenException);
+    expect(repository.updateTokens).not.toHaveBeenCalled();
   });
 
   it('refreshes tokens server-side and returns the current user', async () => {

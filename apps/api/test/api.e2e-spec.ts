@@ -1,4 +1,10 @@
-import { BadRequestException, type INestApplication, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  type CanActivate,
+  type ExecutionContext,
+  type INestApplication,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import type { CurrentSessionUser } from '@materiabill/contracts';
@@ -11,6 +17,9 @@ import { configureApiDocumentation } from '../src/main.js';
 import { SessionController } from '../src/session/session.controller.js';
 import { SessionGuard } from '../src/session/session.guard.js';
 import { SessionService } from '../src/session/session.service.js';
+import { WorkspaceContextController } from '../src/workspace-context/workspace-context.controller.js';
+import { WorkspaceContextGuard } from '../src/workspace-context/workspace-context.guard.js';
+import { WorkspaceContextService } from '../src/workspace-context/workspace-context.service.js';
 
 const sessionUser: CurrentSessionUser = {
   id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -282,5 +291,140 @@ describe('session auth endpoints', () => {
 
     await agent.post('/auth/logout').expect(204);
     expect(sessionService.logout).toHaveBeenCalledWith('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2');
+  });
+});
+
+describe('workspace context endpoints', () => {
+  let workspaceApp: INestApplication;
+  const sessionId = 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2';
+  const workspaceContext = {
+    workspace: {
+      id: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      name: 'Demo Workspace',
+      slug: 'demo-workspace',
+      paymentCurrency: 'SAR',
+    },
+    membership: {
+      userId: sessionUser.id,
+      roleKey: 'workspace_admin',
+      permissions: ['workspace.view'],
+      isAdmin: true,
+    },
+    access: {
+      appInstalled: true,
+      subscriptionActive: true,
+      membershipActive: true,
+    },
+  };
+  const sessionGuardMock: CanActivate = {
+    canActivate: (context: ExecutionContext): boolean => {
+      const request = context.switchToHttp().getRequest<{
+        sessionId?: string;
+        user?: CurrentSessionUser;
+      }>();
+      request.sessionId = sessionId;
+      request.user = sessionUser;
+
+      return true;
+    },
+  };
+  const workspaceGuardMock: CanActivate = {
+    canActivate: (context: ExecutionContext): boolean => {
+      const request = context.switchToHttp().getRequest<{
+        sessionId?: string;
+        user?: CurrentSessionUser;
+        workspaceContext?: typeof workspaceContext;
+      }>();
+      request.sessionId = sessionId;
+      request.user = sessionUser;
+      request.workspaceContext = workspaceContext;
+
+      return true;
+    },
+  };
+  const workspaceContextService = {
+    buildSwitcherResponse: vi.fn(
+      (user: CurrentSessionUser, activeWorkspaceId = user.activeWorkspaceId) => ({
+        activeWorkspaceId,
+        workspaces: user.workspaces,
+      }),
+    ),
+    resolveForRequest: vi.fn().mockResolvedValue(workspaceContext),
+    switchActiveWorkspace: vi.fn(
+      ({
+        workspaceId,
+        user,
+      }: {
+        readonly workspaceId: string;
+        readonly user: CurrentSessionUser;
+      }) =>
+        Promise.resolve({
+          activeWorkspaceId: workspaceId,
+          workspaces: user.workspaces,
+        }),
+    ),
+  };
+
+  beforeAll(async () => {
+    setSessionTestEnv();
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [WorkspaceContextController],
+      providers: [{ provide: WorkspaceContextService, useValue: workspaceContextService }],
+    })
+      .overrideGuard(SessionGuard)
+      .useValue(sessionGuardMock)
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(workspaceGuardMock)
+      .compile();
+
+    workspaceApp = moduleRef.createNestApplication();
+    await workspaceApp.init();
+  });
+
+  afterAll(async () => {
+    await workspaceApp.close();
+  });
+
+  it('returns the workspace switcher list for the signed session', async () => {
+    const response = await request(workspaceApp.getHttpServer()).get('/workspaces').expect(200);
+
+    expect(response.body).toEqual({
+      activeWorkspaceId: sessionUser.activeWorkspaceId,
+      workspaces: sessionUser.workspaces,
+    });
+  });
+
+  it('returns the resolved workspace context', async () => {
+    const response = await request(workspaceApp.getHttpServer())
+      .get('/workspace-context')
+      .set('x-workspace-id', '82bf0afe-b730-4046-ac0b-30f74ce1db7a')
+      .expect(200);
+
+    expect(response.body).toEqual(workspaceContext);
+  });
+
+  it('switches the active workspace after request validation', async () => {
+    const response = await request(workspaceApp.getHttpServer())
+      .post('/workspaces/active')
+      .send({ workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a' })
+      .expect(201);
+
+    expect(response.body).toEqual({
+      activeWorkspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      workspaces: sessionUser.workspaces,
+    });
+    expect(workspaceContextService.switchActiveWorkspace).toHaveBeenCalledWith({
+      sessionId,
+      user: sessionUser,
+      workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+    });
+  });
+
+  it('rejects invalid active workspace switch bodies', async () => {
+    await request(workspaceApp.getHttpServer())
+      .post('/workspaces/active')
+      .send({ workspaceId: 'not-a-uuid' })
+      .expect(400);
   });
 });
