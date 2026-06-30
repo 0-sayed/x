@@ -52,12 +52,15 @@ export function mapProjectionBatch(
   }
 
   return {
-    ...batch,
+    users: dedupeByLastOccurrence(batch.users, (user) => user.id),
     workspaces: dedupeByLastOccurrence(batch.workspaces, (workspace) => workspace.id),
     memberships: dedupeByLastOccurrence(
       batch.memberships,
       (membership) => `${membership.workspaceId}::${membership.userId}`,
     ),
+    brands: dedupeByLastOccurrence(batch.brands, (brand) => brand.id),
+    locations: dedupeByLastOccurrence(batch.locations, (location) => location.id),
+    exchangeRates: dedupeByLastOccurrence(batch.exchangeRates, (rate) => rate.id),
   };
 }
 
@@ -221,7 +224,12 @@ function requireString(item: RawItem, key: string, resource: SyncResource): stri
 }
 
 function optionalDate(value: unknown): Date | null {
-  return typeof value === 'string' && value.trim() !== '' ? new Date(value) : null;
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function dedupeByLastOccurrence<T>(rows: readonly T[], getKey: (row: T) => string): T[] {

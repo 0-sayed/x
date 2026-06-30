@@ -68,10 +68,67 @@ describe('projection mappers', () => {
     });
   });
 
+  it('ignores malformed optional date values', () => {
+    const batch = mapProjectionBatch('brands', [
+      {
+        id: '018f3f91-1b79-71ec-9d83-000000000202',
+        workspaceId: '018f3f91-1b79-71ec-9d83-000000000101',
+        name: 'Brand With Bad Date',
+        deletedAt: 'not-a-date',
+      },
+    ]);
+
+    expect(batch.brands[0]?.deletedAt).toBeNull();
+  });
+
   it('rejects rows without Inframodern ids', () => {
     expect(() => mapProjectionBatch('locations', [{ name: 'No Id' }])).toThrow(
       'locations item is missing id',
     );
+  });
+
+  it('deduplicates direct resource rows with last occurrence wins', () => {
+    const duplicateId = '018f3f91-1b79-71ec-9d83-000000000301';
+    const effectiveAt = '2026-06-30T10:00:00.000Z';
+
+    expect(
+      mapProjectionBatch('users', [
+        { id: duplicateId, email: 'first@example.com' },
+        { id: duplicateId, email: 'last@example.com' },
+      ]).users,
+    ).toEqual([expect.objectContaining({ id: duplicateId, email: 'last@example.com' })]);
+    expect(
+      mapProjectionBatch('brands', [
+        { id: duplicateId, name: 'First Brand' },
+        { id: duplicateId, name: 'Last Brand' },
+      ]).brands,
+    ).toEqual([expect.objectContaining({ id: duplicateId, name: 'Last Brand' })]);
+    expect(
+      mapProjectionBatch('locations', [
+        { id: duplicateId, name: 'First Location' },
+        { id: duplicateId, name: 'Last Location' },
+      ]).locations,
+    ).toEqual([expect.objectContaining({ id: duplicateId, name: 'Last Location' })]);
+    expect(
+      mapProjectionBatch('exchange-rates', [
+        {
+          id: duplicateId,
+          baseCurrency: 'USD',
+          quoteCurrency: 'SAR',
+          rate: '3.75',
+          effectiveAt,
+          source: 'first',
+        },
+        {
+          id: duplicateId,
+          baseCurrency: 'USD',
+          quoteCurrency: 'AED',
+          rate: '3.67',
+          effectiveAt,
+          source: 'last',
+        },
+      ]).exchangeRates,
+    ).toEqual([expect.objectContaining({ id: duplicateId, quoteCurrency: 'AED', source: 'last' })]);
   });
 
   it('deduplicates shared workspaces and duplicate memberships with last occurrence wins', () => {
