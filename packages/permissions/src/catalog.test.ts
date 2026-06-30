@@ -8,13 +8,16 @@ import {
   permissionCatalog,
 } from './catalog.js';
 
+type HasPush<T> = 'push' extends keyof T ? true : false;
+
 describe('permission catalog', () => {
   it('matches the canonical permission key set exactly', () => {
     expect(contractorPermissionKeys).toEqual(permissionKeys);
     expect(permissionCatalog.map((entry) => entry.key)).toEqual(permissionKeys);
 
-    // @ts-expect-error exported permission keys are readonly API.
-    contractorPermissionKeys.push('workspace.view');
+    const contractorPermissionKeysHavePush: HasPush<typeof contractorPermissionKeys> = false;
+
+    expect(contractorPermissionKeysHavePush).toBe(false);
   });
 
   it('keeps client-only draw approval out of contractor roles', () => {
@@ -44,7 +47,9 @@ describe('permission catalog', () => {
     expect(defaultRoleTemplates.viewer.permissions).not.toContain('projects.create');
     expect(defaultRoleTemplates.viewer.permissions).not.toContain('manage_roles');
 
-    // @ts-expect-error exported template permissions are readonly API.
-    defaultRoleTemplates.viewer.permissions.push('projects.view');
+    const viewerPermissionsHavePush: HasPush<typeof defaultRoleTemplates.viewer.permissions> =
+      false;
+
+    expect(viewerPermissionsHavePush).toBe(false);
   });
 });
