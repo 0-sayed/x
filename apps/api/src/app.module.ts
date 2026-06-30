@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
 import { SyncAdminModule } from './sync-admin/sync-admin.module.js';
 import { SessionModule } from './session/session.module.js';
+import { WorkspaceContextModule } from './workspace-context/workspace-context.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SessionModule } from './session/session.module.js';
     DatabaseModule,
     SyncAdminModule,
     SessionModule,
+    WorkspaceContextModule,
   ],
   controllers: [HealthController, BootstrapInfoController],
 })

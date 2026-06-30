@@ -6,6 +6,7 @@ import type { AuthenticatedRequestUser } from './session.types.js';
 
 type SignedCookieRequest = {
   readonly signedCookies?: Record<string, string | undefined>;
+  sessionId?: string;
   user?: AuthenticatedRequestUser;
 };
 
@@ -17,9 +18,9 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<SignedCookieRequest>();
-    request.user = await this.sessionService.getCurrentUser(
-      request.signedCookies?.[this.#cookieName],
-    );
+    const sessionId = request.signedCookies?.[this.#cookieName];
+    request.sessionId = sessionId;
+    request.user = await this.sessionService.getCurrentUser(sessionId);
 
     return true;
   }

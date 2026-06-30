@@ -33,3 +33,4 @@ export * from './sync.js';
 export * from './sync-topology.js';
 export { currentSessionUserSchema, sessionWorkspaceSchema } from './session.js';
 export type { CurrentSessionUser, SessionWorkspace } from './session.js';
+export * from './workspace-context.js';
