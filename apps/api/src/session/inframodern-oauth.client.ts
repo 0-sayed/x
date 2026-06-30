@@ -4,6 +4,13 @@ import type {
   OAuthTokenResponse,
 } from './session.types.js';
 
+export class InframodernOAuthTokenRequestError extends Error {
+  constructor(readonly status: number) {
+    super(`Inframodern token request failed with status ${String(status)}`);
+    this.name = 'InframodernOAuthTokenRequestError';
+  }
+}
+
 export class InframodernOAuthClient {
   readonly #config: InframodernOAuthClientConfig;
   readonly #fetch: typeof fetch;
@@ -80,7 +87,7 @@ export class InframodernOAuthClient {
     );
 
     if (!response.ok) {
-      throw new Error(`Inframodern token request failed with status ${String(response.status)}`);
+      throw new InframodernOAuthTokenRequestError(response.status);
     }
 
     return parseOAuthTokenResponse(await response.json());
@@ -88,11 +95,12 @@ export class InframodernOAuthClient {
 }
 
 function parseOAuthTokenResponse(value: unknown): OAuthTokenResponse {
-  if (!isRecord(value) || !isString(value.access_token) || !isString(value.refresh_token)) {
+  if (!isRecord(value) || !isString(value.access_token)) {
     throw new Error('Invalid Inframodern token response');
   }
 
   if (
+    !isOptionalString(value.refresh_token) ||
     !isOptionalString(value.token_type) ||
     !isOptionalString(value.scope) ||
     !isOptionalNumber(value.expires_in) ||

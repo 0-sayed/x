@@ -78,6 +78,7 @@ function createDbMock(selectRows: readonly unknown[] = []) {
       };
     }),
     select: vi.fn(() => selectBuilder),
+    transaction: vi.fn((callback: (tx: unknown) => unknown) => callback(db)),
   };
 
   return {
@@ -150,6 +151,7 @@ describe('SessionRepository', () => {
     });
 
     expect(activeWorkspaceId).toBe('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
+    expect(db.transaction).toHaveBeenCalledTimes(1);
     expect(insertCalls).toHaveLength(4);
 
     expect(insertCalls[0]?.valuesArgs[0]).toEqual(

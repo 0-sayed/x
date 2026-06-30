@@ -243,7 +243,7 @@ export function getSessionRuntimeConfig(env: NodeJS.ProcessEnv): SessionRuntimeC
     sessionSecret: parsed.SESSION_SECRET,
     encryptionKey: assertBase64Key(parsed.SESSION_ENCRYPTION_KEY),
     cookieName: parsed.SESSION_COOKIE_NAME,
-    cookieSecure: parsed.SESSION_COOKIE_SECURE,
+    cookieSecure: parsed.NODE_ENV === 'production' ? true : parsed.SESSION_COOKIE_SECURE,
     oauthStateCookieName: parsed.OAUTH_STATE_COOKIE_NAME,
     sessionTtlSeconds: parsed.SESSION_TTL_SECONDS,
     oauthStateTtlSeconds: parsed.OAUTH_STATE_TTL_SECONDS,

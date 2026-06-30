@@ -139,6 +139,18 @@ describe('session runtime config', () => {
     });
   });
 
+  it('forces secure session cookies in production even when the flag is omitted', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        NODE_ENV: 'production',
+      }),
+    ).toMatchObject({
+      cookieSecure: true,
+      oauthMode: 'production',
+    });
+  });
+
   it('rejects sandbox mode without sandbox client credentials', () => {
     expect(() =>
       getSessionRuntimeConfig({

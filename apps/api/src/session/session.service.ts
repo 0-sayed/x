@@ -1,7 +1,15 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { CurrentSessionUser } from '@materiabill/contracts';
 
-import { InframodernOAuthClient } from './inframodern-oauth.client.js';
+import {
+  InframodernOAuthClient,
+  InframodernOAuthTokenRequestError,
+} from './inframodern-oauth.client.js';
 import { SessionCrypto } from './session.crypto.js';
 import { NestSessionRepository } from './session.repository.js';
 import type { OAuthTokenResponse, StoredOAuthTokens } from './session.types.js';
@@ -78,12 +86,18 @@ export class SessionService {
     let tokenResponse: OAuthTokenResponse;
     try {
       tokenResponse = await this.oauthClient.refresh(storedTokens.refreshToken);
-    } catch {
-      throw new UnauthorizedException('Session expired or invalid');
+    } catch (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        throw new UnauthorizedException('Session expired or invalid');
+      }
+
+      throw new ServiceUnavailableException('OAuth provider unavailable');
     }
 
     await this.repository.updateTokens(sessionId, {
-      encryptedTokens: this.crypto.encrypt(toStoredTokens(tokenResponse)),
+      encryptedTokens: this.crypto.encrypt(
+        toStoredTokens(tokenResponse, storedTokens.refreshToken),
+      ),
       accessTokenExpiresAt: expiresAt(tokenResponse.expires_in),
       refreshTokenExpiresAt: expiresAt(tokenResponse.refresh_token_expires_in),
     });
@@ -100,13 +114,29 @@ export class SessionService {
   }
 }
 
-function toStoredTokens(tokenResponse: OAuthTokenResponse): StoredOAuthTokens {
+function toStoredTokens(
+  tokenResponse: OAuthTokenResponse,
+  fallbackRefreshToken?: string,
+): StoredOAuthTokens {
+  const refreshToken = tokenResponse.refresh_token ?? fallbackRefreshToken;
+
+  if (!refreshToken) {
+    throw new Error('Invalid Inframodern token response');
+  }
+
   return {
     accessToken: tokenResponse.access_token,
-    refreshToken: tokenResponse.refresh_token,
+    refreshToken,
     tokenType: tokenResponse.token_type ?? 'Bearer',
     scope: tokenResponse.scope ?? null,
   };
+}
+
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  return (
+    error instanceof InframodernOAuthTokenRequestError &&
+    (error.status === 400 || error.status === 401)
+  );
 }
 
 function expiresAt(seconds: number | null | undefined): Date | null {

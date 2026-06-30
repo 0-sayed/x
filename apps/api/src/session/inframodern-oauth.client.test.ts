@@ -91,6 +91,29 @@ describe('InframodernOAuthClient', () => {
     });
   });
 
+  it('accepts refresh responses without a rotated refresh token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        access_token: 'next-access-token',
+        token_type: 'Bearer',
+        scope: null,
+        expires_in: 1800,
+        refresh_token_expires_in: null,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new InframodernOAuthClient(config);
+
+    await expect(client.refresh('stored-refresh-token')).resolves.toMatchObject({
+      access_token: 'next-access-token',
+      token_type: 'Bearer',
+      scope: null,
+      expires_in: 1800,
+      refresh_token_expires_in: null,
+    });
+  });
+
   it('fetches the OAuth user from the API user endpoint', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -134,7 +157,7 @@ describe('InframodernOAuthClient', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
-        access_token: 'access-token',
+        refresh_token: 'refresh-token',
       }),
     });
     vi.stubGlobal('fetch', fetchMock);

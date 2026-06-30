@@ -1,6 +1,11 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
+import { InframodernOAuthTokenRequestError } from './inframodern-oauth.client.js';
 import { SessionService } from './session.service.js';
 
 function makeService() {
@@ -135,15 +140,51 @@ describe('SessionService', () => {
     );
   });
 
-  it('maps OAuth refresh failures to unauthorized responses', async () => {
+  it('preserves the stored refresh token when the provider omits a replacement', async () => {
+    const { crypto, oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+    oauthClient.refresh.mockResolvedValue({
+      access_token: 'rotated-access-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token_expires_in: null,
+      scope: 'openid profile email',
+    });
+
+    await expect(service.refresh('session-id')).resolves.toEqual(user);
+
+    expect(crypto.encrypt).toHaveBeenCalledWith({
+      accessToken: 'rotated-access-token',
+      refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
+      scope: 'openid profile email',
+    });
+  });
+
+  it('maps invalid refresh tokens to unauthorized responses', async () => {
     const { oauthClient, repository, service, user } = makeService();
     repository.findCurrentUserBySessionId.mockResolvedValue({
       encryptedTokens: 'encrypted-token-payload',
       user,
     });
-    oauthClient.refresh.mockRejectedValue(new Error('refresh failed'));
+    oauthClient.refresh.mockRejectedValue(new InframodernOAuthTokenRequestError(400));
 
     await expect(service.refresh('session-id')).rejects.toThrow(UnauthorizedException);
+    expect(repository.updateTokens).not.toHaveBeenCalled();
+  });
+
+  it('preserves sessions on transient OAuth refresh failures', async () => {
+    const { oauthClient, repository, service, user } = makeService();
+    repository.findCurrentUserBySessionId.mockResolvedValue({
+      encryptedTokens: 'encrypted-token-payload',
+      user,
+    });
+    oauthClient.refresh.mockRejectedValue(new Error('connect ECONNRESET'));
+
+    await expect(service.refresh('session-id')).rejects.toThrow(ServiceUnavailableException);
     expect(repository.updateTokens).not.toHaveBeenCalled();
   });
 

@@ -48,7 +48,7 @@ export type InframodernOAuthUser = {
 
 export type OAuthTokenResponse = {
   readonly access_token: string;
-  readonly refresh_token: string;
+  readonly refresh_token?: string | null;
   readonly token_type?: string | null;
   readonly scope?: string | null;
   readonly expires_in?: number | null;

@@ -14,6 +14,7 @@ import { DATABASE_CLIENT } from '../database/database.module.js';
 import type { InframodernOAuthUser } from './session.types.js';
 
 type Db = DatabaseClient['db'];
+type BootstrapDb = Pick<Db, 'insert' | 'update'>;
 
 type CreateSessionInput = {
   readonly userId: string;
@@ -41,10 +42,17 @@ export class SessionRepository {
   constructor(private readonly db: Db) {}
 
   async bootstrapFromInframodern(user: InframodernOAuthUser): Promise<string | null> {
+    return this.db.transaction((tx) => this.#bootstrapFromInframodern(tx, user));
+  }
+
+  async #bootstrapFromInframodern(
+    db: BootstrapDb,
+    user: InframodernOAuthUser,
+  ): Promise<string | null> {
     const now = new Date();
     const displayName = user.displayName ?? user.name ?? user.email;
 
-    await this.db
+    await db
       .insert(inframodernUserRefs)
       .values({
         id: user.id,
@@ -74,6 +82,7 @@ export class SessionRepository {
 
     const workspaces = this.#collectBootstrapWorkspaces(user);
     await this.#deactivateOmittedMemberships(
+      db,
       user.id,
       workspaces.map((workspace) => workspace.id),
       now,
@@ -83,7 +92,7 @@ export class SessionRepository {
       return null;
     }
 
-    await this.db
+    await db
       .insert(workspaceRefs)
       .values(
         workspaces.map((workspace) => ({
@@ -108,7 +117,7 @@ export class SessionRepository {
       });
 
     for (const workspace of workspaces) {
-      await this.db
+      await db
         .insert(workspaceMembershipRefs)
         .values({
           workspaceId: workspace.id,
@@ -252,6 +261,7 @@ export class SessionRepository {
   }
 
   async #deactivateOmittedMemberships(
+    db: BootstrapDb,
     userId: string,
     currentWorkspaceIds: readonly string[],
     now: Date,
@@ -261,7 +271,7 @@ export class SessionRepository {
         ? notInArray(workspaceMembershipRefs.workspaceId, [...currentWorkspaceIds])
         : undefined;
 
-    await this.db
+    await db
       .update(workspaceMembershipRefs)
       .set({
         isActive: false,
