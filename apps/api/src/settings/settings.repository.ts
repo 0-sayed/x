@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { UpdateWorkspaceSettingsRequest } from '@materiabill/contracts';
 import type { DatabaseClient, WorkspaceSettingsRecord } from '@materiabill/db';
 import { seedWorkspaceSettingsDefaults, workspaceSettings } from '@materiabill/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
 
@@ -27,21 +27,19 @@ export class SettingsRepository {
     patch: UpdateWorkspaceSettingsRequest,
   ): Promise<WorkspaceSettingsRecord> {
     await seedWorkspaceSettingsDefaults(this.#db, [workspaceId]);
-    let nextPatch = patch;
-    if (patch.notificationPreferences !== undefined) {
-      const current = await this.findRequiredWorkspaceSettings(workspaceId);
-      nextPatch = {
-        ...patch,
-        notificationPreferences: {
-          ...current.notificationPreferences,
-          ...patch.notificationPreferences,
-        },
-      };
-    }
+    const { notificationPreferences, ...scalarPatch } = patch;
 
     const rows = await this.#db
       .update(workspaceSettings)
-      .set({ ...nextPatch, updatedAt: new Date() })
+      .set({
+        ...scalarPatch,
+        ...(notificationPreferences !== undefined
+          ? {
+              notificationPreferences: sql`${workspaceSettings.notificationPreferences} || ${JSON.stringify(notificationPreferences)}::jsonb`,
+            }
+          : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(workspaceSettings.workspaceId, workspaceId))
       .returning();
 
