@@ -10,6 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import type { CurrentSessionUser } from '@materiabill/contracts';
 import cookieParser from 'cookie-parser';
+import { of } from 'rxjs';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,6 +20,7 @@ import { configureApiDocumentation } from '../src/main.js';
 import { PermissionsController } from '../src/permissions/permissions.controller.js';
 import { PermissionsGuard } from '../src/permissions/permissions.guard.js';
 import { PermissionsService } from '../src/permissions/permissions.service.js';
+import { RealtimeHub } from '../src/realtime/realtime.hub.js';
 import { SessionController } from '../src/session/session.controller.js';
 import { SessionGuard } from '../src/session/session.guard.js';
 import { SessionService } from '../src/session/session.service.js';
@@ -126,6 +128,12 @@ describe('api bootstrap shell', () => {
     expect(response.body.openapi).toBeDefined();
     expect(response.body.paths['/health']).toBeDefined();
     expect(response.body.paths['/bootstrap']).toBeDefined();
+  });
+
+  it('registers the realtime SSE endpoint in the OpenAPI document', async () => {
+    const response = await request(app.getHttpServer()).get('/docs-json').expect(200);
+
+    expect(response.body.paths['/realtime/events']).toBeDefined();
   });
 
   it('serves bootstrap metadata with contractor permission catalog keys', async () => {
@@ -431,6 +439,107 @@ describe('workspace context endpoints', () => {
       .post('/workspaces/active')
       .send({ workspaceId: 'not-a-uuid' })
       .expect(400);
+  });
+});
+
+describe('realtime endpoint registration', () => {
+  let realtimeApp: INestApplication;
+  const realtimeHub = {
+    subscribe: vi.fn(() =>
+      of({
+        id: '01890f8e-5f47-7cc3-98c4-dc0c0c07398f',
+        type: 'realtime.connected',
+        retry: 10000,
+        data: {
+          id: '01890f8e-5f47-7cc3-98c4-dc0c0c07398f',
+          workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+          type: 'realtime.connected',
+          payload: {},
+          occurredAt: '2026-07-01T12:00:00.000Z',
+        },
+      }),
+    ),
+  };
+
+  beforeAll(async () => {
+    setSessionTestEnv();
+
+    const realtimeWorkspaceGuardMock: CanActivate = {
+      canActivate: (context: ExecutionContext): boolean => {
+        const requestValue = context.switchToHttp().getRequest<{
+          workspaceContext?: {
+            workspace: {
+              id: string;
+              name: string;
+              slug: string;
+              paymentCurrency: string;
+            };
+            membership: {
+              userId: string;
+              roleKey: string;
+              permissions: string[];
+              isAdmin: boolean;
+            };
+            access: {
+              appInstalled: boolean;
+              subscriptionActive: boolean;
+              membershipActive: boolean;
+            };
+          };
+        }>();
+        requestValue.workspaceContext = {
+          workspace: {
+            id: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+            name: 'Demo Workspace',
+            slug: 'demo-workspace',
+            paymentCurrency: 'SAR',
+          },
+          membership: {
+            userId: sessionUser.id,
+            roleKey: 'workspace_admin',
+            permissions: ['workspace.view'],
+            isAdmin: true,
+          },
+          access: {
+            appInstalled: true,
+            subscriptionActive: true,
+            membershipActive: true,
+          },
+        };
+
+        return true;
+      },
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(realtimeWorkspaceGuardMock)
+      .overrideProvider(RealtimeHub)
+      .useValue(realtimeHub)
+      .compile();
+
+    realtimeApp = moduleRef.createNestApplication();
+    configureApiDocumentation(realtimeApp);
+    await realtimeApp.init();
+  });
+
+  afterAll(async () => {
+    await realtimeApp.close();
+  });
+
+  beforeEach(() => {
+    realtimeHub.subscribe.mockClear();
+  });
+
+  it('serves the realtime stream from the application module', async () => {
+    const response = await request(realtimeApp.getHttpServer()).get('/realtime/events').expect(200);
+
+    expect(response.headers['content-type']).toContain('text/event-stream');
+    expect(response.text).toContain('event: realtime.connected');
+    expect(response.text).toContain('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
+    expect(realtimeHub.subscribe).toHaveBeenCalledWith('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
   });
 });
 
