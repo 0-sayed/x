@@ -8,6 +8,9 @@
   ],
   "envOverrides": {
     "DATABASE_URL": "postgresql://local_user:changeme-local-only@127.0.0.1:${POSTGRES_PORT}/materiabill",
+    "ADMIN_URL": "http://127.0.0.1:${ADMIN_PORT}",
+    "INFRAMODERN_OAUTH_CALLBACK_URL": "http://127.0.0.1:${API_PORT}/auth/callback",
+    "INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL": "http://127.0.0.1:${API_PORT}/auth/callback",
     "VITE_API_BASE_URL": "http://127.0.0.1:${API_PORT}"
   }
 }

@@ -21,11 +21,15 @@ describe('worktree compose config', () => {
   it('derives URL env overrides from assigned worktree ports', () => {
     const resolvedEnvOverrides = resolveEnvOverrides(wtcrc.envOverrides, {
       API_PORT: '3100',
+      ADMIN_PORT: '3173',
       POSTGRES_PORT: '60432',
     });
 
     expect(resolvedEnvOverrides).toMatchObject({
       DATABASE_URL: 'postgresql://local_user:changeme-local-only@127.0.0.1:60432/materiabill',
+      ADMIN_URL: 'http://127.0.0.1:3173',
+      INFRAMODERN_OAUTH_CALLBACK_URL: 'http://127.0.0.1:3100/auth/callback',
+      INFRAMODERN_SANDBOX_OAUTH_CALLBACK_URL: 'http://127.0.0.1:3100/auth/callback',
       VITE_API_BASE_URL: 'http://127.0.0.1:3100',
     });
     expect(Object.values(resolvedEnvOverrides).every((value) => !value.includes('${'))).toBe(true);
