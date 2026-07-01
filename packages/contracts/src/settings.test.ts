@@ -76,4 +76,15 @@ describe('settings contracts', () => {
       workspaceSettingsSchema.parse({ ...settingsPayload, suggestionThrottlePerMaterial: -1 }),
     ).toThrow();
   });
+
+  it('rejects malformed numeric update values instead of coercing them to defaults', () => {
+    for (const value of [null, '', '   ', false]) {
+      expect(() =>
+        updateWorkspaceSettingsRequestSchema.parse({ defaultRetentionPercentage: value }),
+      ).toThrow();
+      expect(() =>
+        updateWorkspaceSettingsRequestSchema.parse({ suggestionThrottlePerMaterial: value }),
+      ).toThrow();
+    }
+  });
 });

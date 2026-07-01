@@ -27,10 +27,21 @@ export class SettingsRepository {
     patch: UpdateWorkspaceSettingsRequest,
   ): Promise<WorkspaceSettingsRecord> {
     await seedWorkspaceSettingsDefaults(this.#db, [workspaceId]);
+    let nextPatch = patch;
+    if (patch.notificationPreferences !== undefined) {
+      const current = await this.findRequiredWorkspaceSettings(workspaceId);
+      nextPatch = {
+        ...patch,
+        notificationPreferences: {
+          ...current.notificationPreferences,
+          ...patch.notificationPreferences,
+        },
+      };
+    }
 
     const rows = await this.#db
       .update(workspaceSettings)
-      .set({ ...patch, updatedAt: new Date() })
+      .set({ ...nextPatch, updatedAt: new Date() })
       .where(eq(workspaceSettings.workspaceId, workspaceId))
       .returning();
 

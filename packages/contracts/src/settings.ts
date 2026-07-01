@@ -18,16 +18,28 @@ export const workspaceNotificationPreferencesSchema = z.record(
   notificationChannelPreferenceSchema,
 );
 
+const integerSettingSchema = (min: number, max: number) =>
+  z
+    .union([
+      z.number(),
+      z
+        .string()
+        .trim()
+        .regex(/^-?\d+$/)
+        .transform(Number),
+    ])
+    .pipe(z.number().int().min(min).max(max));
+
 const baseWorkspaceSettingsSchema = z
   .object({
     currency: currencyCodeSchema,
     timezone: z.string().trim().min(1).max(80),
     defaultLanguage: defaultLanguageSchema,
-    defaultRetentionPercentage: z.coerce.number().int().min(0).max(100),
-    graceWindowMinutes: z.coerce.number().int().min(1).max(1440),
+    defaultRetentionPercentage: integerSettingSchema(0, 100),
+    graceWindowMinutes: integerSettingSchema(1, 1440),
     defaultDisclosureDepth: defaultDisclosureDepthSchema,
-    suggestionThrottlePerMaterial: z.coerce.number().int().min(0).max(100),
-    inviteAutoNudgeHours: z.coerce.number().int().min(1).max(720),
+    suggestionThrottlePerMaterial: integerSettingSchema(0, 100),
+    inviteAutoNudgeHours: integerSettingSchema(1, 720),
     notificationPreferences: workspaceNotificationPreferencesSchema,
   })
   .strict();

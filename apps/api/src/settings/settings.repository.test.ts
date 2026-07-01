@@ -83,4 +83,28 @@ describe('SettingsRepository', () => {
       updatedAt: expect.any(Date),
     });
   });
+
+  it('merges notification preference patches without removing existing keys', async () => {
+    const db = createDbMock();
+    const repository = new SettingsRepository({ db } as never);
+
+    await expect(
+      repository.updateWorkspaceSettings(workspaceId, {
+        notificationPreferences: {
+          drawReleased: { inApp: true, email: false, whatsapp: false },
+        },
+      }),
+    ).resolves.toMatchObject({
+      notificationPreferences: {
+        default: { inApp: true, email: true, whatsapp: false },
+        drawReleased: { inApp: true, email: false, whatsapp: false },
+      },
+    });
+    expect(db.updatedRows[0]).toMatchObject({
+      notificationPreferences: {
+        default: { inApp: true, email: true, whatsapp: false },
+        drawReleased: { inApp: true, email: false, whatsapp: false },
+      },
+    });
+  });
 });
