@@ -1,6 +1,6 @@
 {
-  "id": "494fb764-f171-4993-a015-bdab1dada7b1",
-  "prevId": "9425dd98-b312-4a3b-9a31-f88a67ada106",
+  "id": "2157f762-2996-44de-b3c8-b359fec868cc",
+  "prevId": "494fb764-f171-4993-a015-bdab1dada7b1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -121,8 +121,12 @@
           "name": "audit_events_workspace_id_workspace_refs_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -130,8 +134,12 @@
           "name": "audit_events_actor_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["actor_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -243,8 +251,12 @@
           "name": "brand_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "brand_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -536,8 +548,12 @@
           "name": "file_assets_workspace_id_workspace_refs_id_fk",
           "tableFrom": "file_assets",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -545,8 +561,12 @@
           "name": "file_assets_uploaded_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "file_assets",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["uploaded_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "uploaded_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -556,7 +576,9 @@
         "file_assets_storage_key_uidx": {
           "name": "file_assets_storage_key_uidx",
           "nullsNotDistinct": false,
-          "columns": ["storage_key"]
+          "columns": [
+            "storage_key"
+          ]
         }
       },
       "policies": {},
@@ -781,8 +803,12 @@
           "name": "location_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "location_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -883,6 +909,516 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notification_deliveries": {
+      "name": "notification_deliveries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notification_id": {
+          "name": "notification_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipient_user_id": {
+          "name": "recipient_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_address": {
+          "name": "recipient_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_message_id": {
+          "name": "provider_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skipped_reason": {
+          "name": "skipped_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempted_at": {
+          "name": "attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notification_deliveries_workspace_attempted_at_idx": {
+          "name": "notification_deliveries_workspace_attempted_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attempted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notification_deliveries_workspace_notification_attempted_at_idx": {
+          "name": "notification_deliveries_workspace_notification_attempted_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "notification_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attempted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notification_deliveries_workspace_recipient_attempted_at_idx": {
+          "name": "notification_deliveries_workspace_recipient_attempted_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recipient_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attempted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notification_deliveries_workspace_id_workspace_refs_id_fk": {
+          "name": "notification_deliveries_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "notification_deliveries",
+          "tableTo": "workspace_refs",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notification_deliveries_notification_id_notifications_id_fk": {
+          "name": "notification_deliveries_notification_id_notifications_id_fk",
+          "tableFrom": "notification_deliveries",
+          "tableTo": "notifications",
+          "columnsFrom": [
+            "notification_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "notification_deliveries_recipient_user_id_inframodern_user_refs_id_fk": {
+          "name": "notification_deliveries_recipient_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "notification_deliveries",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": [
+            "recipient_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "notification_deliveries_event_type_check": {
+          "name": "notification_deliveries_event_type_check",
+          "value": "\"notification_deliveries\".\"event_type\" in ('draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge')"
+        },
+        "notification_deliveries_channel_check": {
+          "name": "notification_deliveries_channel_check",
+          "value": "\"notification_deliveries\".\"channel\" in ('in_app', 'email', 'whatsapp')"
+        },
+        "notification_deliveries_status_check": {
+          "name": "notification_deliveries_status_check",
+          "value": "\"notification_deliveries\".\"status\" in ('sent', 'skipped', 'failed', 'placeholder')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.notification_preferences": {
+      "name": "notification_preferences",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notification_preferences_workspace_event_channel_uidx": {
+          "name": "notification_preferences_workspace_event_channel_uidx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notification_preferences_workspace_id_workspace_refs_id_fk": {
+          "name": "notification_preferences_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "notification_preferences",
+          "tableTo": "workspace_refs",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "notification_preferences_event_type_check": {
+          "name": "notification_preferences_event_type_check",
+          "value": "\"notification_preferences\".\"event_type\" in ('draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge')"
+        },
+        "notification_preferences_channel_check": {
+          "name": "notification_preferences_channel_check",
+          "value": "\"notification_preferences\".\"channel\" in ('in_app', 'email', 'whatsapp')"
+        },
+        "notification_preferences_whatsapp_enabled_check": {
+          "name": "notification_preferences_whatsapp_enabled_check",
+          "value": "not (\"notification_preferences\".\"channel\" = 'whatsapp' and \"notification_preferences\".\"enabled\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_user_id": {
+          "name": "recipient_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notifications_workspace_recipient_created_at_idx": {
+          "name": "notifications_workspace_recipient_created_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recipient_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notifications_workspace_recipient_read_at_created_at_idx": {
+          "name": "notifications_workspace_recipient_read_at_created_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recipient_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "read_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notifications_workspace_id_workspace_refs_id_fk": {
+          "name": "notifications_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "workspace_refs",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notifications_recipient_user_id_inframodern_user_refs_id_fk": {
+          "name": "notifications_recipient_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": [
+            "recipient_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "notifications_event_type_check": {
+          "name": "notifications_event_type_check",
+          "value": "\"notifications\".\"event_type\" in ('draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.pending_decisions": {
@@ -1064,21 +1600,6 @@
           "method": "btree",
           "with": {}
         },
-        "pending_decisions_requested_by_user_id_idx": {
-          "name": "pending_decisions_requested_by_user_id_idx",
-          "columns": [
-            {
-              "expression": "requested_by_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "pending_decisions_pending_record_unique_idx": {
           "name": "pending_decisions_pending_record_unique_idx",
           "columns": [
@@ -1108,9 +1629,24 @@
             }
           ],
           "isUnique": true,
+          "where": "status = 'pending' AND record_id IS NOT NULL",
           "concurrently": false,
           "method": "btree",
-          "where": "status = 'pending' AND record_id IS NOT NULL",
+          "with": {}
+        },
+        "pending_decisions_requested_by_user_id_idx": {
+          "name": "pending_decisions_requested_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "requested_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
           "with": {}
         }
       },
@@ -1119,8 +1655,12 @@
           "name": "pending_decisions_workspace_id_workspace_refs_id_fk",
           "tableFrom": "pending_decisions",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1128,8 +1668,12 @@
           "name": "pending_decisions_requested_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "pending_decisions",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["requested_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "requested_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1216,8 +1760,12 @@
           "name": "role_permissions_role_id_workspace_roles_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_roles",
-          "columnsFrom": ["role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1225,8 +1773,12 @@
           "name": "role_permissions_workspace_id_workspace_refs_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1234,8 +1786,14 @@
           "name": "role_permissions_workspace_id_role_id_workspace_roles_workspace_id_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_roles",
-          "columnsFrom": ["workspace_id", "role_id"],
-          "columnsTo": ["workspace_id", "id"],
+          "columnsFrom": [
+            "workspace_id",
+            "role_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1243,7 +1801,10 @@
       "compositePrimaryKeys": {
         "role_permissions_role_id_permission_key_pk": {
           "name": "role_permissions_role_id_permission_key_pk",
-          "columns": ["role_id", "permission_key"]
+          "columns": [
+            "role_id",
+            "permission_key"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1375,8 +1936,12 @@
           "name": "session_records_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "session_records",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1384,8 +1949,12 @@
           "name": "session_records_active_workspace_id_workspace_refs_id_fk",
           "tableFrom": "session_records",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["active_workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "active_workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1685,8 +2254,12 @@
           "name": "sign_offs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "sign_offs",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1694,8 +2267,12 @@
           "name": "sign_offs_requested_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "sign_offs",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["requested_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "requested_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1703,8 +2280,12 @@
           "name": "sign_offs_resolved_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "sign_offs",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["resolved_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "resolved_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1712,8 +2293,12 @@
           "name": "sign_offs_resolution_decision_id_pending_decisions_id_fk",
           "tableFrom": "sign_offs",
           "tableTo": "pending_decisions",
-          "columnsFrom": ["resolution_decision_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "resolution_decision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1928,8 +2513,12 @@
           "name": "sync_failures_event_id_sync_inbox_event_id_fk",
           "tableFrom": "sync_failures",
           "tableTo": "sync_inbox",
-          "columnsFrom": ["event_id"],
-          "columnsTo": ["event_id"],
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "event_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2218,8 +2807,12 @@
           "name": "user_role_assignments_workspace_id_workspace_refs_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2227,8 +2820,12 @@
           "name": "user_role_assignments_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2236,8 +2833,12 @@
           "name": "user_role_assignments_role_id_workspace_roles_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_roles",
-          "columnsFrom": ["role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2245,8 +2846,14 @@
           "name": "user_role_assignments_workspace_id_user_id_workspace_membership_refs_workspace_id_user_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_membership_refs",
-          "columnsFrom": ["workspace_id", "user_id"],
-          "columnsTo": ["workspace_id", "user_id"],
+          "columnsFrom": [
+            "workspace_id",
+            "user_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2254,8 +2861,14 @@
           "name": "user_role_assignments_workspace_id_role_id_workspace_roles_workspace_id_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_roles",
-          "columnsFrom": ["workspace_id", "role_id"],
-          "columnsTo": ["workspace_id", "id"],
+          "columnsFrom": [
+            "workspace_id",
+            "role_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2263,7 +2876,12 @@
       "compositePrimaryKeys": {
         "user_role_assignments_workspace_id_user_id_role_id_source_pk": {
           "name": "user_role_assignments_workspace_id_user_id_role_id_source_pk",
-          "columns": ["workspace_id", "user_id", "role_id", "source"]
+          "columns": [
+            "workspace_id",
+            "user_id",
+            "role_id",
+            "source"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -2375,8 +2993,12 @@
           "name": "workspace_membership_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "workspace_membership_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2384,8 +3006,12 @@
           "name": "workspace_membership_refs_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "workspace_membership_refs",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2393,7 +3019,10 @@
       "compositePrimaryKeys": {
         "workspace_membership_refs_workspace_id_user_id_pk": {
           "name": "workspace_membership_refs_workspace_id_user_id_pk",
-          "columns": ["workspace_id", "user_id"]
+          "columns": [
+            "workspace_id",
+            "user_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -2621,8 +3250,12 @@
           "name": "workspace_roles_workspace_id_workspace_refs_id_fk",
           "tableFrom": "workspace_roles",
           "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2632,7 +3265,10 @@
         "workspace_roles_workspace_id_id_unique": {
           "name": "workspace_roles_workspace_id_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["workspace_id", "id"]
+          "columns": [
+            "workspace_id",
+            "id"
+          ]
         }
       },
       "policies": {},

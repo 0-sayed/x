@@ -107,6 +107,25 @@ describe('GraceWindowRepository', () => {
     expect(selectBuilder.limit).toHaveBeenCalledWith(50);
   });
 
+  it('finds an active pending decision by workspace and record identity', async () => {
+    const { db, selectBuilder } = createDbMock([], [pendingRow]);
+    const repository = new GraceWindowRepository({ db } as never);
+
+    const row = await repository.findActiveByRecord({
+      workspaceId: pendingRow.workspaceId,
+      decisionType: pendingRow.decisionType,
+      recordType: pendingRow.recordType,
+      recordId: pendingRow.recordId,
+      now: new Date('2026-07-01T09:05:00.000Z'),
+    });
+
+    expect(row?.id).toBe(pendingRow.id);
+    expect(selectBuilder.from).toHaveBeenCalledWith(pendingDecisions);
+    expect(selectBuilder.where).toHaveBeenCalledTimes(1);
+    expect(collectSqlStrings(selectBuilder.where.mock.calls[0]?.[0]).join('')).toContain('pending');
+    expect(selectBuilder.limit).toHaveBeenCalledWith(1);
+  });
+
   it('atomically marks a pending decision undone', async () => {
     const undoneRow = {
       ...pendingRow,
@@ -158,3 +177,21 @@ describe('GraceWindowRepository', () => {
     });
   });
 });
+
+function collectSqlStrings(value: unknown, seen = new Set<unknown>()): string[] {
+  if (!value || typeof value !== 'object' || seen.has(value)) {
+    return [];
+  }
+  seen.add(value);
+
+  if ('value' in value && Array.isArray(value.value)) {
+    return value.value.filter((chunk) => typeof chunk === 'string');
+  }
+  if ('value' in value && typeof value.value === 'string') {
+    return [value.value];
+  }
+
+  return Reflect.ownKeys(value).flatMap((key) =>
+    collectSqlStrings((value as Record<PropertyKey, unknown>)[key], seen),
+  );
+}

@@ -27,7 +27,7 @@ CREATE TABLE "notification_preferences" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "notification_preferences_event_type_check" CHECK ("notification_preferences"."event_type" in ('draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge')),
 	CONSTRAINT "notification_preferences_channel_check" CHECK ("notification_preferences"."channel" in ('in_app', 'email', 'whatsapp')),
-	CONSTRAINT "notification_preferences_whatsapp_enabled_check" CHECK (NOT ("notification_preferences"."channel" = 'whatsapp' AND "notification_preferences"."enabled"))
+	CONSTRAINT "notification_preferences_whatsapp_enabled_check" CHECK (not ("notification_preferences"."channel" = 'whatsapp' and "notification_preferences"."enabled"))
 );
 --> statement-breakpoint
 CREATE TABLE "notifications" (

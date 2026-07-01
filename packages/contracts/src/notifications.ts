@@ -79,7 +79,36 @@ export const routeNotificationEventInputSchema = z
     recipients: z.array(notificationRecipientSchema).min(1).max(100),
     channels: z.array(notificationChannelSchema).min(1).default(['in_app', 'email']),
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) => {
+    const recipientUserIds = new Set<string>();
+    input.recipients.forEach((recipient, index) => {
+      if (recipientUserIds.has(recipient.userId)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Recipient userId must be unique',
+          path: ['recipients', index, 'userId'],
+        });
+        return;
+      }
+
+      recipientUserIds.add(recipient.userId);
+    });
+
+    const channels = new Set<string>();
+    input.channels.forEach((channel, index) => {
+      if (channels.has(channel)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Channel must be unique',
+          path: ['channels', index],
+        });
+        return;
+      }
+
+      channels.add(channel);
+    });
+  });
 
 export const notificationSchema = z
   .object({

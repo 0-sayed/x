@@ -1,5 +1,5 @@
 import type { NotificationPreferenceRecord, NotificationRecord } from '@materiabill/db';
-import { NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
 import { UnconfiguredNotificationEmailAdapter } from './notification-email.adapter.js';
@@ -303,7 +303,8 @@ describe('NotificationsService', () => {
     expect(auditService.recordEvent).not.toHaveBeenCalled();
   });
 
-  it('does not publish realtime when audit recording fails during routing', async () => {
+  it('publishes realtime and does not fail routing when audit recording fails', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementationOnce(() => undefined);
     const { realtimePublisher, auditService, service } = createService();
     auditService.recordEvent.mockRejectedValueOnce(new Error('audit write failed'));
 
@@ -319,9 +320,19 @@ describe('NotificationsService', () => {
         recipients: [{ userId }],
         channels: ['in_app'],
       }),
-    ).rejects.toThrow('audit write failed');
+    ).resolves.toEqual({
+      deliveries: [expect.objectContaining({ channel: 'in_app', status: 'sent' })],
+    });
 
-    expect(realtimePublisher.publish).not.toHaveBeenCalled();
+    expect(realtimePublisher.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId,
+        type: 'notifications.changed',
+        payload: expect.objectContaining({ recipientUserId: userId }),
+      }),
+    );
+    expect(warnSpy).toHaveBeenCalledWith('audit write failed');
+    warnSpy.mockRestore();
   });
 
   it('parses notification list queries and scopes them to the current user', async () => {

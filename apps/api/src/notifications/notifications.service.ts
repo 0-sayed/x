@@ -18,7 +18,7 @@ import type {
   NotificationPreferenceRecord,
   NotificationRecord,
 } from '@materiabill/db';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { AuditService } from '../audit/audit.service.js';
 import { RealtimePublisher } from '../realtime/realtime.publisher.js';
@@ -56,6 +56,8 @@ type ReplacePreferencesInput = {
 
 @Injectable()
 export class NotificationsService {
+  readonly #logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly repository: NotificationsRepository,
     @Inject(NOTIFICATION_EMAIL_ADAPTER)
@@ -221,15 +223,21 @@ export class NotificationsService {
       deliveries,
     });
 
-    await this.auditService.recordEvent({
-      workspaceId: parsed.workspaceId,
-      actorUserId: parsed.actorUserId,
-      audience: 'internal',
-      action: 'notification.routed',
-      resourceType: parsed.resourceType,
-      resourceId: parsed.resourceId ?? null,
-      metadata: summarizeDeliveries(createdRoutes.deliveries),
-    });
+    try {
+      await this.auditService.recordEvent({
+        workspaceId: parsed.workspaceId,
+        actorUserId: parsed.actorUserId,
+        audience: 'internal',
+        action: 'notification.routed',
+        resourceType: parsed.resourceType,
+        resourceId: parsed.resourceId ?? null,
+        metadata: summarizeDeliveries(createdRoutes.deliveries),
+      });
+    } catch (error) {
+      this.#logger.warn(
+        error instanceof Error ? error.message : 'Notification audit recording failed',
+      );
+    }
 
     for (const route of createdRoutes.notificationRoutes) {
       this.realtimePublisher.publish({

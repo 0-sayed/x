@@ -50,6 +50,21 @@ describe('notification contracts', () => {
     ).toEqual(['in_app', 'email']);
   });
 
+  it('rejects duplicate route recipients and channels', () => {
+    expect(() =>
+      routeNotificationEventInputSchema.parse({
+        workspaceId,
+        actorUserId: null,
+        eventType: 'draw.approved',
+        title: 'Draw approved',
+        body: 'Client approved draw D-104',
+        resourceType: 'draw',
+        recipients: [{ userId }, { userId }],
+        channels: ['email', 'email'],
+      }),
+    ).toThrow();
+  });
+
   it('rejects enabling WhatsApp preferences at launch', () => {
     expect(() =>
       replaceNotificationPreferencesRequestSchema.parse({

@@ -1,6 +1,15 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@materiabill/contracts': fileURLToPath(
+        new URL('./packages/contracts/src/index.ts', import.meta.url),
+      ),
+      '@materiabill/db': fileURLToPath(new URL('./packages/db/src/index.ts', import.meta.url)),
+    },
+  },
   test: {
     environment: 'node',
     globals: false,

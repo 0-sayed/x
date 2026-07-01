@@ -19,9 +19,9 @@ describe('notifications schema', () => {
   it('does not define a default for enabled and rejects whatsapp opt-in at the database level', () => {
     expect(notificationPreferences.enabled.hasDefault).toBe(false);
 
-    const sql = readFileSync(resolve(process.cwd(), 'drizzle/0008_notifications.sql'), 'utf8');
+    const sql = readFileSync(resolve(process.cwd(), 'drizzle/0009_notifications.sql'), 'utf8');
     expect(sql).toContain(
-      `CONSTRAINT "notification_preferences_whatsapp_enabled_check" CHECK (NOT ("notification_preferences"."channel" = 'whatsapp' AND "notification_preferences"."enabled"))`,
+      `CONSTRAINT "notification_preferences_whatsapp_enabled_check" CHECK (not ("notification_preferences"."channel" = 'whatsapp' and "notification_preferences"."enabled"))`,
     );
     expect(sql).not.toContain('"enabled" boolean DEFAULT false NOT NULL');
   });
