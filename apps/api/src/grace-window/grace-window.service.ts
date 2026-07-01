@@ -185,7 +185,14 @@ export class GraceWindowService {
       throw new ConflictException('Pending decision is not ready to commit');
     }
 
-    await this.commitHandlers?.commit(committed, now);
+    let commitError: unknown;
+    let commitFailed = false;
+    try {
+      await this.commitHandlers?.commit(committed, now);
+    } catch (error) {
+      commitError = error;
+      commitFailed = true;
+    }
 
     await this.auditService.recordEvent({
       workspaceId: committed.workspaceId,
@@ -198,8 +205,14 @@ export class GraceWindowService {
         decisionType: committed.decisionType,
         recordType: committed.recordType,
         recordId: committed.recordId,
+        commitStatus: commitFailed ? 'failed' : 'succeeded',
+        ...(commitFailed ? { commitError: getErrorMessage(commitError) } : {}),
       },
     });
+
+    if (commitFailed) {
+      throw commitError;
+    }
 
     return toPendingDecision(committed, now);
   }
@@ -231,4 +244,11 @@ function remainingSeconds(expiresAt: Date, now: Date): number {
 
 function toAuditAudience(audience: DecisionAudience): AuditAudience {
   return audience === 'org' ? 'internal' : 'client';
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+
+  return 'Unknown commit error';
 }

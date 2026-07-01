@@ -3,6 +3,7 @@ import type { WorkspaceContext } from '@materiabill/contracts';
 import type { PendingDecisionRecord } from '@materiabill/db';
 import { describe, expect, it, vi } from 'vitest';
 
+import { GraceWindowCommitHandlerRegistry } from './grace-window-commit-handlers.js';
 import { GraceWindowService } from './grace-window.service.js';
 
 const requesterUserId = '3f43835d-7f3b-4b16-907b-d57db49832dd';
@@ -53,6 +54,7 @@ type ServiceOverrides = {
   readonly undo?: PendingDecisionRecord | undefined;
   readonly commit?: PendingDecisionRecord | undefined;
   readonly activeByRecord?: PendingDecisionRecord | undefined;
+  readonly commitHandlers?: ConstructorParameters<typeof GraceWindowService>[2];
 };
 
 function createService(overrides: ServiceOverrides = {}) {
@@ -94,7 +96,8 @@ function createService(overrides: ServiceOverrides = {}) {
     service: new GraceWindowService(
       repository as never,
       auditService as never,
-      commitHandlers as unknown as ConstructorParameters<typeof GraceWindowService>[2],
+      overrides.commitHandlers ??
+        (commitHandlers as unknown as ConstructorParameters<typeof GraceWindowService>[2]),
     ),
   };
 }
@@ -386,6 +389,55 @@ describe('GraceWindowService', () => {
       expect.objectContaining({
         audience: 'client',
         action: 'grace_window.committed',
+      }),
+    );
+  });
+
+  it('records committed audit metadata before rethrowing commit handler failures', async () => {
+    const commitError = new Error('domain commit failed');
+    const { auditService, commitHandlers, service } = createService();
+    commitHandlers.commit.mockRejectedValueOnce(commitError);
+
+    await expect(
+      service.markExpiredDecisionCommitted({
+        workspaceId: row.workspaceId,
+        decisionId: row.id,
+        now: new Date('2026-07-01T09:12:00.000Z'),
+      }),
+    ).rejects.toThrow(commitError);
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'grace_window.committed',
+        metadata: expect.objectContaining({
+          commitStatus: 'failed',
+          commitError: 'domain commit failed',
+        }),
+      }),
+    );
+  });
+
+  it('fails missing commit handlers instead of silently committing only the pending row', async () => {
+    const { auditService, service } = createService({
+      commitHandlers: new GraceWindowCommitHandlerRegistry(),
+    });
+
+    await expect(
+      service.markExpiredDecisionCommitted({
+        workspaceId: row.workspaceId,
+        decisionId: row.id,
+        now: new Date('2026-07-01T09:12:00.000Z'),
+      }),
+    ).rejects.toThrow('No grace-window commit handler registered for decision type');
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'grace_window.committed',
+        metadata: expect.objectContaining({
+          commitStatus: 'failed',
+          commitError:
+            'No grace-window commit handler registered for decision type: signoff.approve',
+        }),
       }),
     );
   });

@@ -15,6 +15,13 @@ export class GraceWindowCommitHandlerRegistry {
   }
 
   async commit(decision: PendingDecisionRecord, now: Date): Promise<void> {
-    await this.#handlers.get(decision.decisionType)?.commit(decision, now);
+    const handler = this.#handlers.get(decision.decisionType);
+    if (!handler) {
+      throw new Error(
+        `No grace-window commit handler registered for decision type: ${decision.decisionType}`,
+      );
+    }
+
+    await handler.commit(decision, now);
   }
 }
