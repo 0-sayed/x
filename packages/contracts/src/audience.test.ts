@@ -35,7 +35,9 @@ describe('audience contracts', () => {
     expect(canReadAudience('org', 'participants')).toBe(false);
     expect(canReadAudience('org', 'client')).toBe(false);
     expect(canReadAudience('participants', 'client')).toBe(false);
-    expect(() => assertReadableAudience('org', 'client')).toThrow('Audience scope denied');
+    expect(() => {
+      assertReadableAudience('org', 'client');
+    }).toThrow('Audience scope denied');
   });
 
   it('filters items to the viewer-readable audience set', () => {
@@ -53,9 +55,9 @@ describe('audience contracts', () => {
     expect(
       filterAudienceItems(rows, 'participants', (row) => row.audience).map((row) => row.id),
     ).toEqual(['participant-note', 'client-update']);
-    expect(filterAudienceItems(rows, 'client', (row) => row.audience).map((row) => row.id)).toEqual([
-      'client-update',
-    ]);
+    expect(filterAudienceItems(rows, 'client', (row) => row.audience).map((row) => row.id)).toEqual(
+      ['client-update'],
+    );
   });
 
   it('keeps money-out hidden from non-org viewers', () => {
@@ -64,8 +66,8 @@ describe('audience contracts', () => {
     expect(canReadMoneyKind('money_out', 'org')).toBe(true);
     expect(canReadMoneyKind('money_out', 'participants')).toBe(false);
     expect(canReadMoneyKind('money_out', 'client')).toBe(false);
-    expect(() => assertMoneyKindReadable('money_out', 'client')).toThrow(
-      'Money-out records are not visible to this audience',
-    );
+    expect(() => {
+      assertMoneyKindReadable('money_out', 'client');
+    }).toThrow('Money-out records are not visible to this audience');
   });
 });

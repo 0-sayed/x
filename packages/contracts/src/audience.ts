@@ -39,7 +39,10 @@ export function filterAudienceItems<T>(
   return items.filter((item) => canReadAudience(getAudience(item), viewerAudience));
 }
 
-export function canReadMoneyKind(kind: MoneyVisibilityKind, viewerAudience: AudienceScope): boolean {
+export function canReadMoneyKind(
+  kind: MoneyVisibilityKind,
+  viewerAudience: AudienceScope,
+): boolean {
   const parsedKind = moneyVisibilityKindSchema.parse(kind);
   const parsedViewerAudience = audienceScopeSchema.parse(viewerAudience);
 
