@@ -4,6 +4,7 @@ import {
   exchangeRateRefs,
   inframodernUserRefs,
   locationRefs,
+  seedWorkspaceSettingsDefaults,
   workspaceMembershipRefs,
   workspaceRefs,
   type MateriabillDatabase,
@@ -44,6 +45,10 @@ export class ProjectionUpsertService {
       updatedAt: sql.raw('excluded.updated_at'),
       deletedAt: sql.raw('excluded.deleted_at'),
     });
+    await seedWorkspaceSettingsDefaults(
+      this.db,
+      batch.workspaces.map((workspace) => workspace.id),
+    );
     await this.upsertMemberships(batch.memberships);
     await this.upsertById(brandRefs, batch.brands, {
       workspaceId: sql.raw('excluded.workspace_id'),

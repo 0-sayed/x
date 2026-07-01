@@ -3,6 +3,7 @@ import type { CurrentSessionUser, SessionWorkspace } from '@materiabill/contract
 import type { DatabaseClient } from '@materiabill/db';
 import {
   inframodernUserRefs,
+  seedWorkspaceSettingsDefaults,
   sessionRecords,
   workspaceMembershipRefs,
   workspaceRefs,
@@ -156,6 +157,7 @@ export class SessionRepository {
         },
         db as Db,
       );
+      await seedWorkspaceSettingsDefaults(db as Db, [workspace.id]);
     }
 
     return workspaces[0]?.id ?? null;

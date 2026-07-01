@@ -33,7 +33,7 @@ describe('grace-window contracts', () => {
     expect(parsed.remainingSeconds).toBe(600);
   });
 
-  it('defaults creation grace minutes to ten', () => {
+  it('accepts omitted creation grace minutes so workspace settings can supply the default', () => {
     expect(
       createPendingDecisionInputSchema.parse({
         workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
@@ -44,7 +44,7 @@ describe('grace-window contracts', () => {
         recordId: 'b78a2186-932e-43bb-a4c5-3853d4f9a0ff',
         summaryLabel: 'Release draw D-104',
       }).graceWindowMinutes,
-    ).toBe(10);
+    ).toBeUndefined();
   });
 
   it('accepts list query filters and response payloads', () => {

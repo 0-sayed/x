@@ -56,7 +56,13 @@ type ServiceOverrides = {
 
 function createService(overrides: ServiceOverrides = {}) {
   const repository = {
-    createDecision: vi.fn().mockResolvedValue(row),
+    createDecision: vi.fn().mockImplementation(async (input) => ({
+      ...row,
+      ...input,
+      id: row.id,
+      requestedAt: input.requestedAt,
+      expiresAt: input.expiresAt,
+    })),
     listActive: vi.fn().mockResolvedValue([row]),
     findByIdInWorkspace: vi.fn().mockResolvedValue('find' in overrides ? overrides.find : row),
     undoPending: vi.fn().mockResolvedValue(
@@ -79,16 +85,82 @@ function createService(overrides: ServiceOverrides = {}) {
   const auditService = {
     recordEvent: vi.fn().mockResolvedValue(undefined),
   };
+  const settingsService = {
+    getGraceWindowMinutes: vi.fn().mockResolvedValue(12),
+  };
 
   return {
     auditService,
     repository,
-    service: new GraceWindowService(repository as never, auditService as never),
+    service: new GraceWindowService(
+      repository as never,
+      auditService as never,
+      settingsService as never,
+    ),
+    settingsService,
   };
 }
 
 describe('GraceWindowService', () => {
-  it('creates a pending decision with a fixed ten minute expiry by default', async () => {
+  it('uses the workspace settings grace window when no explicit minutes are provided', async () => {
+    const { repository, service, settingsService } = createService();
+    repository.createDecision.mockResolvedValueOnce({
+      ...row,
+      audience: 'org',
+      decisionType: 'draw.release',
+      recordType: 'draw',
+      recordId: null,
+      summaryLabel: 'Release draw D-104',
+      requestedAt: new Date('2026-07-01T09:00:00.000Z'),
+      expiresAt: new Date('2026-07-01T09:12:00.000Z'),
+    });
+
+    await expect(
+      service.createPendingDecision({
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        actorUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        audience: 'org',
+        decisionType: 'draw.release',
+        recordType: 'draw',
+        summaryLabel: 'Release draw D-104',
+        requestedAt: '2026-07-01T09:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      expiresAt: '2026-07-01T09:12:00.000Z',
+    });
+
+    expect(settingsService.getGraceWindowMinutes).toHaveBeenCalledWith(row.workspaceId);
+    expect(repository.createDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expiresAt: new Date('2026-07-01T09:12:00.000Z'),
+      }),
+    );
+  });
+
+  it('keeps explicit grace window minutes ahead of workspace settings', async () => {
+    const { repository, service, settingsService } = createService();
+
+    await service.createPendingDecision({
+      workspaceId: row.workspaceId,
+      actorUserId: row.requestedByUserId,
+      audience: 'participants',
+      decisionType: row.decisionType,
+      recordType: row.recordType,
+      recordId: row.recordId,
+      summaryLabel: row.summaryLabel,
+      requestedAt: '2026-07-01T09:00:00.000Z',
+      graceWindowMinutes: 3,
+    });
+
+    expect(settingsService.getGraceWindowMinutes).not.toHaveBeenCalled();
+    expect(repository.createDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expiresAt: new Date('2026-07-01T09:03:00.000Z'),
+      }),
+    );
+  });
+
+  it('creates a pending decision and records an audit event', async () => {
     const { auditService, repository, service } = createService();
 
     await expect(
@@ -101,6 +173,7 @@ describe('GraceWindowService', () => {
         recordId: row.recordId,
         summaryLabel: row.summaryLabel,
         requestedAt: '2026-07-01T09:00:00.000Z',
+        graceWindowMinutes: 10,
       }),
     ).resolves.toMatchObject({
       id: row.id,
@@ -121,29 +194,6 @@ describe('GraceWindowService', () => {
         action: 'grace_window.created',
         resourceType: 'pending_decision',
         resourceId: row.id,
-      }),
-    );
-  });
-
-  it('uses graceWindowMinutes for the repository expiry', async () => {
-    const { repository, service } = createService();
-
-    await service.createPendingDecision({
-      workspaceId: row.workspaceId,
-      actorUserId: row.requestedByUserId,
-      audience: 'participants',
-      decisionType: row.decisionType,
-      recordType: row.recordType,
-      recordId: row.recordId,
-      summaryLabel: row.summaryLabel,
-      requestedAt: '2026-07-01T09:00:00.000Z',
-      graceWindowMinutes: 45,
-    });
-
-    expect(repository.createDecision).toHaveBeenCalledWith(
-      expect.objectContaining({
-        requestedAt: new Date('2026-07-01T09:00:00.000Z'),
-        expiresAt: new Date('2026-07-01T09:45:00.000Z'),
       }),
     );
   });

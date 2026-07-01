@@ -57,6 +57,13 @@
       "when": 1782915272038,
       "tag": "0007_pending_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782936817738,
+      "tag": "0008_workspace_settings",
+      "breakpoints": true
     }
   ]
 }

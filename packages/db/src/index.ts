@@ -2,6 +2,7 @@ export { createDatabaseClient } from './client.js';
 export { getDatabaseHealth } from './health.js';
 export { getDbClient } from './client.js';
 export type { DbClient, MateriabillDatabase } from './client.js';
+export * from './settings-defaults.js';
 export {
   auditEvents,
   brandRefs,
@@ -21,6 +22,7 @@ export {
   workspaceMembershipRefs,
   workspaceRefs,
   workspaceRoles,
+  workspaceSettings,
 } from './schema/index.js';
 export type {
   AuditEventRecord,
@@ -48,6 +50,7 @@ export type {
   NewWorkspaceRole,
   NewWorkspaceMembershipRef,
   NewWorkspaceRef,
+  NewWorkspaceSettingsRecord,
   RolePermission,
   SessionRecord,
   SyncCheckpoint,
@@ -61,5 +64,6 @@ export type {
   WorkspaceMembershipRef,
   WorkspaceRole,
   WorkspaceRef,
+  WorkspaceSettingsRecord,
 } from './schema/index.js';
 export type { DatabaseClient } from './client.js';
