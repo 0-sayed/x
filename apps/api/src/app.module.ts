@@ -3,6 +3,7 @@ import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AuditModule } from './audit/audit.module.js';
+import { AudienceModule } from './audience/audience.module.js';
 import { BootstrapInfoController } from './bootstrap-info.controller.js';
 import { DatabaseModule } from './database/database.module.js';
 import { GraceWindowModule } from './grace-window/grace-window.module.js';
@@ -24,6 +25,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     WorkspaceContextModule,
     RealtimeModule,
     AuditModule,
+    AudienceModule,
     GraceWindowModule,
     FileStorageModule,
     PermissionsModule,
