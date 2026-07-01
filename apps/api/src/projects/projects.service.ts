@@ -23,6 +23,7 @@ import {
 import type { ProjectParticipantRecord, ProjectRecord } from '@materiabill/db';
 
 import { AuditService } from '../audit/audit.service.js';
+import { ClientIdentitiesService } from '../client-identities/client-identities.service.js';
 import { ProjectsRepository, type ProjectSummaryRow } from './projects.repository.js';
 
 @Injectable()
@@ -32,16 +33,20 @@ export class ProjectsService {
     private readonly projectsRepository: ProjectsRepository,
     @Inject(AuditService)
     private readonly auditService: AuditService,
+    @Inject(ClientIdentitiesService)
+    private readonly clientIdentitiesService: ClientIdentitiesService,
   ) {}
 
   async createProject(workspaceContext: WorkspaceContext, body: unknown): Promise<ProjectDetail> {
     const parsed = parseRequest(createProjectRequestSchema, body, 'Invalid project create request');
+    await this.assertKnownEndCustomer(parsed.endCustomerId ?? null);
     const project = await this.projectsRepository.createProject({
       ...parsed,
       now: parsed.now ?? null,
       bottleneck: parsed.bottleneck ?? null,
       pmUserId: parsed.pmUserId ?? null,
       locationId: parsed.locationId ?? null,
+      endCustomerId: parsed.endCustomerId ?? null,
       clientOrgId: parsed.clientOrgId ?? null,
       workspaceId: workspaceContext.workspace.id,
       createdByUserId: workspaceContext.membership.userId,
@@ -92,6 +97,13 @@ export class ProjectsService {
     if (existing.archivedAt) {
       throw new ConflictException('Archived projects cannot be edited');
     }
+
+    const finalEndCustomerId =
+      'endCustomerId' in parsed ? (parsed.endCustomerId ?? null) : existing.endCustomerId;
+    const finalClientOrgId =
+      'clientOrgId' in parsed ? (parsed.clientOrgId ?? null) : existing.clientOrgId;
+    this.assertExactlyOneProjectClient(finalEndCustomerId, finalClientOrgId);
+    await this.assertKnownEndCustomer(finalEndCustomerId);
 
     const updated = await this.projectsRepository.updateProject({
       ...parsed,
@@ -209,6 +221,26 @@ export class ProjectsService {
     return project;
   }
 
+  private assertExactlyOneProjectClient(
+    endCustomerId: string | null,
+    clientOrgId: string | null,
+  ): void {
+    if (Number(Boolean(endCustomerId)) + Number(Boolean(clientOrgId)) !== 1) {
+      throw new BadRequestException('Exactly one project client is required');
+    }
+  }
+
+  private async assertKnownEndCustomer(endCustomerId: string | null): Promise<void> {
+    if (!endCustomerId) {
+      return;
+    }
+
+    const exists = await this.clientIdentitiesService.identityExists(endCustomerId);
+    if (!exists) {
+      throw new BadRequestException('End customer identity does not exist');
+    }
+  }
+
   private async recordProjectAudit(
     workspaceContext: WorkspaceContext,
     project: ProjectRecord,
@@ -256,6 +288,7 @@ export class ProjectsService {
       baselineDeliveryDate: project.baselineDeliveryDate,
       pmUserId: project.pmUserId,
       locationId: project.locationId,
+      endCustomerId: project.endCustomerId,
       clientOrgId: project.clientOrgId,
       archivedAt: project.archivedAt?.toISOString() ?? null,
       createdAt: project.createdAt.toISOString(),

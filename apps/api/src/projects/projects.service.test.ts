@@ -36,6 +36,7 @@ function createRepositoryMock() {
     baselineDeliveryDate: '2026-12-15',
     pmUserId: null,
     locationId: null,
+    endCustomerId: '11111111-1111-4111-8111-111111111111',
     clientOrgId: null,
     createdByUserId: workspaceContext.membership.userId,
     archivedAt: null,
@@ -86,13 +87,19 @@ function createRepositoryMock() {
 function createService() {
   const { repository, project, participants } = createRepositoryMock();
   const auditService = { recordEvent: vi.fn().mockResolvedValue(undefined) };
+  const clientIdentitiesService = { identityExists: vi.fn().mockResolvedValue(true) };
 
   return {
     project,
     participants,
     repository,
     auditService,
-    service: new ProjectsService(repository as never, auditService as never),
+    clientIdentitiesService,
+    service: new ProjectsService(
+      repository as never,
+      auditService as never,
+      clientIdentitiesService as never,
+    ),
   };
 }
 
@@ -114,6 +121,7 @@ describe('ProjectsService', () => {
         city: 'Riyadh',
         currency: 'SAR',
         baselineDeliveryDate: '2026-12-15',
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
       }),
     ).resolves.toEqual({
       ...toApiProject(project),
@@ -133,6 +141,7 @@ describe('ProjectsService', () => {
         bottleneck: null,
         pmUserId: null,
         locationId: null,
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
         clientOrgId: null,
       }),
     );
@@ -146,6 +155,38 @@ describe('ProjectsService', () => {
         resourceId: project.id,
       }),
     );
+  });
+
+  it('rejects create requests without exactly one client reference', async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.createProject(workspaceContext as never, {
+        name: 'Villa A12',
+        city: 'Riyadh',
+        currency: 'SAR',
+        baselineDeliveryDate: '2026-12-15',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.createProject).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing end-customer identities before inserting projects', async () => {
+    const { service, repository, clientIdentitiesService } = createService();
+    clientIdentitiesService.identityExists.mockResolvedValue(false);
+
+    await expect(
+      service.createProject(workspaceContext as never, {
+        name: 'Villa A12',
+        city: 'Riyadh',
+        currency: 'SAR',
+        baselineDeliveryDate: '2026-12-15',
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.createProject).not.toHaveBeenCalled();
   });
 
   it('lists projects and returns a stable next cursor only when the page is full', async () => {
@@ -255,6 +296,16 @@ describe('ProjectsService', () => {
         name: 'Villa A12 Phase 2',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('requires update requests to leave exactly one final client reference', async () => {
+    const { service, project, repository } = createService();
+
+    await expect(
+      service.updateProject(workspaceContext as never, project.id, { endCustomerId: null }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.updateProject).not.toHaveBeenCalled();
   });
 
   it('updates a project and records an internal audit event', async () => {
