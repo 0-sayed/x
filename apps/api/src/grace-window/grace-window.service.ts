@@ -52,7 +52,7 @@ export class GraceWindowService {
   async createPendingDecision(input: CreatePendingDecisionInput): Promise<PendingDecision> {
     const parsed = createPendingDecisionInputSchema.parse(input);
     const requestedAt = parsed.requestedAt ? new Date(parsed.requestedAt) : new Date();
-    const expiresAt = new Date(requestedAt.getTime() + 10 * 60_000);
+    const expiresAt = new Date(requestedAt.getTime() + parsed.graceWindowMinutes * 60_000);
 
     const created = await this.repository.createDecision({
       id: randomUUID(),

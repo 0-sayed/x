@@ -125,7 +125,7 @@ describe('GraceWindowService', () => {
     );
   });
 
-  it('keeps the repository expiry pinned to ten minutes even when graceWindowMinutes changes', async () => {
+  it('uses graceWindowMinutes for the repository expiry', async () => {
     const { repository, service } = createService();
 
     await service.createPendingDecision({
@@ -143,7 +143,7 @@ describe('GraceWindowService', () => {
     expect(repository.createDecision).toHaveBeenCalledWith(
       expect.objectContaining({
         requestedAt: new Date('2026-07-01T09:00:00.000Z'),
-        expiresAt: new Date('2026-07-01T09:10:00.000Z'),
+        expiresAt: new Date('2026-07-01T09:45:00.000Z'),
       }),
     );
   });
