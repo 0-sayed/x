@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AuditModule } from './audit/audit.module.js';
 import { BootstrapInfoController } from './bootstrap-info.controller.js';
 import { DatabaseModule } from './database/database.module.js';
+import { FileStorageModule } from './file-storage/file-storage.module.js';
 import { HealthController } from './health.controller.js';
 import { PermissionsController } from './permissions/permissions.controller.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
@@ -20,6 +21,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     SessionModule,
     WorkspaceContextModule,
     AuditModule,
+    FileStorageModule,
     PermissionsModule,
   ],
   controllers: [HealthController, BootstrapInfoController, PermissionsController],
