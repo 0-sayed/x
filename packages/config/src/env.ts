@@ -42,6 +42,7 @@ const mimeListSchema = z
 const runtimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(3000),
+  WEB_PORT: z.coerce.number().int().positive().optional(),
   LOG_LEVEL: runtimeLogLevelSchema.default('info'),
   API_LOG_LEVEL: runtimeLogLevelSchema.optional(),
   WORKER_LOG_LEVEL: runtimeLogLevelSchema.optional(),
@@ -202,6 +203,14 @@ function requireConfigValue(value: string | undefined, message: string): string 
   return value;
 }
 
+function resolveAdminUrl(parsed: RuntimeEnv): string {
+  if (parsed.ADMIN_URL === 'http://localhost:4173' && parsed.WEB_PORT && parsed.WEB_PORT !== 4173) {
+    return `http://127.0.0.1:${parsed.WEB_PORT}`;
+  }
+
+  return requireConfigValue(parsed.ADMIN_URL, 'Missing admin URL');
+}
+
 function requireSpacesConfigValue(value: string | undefined): string {
   if (!value) {
     throw new Error('Missing DigitalOcean Spaces file storage configuration');
@@ -220,6 +229,16 @@ function assertBase64Key(value: string): string {
   return value;
 }
 
+function resolveOAuthCallbackUrl(callbackUrl: string, parsed: RuntimeEnv): string {
+  const defaultCallbackUrl = 'http://127.0.0.1:3000/auth/callback';
+
+  if (callbackUrl === defaultCallbackUrl && parsed.API_PORT !== 3000) {
+    return `http://127.0.0.1:${parsed.API_PORT}/auth/callback`;
+  }
+
+  return callbackUrl;
+}
+
 function getRequiredSessionOAuthClient(parsed: RuntimeEnv): SessionOAuthClientConfig {
   const isSandbox = parsed.INFRAMODERN_OAUTH_MODE === 'sandbox';
   const clientId = isSandbox
@@ -236,7 +255,10 @@ function getRequiredSessionOAuthClient(parsed: RuntimeEnv): SessionOAuthClientCo
   return {
     clientId: requireConfigValue(clientId, `Missing ${modeLabel} OAuth configuration`),
     clientSecret: requireConfigValue(clientSecret, `Missing ${modeLabel} OAuth configuration`),
-    callbackUrl: requireConfigValue(callbackUrl, `Missing ${modeLabel} OAuth configuration`),
+    callbackUrl: resolveOAuthCallbackUrl(
+      requireConfigValue(callbackUrl, `Missing ${modeLabel} OAuth configuration`),
+      parsed,
+    ),
   };
 }
 
@@ -348,9 +370,7 @@ export function getSessionRuntimeConfig(env: NodeJS.ProcessEnv): SessionRuntimeC
     throw new Error('Missing Inframodern frontend URL');
   }
 
-  if (!parsed.ADMIN_URL) {
-    throw new Error('Missing admin URL');
-  }
+  const adminUrl = resolveAdminUrl(parsed);
 
   return {
     sessionSecret: parsed.SESSION_SECRET,
@@ -362,7 +382,7 @@ export function getSessionRuntimeConfig(env: NodeJS.ProcessEnv): SessionRuntimeC
     oauthStateTtlSeconds: parsed.OAUTH_STATE_TTL_SECONDS,
     inframodernUrl: parsed.INFRAMODERN_URL,
     inframodernFrontendUrl: parsed.INFRAMODERN_FRONTEND_URL,
-    adminUrl: parsed.ADMIN_URL,
+    adminUrl,
     oauthMode: parsed.INFRAMODERN_OAUTH_MODE,
     oauthClient: getRequiredSessionOAuthClient(parsed),
   };

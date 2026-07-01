@@ -153,6 +153,56 @@ describe('session runtime config', () => {
     );
   });
 
+  it('derives the local admin URL from the assigned worktree web port', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        ADMIN_URL: 'http://localhost:4173',
+        WEB_PORT: '55965',
+      }),
+    ).toMatchObject({
+      adminUrl: 'http://127.0.0.1:55965',
+    });
+  });
+
+  it('preserves an explicit non-default admin URL with an assigned web port', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        WEB_PORT: '55965',
+      }),
+    ).toMatchObject({
+      adminUrl: 'http://admin.test',
+    });
+  });
+
+  it('derives the default OAuth callback URL from the assigned worktree API port', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        API_PORT: '55964',
+        INFRAMODERN_OAUTH_CALLBACK_URL: 'http://127.0.0.1:3000/auth/callback',
+      }),
+    ).toMatchObject({
+      oauthClient: {
+        callbackUrl: 'http://127.0.0.1:55964/auth/callback',
+      },
+    });
+  });
+
+  it('preserves an explicit non-default OAuth callback URL with an assigned API port', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        API_PORT: '55964',
+      }),
+    ).toMatchObject({
+      oauthClient: {
+        callbackUrl: 'http://api.test/auth/callback',
+      },
+    });
+  });
+
   it('uses an explicit cookie secure flag independent from OAuth mode', () => {
     expect(
       getSessionRuntimeConfig({
