@@ -14,6 +14,7 @@ export { pendingDecisions } from './grace-window.js';
 export { signOffs } from './signoffs.js';
 export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { projectParticipants, projects } from './projects.js';
+export { workspaceSettings } from './settings.js';
 export { sessionRecords } from './sessions.js';
 export type { AuditEventRecord, NewAuditEventRecord } from './audit.js';
 export type {
@@ -52,6 +53,7 @@ export type {
   ProjectParticipantRecord,
   ProjectRecord,
 } from './projects.js';
+export type { NewWorkspaceSettingsRecord, WorkspaceSettingsRecord } from './settings.js';
 export { syncCheckpoints, syncFailures, syncInbox } from './sync.js';
 export type {
   NewSyncCheckpoint,
