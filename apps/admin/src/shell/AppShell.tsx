@@ -30,14 +30,14 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const { i18n, t } = useTranslation();
-  const { confirm } = useConfirm();
+  const confirmDialog = useConfirm();
   const logout = useLogout();
-  const { showToast } = useToast();
+  const toast = useToast();
   const permissions = workspaceContext?.membership.permissions ?? [];
   const displayName = user.displayName ?? user.email;
 
   async function handleLogout(): Promise<void> {
-    const confirmed = await confirm({
+    const confirmed = await confirmDialog.confirm({
       title: t('confirm.signOutTitle'),
       message: t('confirm.signOutMessage'),
     });
@@ -47,7 +47,7 @@ export function AppShell({
     }
 
     await logout.mutateAsync();
-    showToast(t('toast.signedOut'));
+    toast.showToast(t('toast.signedOut'));
   }
 
   return (

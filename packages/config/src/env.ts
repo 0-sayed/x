@@ -205,7 +205,7 @@ function requireConfigValue(value: string | undefined, message: string): string 
 
 function resolveAdminUrl(parsed: RuntimeEnv): string {
   if (parsed.ADMIN_URL === 'http://localhost:4173' && parsed.WEB_PORT && parsed.WEB_PORT !== 4173) {
-    return `http://127.0.0.1:${parsed.WEB_PORT}`;
+    return `http://127.0.0.1:${String(parsed.WEB_PORT)}`;
   }
 
   return requireConfigValue(parsed.ADMIN_URL, 'Missing admin URL');
@@ -233,7 +233,7 @@ function resolveOAuthCallbackUrl(callbackUrl: string, parsed: RuntimeEnv): strin
   const defaultCallbackUrl = 'http://127.0.0.1:3000/auth/callback';
 
   if (callbackUrl === defaultCallbackUrl && parsed.API_PORT !== 3000) {
-    return `http://127.0.0.1:${parsed.API_PORT}/auth/callback`;
+    return `http://127.0.0.1:${String(parsed.API_PORT)}/auth/callback`;
   }
 
   return callbackUrl;

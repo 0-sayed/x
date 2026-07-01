@@ -133,7 +133,7 @@ async function requestJson<TSchema extends z.ZodType>({
   }
 
   if (!response.ok) {
-    throw new ApiError(`Request failed with status ${response.status}`, response.status);
+    throw new ApiError(`Request failed with status ${String(response.status)}`, response.status);
   }
 
   const parsed = schema.safeParse(await response.json());
@@ -162,6 +162,6 @@ async function requestNoContent({
   });
 
   if (!response.ok) {
-    throw new ApiError(`Request failed with status ${response.status}`, response.status);
+    throw new ApiError(`Request failed with status ${String(response.status)}`, response.status);
   }
 }

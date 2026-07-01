@@ -62,7 +62,9 @@ export function ConfirmProvider({ children }: { readonly children: ReactNode }) 
     }
 
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [close, pending]);
 
   return (
@@ -83,11 +85,19 @@ export function ConfirmProvider({ children }: { readonly children: ReactNode }) 
                 type="button"
                 className="button secondary"
                 ref={cancelButtonRef}
-                onClick={() => close(false)}
+                onClick={() => {
+                  close(false);
+                }}
               >
                 {t('confirm.cancel')}
               </button>
-              <button type="button" className="button danger" onClick={() => close(true)}>
+              <button
+                type="button"
+                className="button danger"
+                onClick={() => {
+                  close(true);
+                }}
+              >
                 {pending.confirmLabel ?? t('confirm.confirm')}
               </button>
             </div>

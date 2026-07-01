@@ -58,8 +58,8 @@ const workspaceContext = {
 function createAuthenticatedFetchMock() {
   let loggedOut = false;
 
-  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
+  return vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
     if (url.endsWith('/user')) {
       if (loggedOut) {

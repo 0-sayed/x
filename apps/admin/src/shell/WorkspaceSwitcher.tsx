@@ -10,7 +10,7 @@ type WorkspaceSwitcherProps = {
 
 export function WorkspaceSwitcher({ switcher }: WorkspaceSwitcherProps) {
   const { t } = useTranslation();
-  const { showToast } = useToast();
+  const toast = useToast();
   const switchWorkspace = useSwitchWorkspace();
 
   return (
@@ -22,7 +22,9 @@ export function WorkspaceSwitcher({ switcher }: WorkspaceSwitcherProps) {
         disabled={!switcher || switchWorkspace.isPending}
         onChange={(event) => {
           switchWorkspace.mutate(event.target.value, {
-            onError: () => showToast(t('workspace.switchFailed')),
+            onError: () => {
+              toast.showToast(t('workspace.switchFailed'));
+            },
           });
         }}
       >
