@@ -10,7 +10,7 @@ describe('signOffs schema', () => {
     expect(getTableName(signOffs)).toBe('sign_offs');
   });
 
-  it('defines required sign-off columns', () => {
+  it('defines all sign-off columns', () => {
     const columns = Object.values(getTableConfig(signOffs).columns).map((column) => column.name);
     expect(columns).toEqual([
       'id',
@@ -35,7 +35,7 @@ describe('signOffs schema', () => {
     ]);
   });
 
-  it('adds workspace and portfolio query indexes', () => {
+  it('adds workspace, project, assigned-audience, subject, and user indexes', () => {
     const indexes = getTableConfig(signOffs)
       .indexes.map((index) => index.config.name)
       .sort();
@@ -50,7 +50,7 @@ describe('signOffs schema', () => {
     ]);
   });
 
-  it('adds enum and reject-reason checks to the generated migration', () => {
+  it('adds enum, required-action status, and reject-reason checks to the generated migration', () => {
     const migrationSql = readFileSync(
       new URL('../../drizzle/0008_sign_offs.sql', import.meta.url),
       'utf8',
@@ -60,6 +60,9 @@ describe('signOffs schema', () => {
     expect(migrationSql).toContain("\"assigned_audience\" in ('org', 'participants', 'client')");
     expect(migrationSql).toContain("\"required_action\" in ('approve', 'sign')");
     expect(migrationSql).toContain("\"status\" in ('pending', 'approved', 'rejected', 'signed')");
+    expect(migrationSql).toContain(
+      "\"status\" in ('pending', 'rejected') OR (\"required_action\" = 'approve' AND \"status\" = 'approved') OR (\"required_action\" = 'sign' AND \"status\" = 'signed')",
+    );
     expect(migrationSql).toContain(
       '"status" != \'rejected\' OR nullif(trim("resolution_reason"), \'\') IS NOT NULL',
     );

@@ -45,10 +45,15 @@ type AuditServiceMock = {
   recordEvent: MockFn;
 };
 
+type CommitHandlerRegistryMock = {
+  register: MockFn;
+};
+
 describe('SignOffsService', () => {
   let repository: RepositoryMock;
   let graceWindowService: GraceWindowServiceMock;
   let auditService: AuditServiceMock;
+  let commitHandlers: CommitHandlerRegistryMock;
   let service: SignOffsService;
 
   beforeEach(() => {
@@ -64,10 +69,65 @@ describe('SignOffsService', () => {
       hasActivePendingDecisionForRecord: vi.fn(),
     };
     auditService = { recordEvent: vi.fn() };
+    commitHandlers = { register: vi.fn() };
     service = new SignOffsService(
       repository as unknown as ConstructorParameters<typeof SignOffsService>[0],
       graceWindowService as unknown as ConstructorParameters<typeof SignOffsService>[1],
       auditService as unknown as ConstructorParameters<typeof SignOffsService>[2],
+      commitHandlers as unknown as ConstructorParameters<typeof SignOffsService>[3],
+    );
+  });
+
+  it('registers a grace-window commit handler for sign-off resolutions', async () => {
+    service.onModuleInit();
+    repository.findByIdInWorkspace.mockResolvedValueOnce(signOff);
+    repository.resolve.mockResolvedValueOnce({
+      ...signOff,
+      status: 'approved',
+      resolvedByUserId: '55555555-5555-4555-8555-555555555555',
+      resolutionDecisionId: '66666666-6666-4666-8666-666666666666',
+      resolvedAt: now,
+    });
+
+    const handler = commitHandlers.register.mock.calls[0]?.[0];
+    await handler.commit(
+      {
+        id: '66666666-6666-4666-8666-666666666666',
+        workspaceId: signOff.workspaceId,
+        projectId: signOff.projectId,
+        requestedByUserId: '55555555-5555-4555-8555-555555555555',
+        status: 'committed',
+        audience: signOff.assignedAudience,
+        decisionType: 'signoff.resolve',
+        recordType: 'signoff',
+        recordId: signOff.id,
+        summaryLabel: 'Approve: Approve timeline baseline',
+        commitPayload: {
+          signOffId: signOff.id,
+          actorUserId: '55555555-5555-4555-8555-555555555555',
+          action: 'approve',
+        },
+        undoPayload: {},
+        requestedAt: now,
+        expiresAt: now,
+        undoneAt: null,
+        committedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+      now,
+    );
+
+    expect(commitHandlers.register).toHaveBeenCalledWith(
+      expect.objectContaining({ decisionType: 'signoff.resolve' }),
+    );
+    expect(repository.resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: signOff.workspaceId,
+        signOffId: signOff.id,
+        status: 'approved',
+        resolutionDecisionId: '66666666-6666-4666-8666-666666666666',
+      }),
     );
   });
 
@@ -200,6 +260,7 @@ describe('SignOffsService', () => {
   });
 
   it('commits a pending decision resolution and records audit', async () => {
+    repository.findByIdInWorkspace.mockResolvedValueOnce(signOff);
     repository.resolve.mockResolvedValueOnce({
       ...signOff,
       status: 'approved',
@@ -222,6 +283,44 @@ describe('SignOffsService', () => {
     expect(auditService.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'signoff.resolved', resourceId: signOff.id }),
     );
+  });
+
+  it('rejects commit-time rejection without a non-empty reason', async () => {
+    repository.findByIdInWorkspace.mockResolvedValueOnce(signOff);
+
+    await expect(
+      service.commitPendingDecisionResolution({
+        workspaceId: signOff.workspaceId,
+        signOffId: signOff.id,
+        decisionId: '66666666-6666-4666-8666-666666666666',
+        actorUserId: '55555555-5555-4555-8555-555555555555',
+        action: 'reject',
+        reason: '   ',
+        now,
+      }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(repository.resolve).not.toHaveBeenCalled();
+  });
+
+  it('rejects commit-time actions that no longer match the required action', async () => {
+    repository.findByIdInWorkspace.mockResolvedValueOnce({
+      ...signOff,
+      requiredAction: 'sign',
+    });
+
+    await expect(
+      service.commitPendingDecisionResolution({
+        workspaceId: signOff.workspaceId,
+        signOffId: signOff.id,
+        decisionId: '66666666-6666-4666-8666-666666666666',
+        actorUserId: '55555555-5555-4555-8555-555555555555',
+        action: 'approve',
+        now,
+      }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(repository.resolve).not.toHaveBeenCalled();
   });
 
   it('sends a manual reminder only for pending client-assigned sign-offs', async () => {

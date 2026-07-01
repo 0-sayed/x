@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   createPendingDecisionInputSchema,
@@ -21,6 +22,7 @@ import type { PendingDecisionRecord } from '@materiabill/db';
 import { randomUUID } from 'node:crypto';
 
 import { AuditService } from '../audit/audit.service.js';
+import { GraceWindowCommitHandlerRegistry } from './grace-window-commit-handlers.js';
 import { GraceWindowRepository } from './grace-window.repository.js';
 import type { FindActivePendingDecisionByRecordInput } from './grace-window.types.js';
 
@@ -48,6 +50,7 @@ export class GraceWindowService {
   constructor(
     private readonly repository: GraceWindowRepository,
     private readonly auditService: AuditService,
+    @Optional() private readonly commitHandlers?: GraceWindowCommitHandlerRegistry,
   ) {}
 
   async createPendingDecision(input: CreatePendingDecisionInput): Promise<PendingDecision> {
@@ -181,6 +184,8 @@ export class GraceWindowService {
     if (!committed) {
       throw new ConflictException('Pending decision is not ready to commit');
     }
+
+    await this.commitHandlers?.commit(committed, now);
 
     await this.auditService.recordEvent({
       workspaceId: committed.workspaceId,

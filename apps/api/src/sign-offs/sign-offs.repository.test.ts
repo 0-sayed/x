@@ -31,7 +31,7 @@ function createDbMock(
   updateRows: readonly unknown[] = [],
 ) {
   const insertCalls: { table: unknown; valuesArgs: unknown[] }[] = [];
-  const updateCalls: { table: unknown; setArgs: unknown[] }[] = [];
+  const updateCalls: { table: unknown; setArgs: unknown[]; whereArgs: unknown[] }[] = [];
   const selectBuilder = {
     from: vi.fn(),
     where: vi.fn(),
@@ -47,7 +47,10 @@ function createDbMock(
       updateCalls[0]?.setArgs.push(values);
       return updateBuilder;
     }),
-    where: vi.fn(() => updateBuilder),
+    where: vi.fn((where: unknown) => {
+      updateCalls[0]?.whereArgs.push(where);
+      return updateBuilder;
+    }),
     returning: vi.fn().mockResolvedValue(updateRows),
   };
 
@@ -68,7 +71,7 @@ function createDbMock(
     }),
     select: vi.fn(() => selectBuilder),
     update: vi.fn((table: unknown) => {
-      updateCalls.push({ table, setArgs: [] });
+      updateCalls.push({ table, setArgs: [], whereArgs: [] });
       return updateBuilder;
     }),
   };
@@ -84,6 +87,9 @@ function collectSqlStrings(value: unknown, seen = new Set<unknown>()): string[] 
 
   if ('value' in value && Array.isArray(value.value)) {
     return value.value.filter((chunk) => typeof chunk === 'string');
+  }
+  if ('value' in value && typeof value.value === 'string') {
+    return [value.value];
   }
 
   return Reflect.ownKeys(value).flatMap((key) =>
@@ -173,6 +179,8 @@ describe('SignOffsRepository', () => {
       resolutionDecisionId: '66666666-6666-4666-8666-666666666666',
       resolvedAt: new Date('2026-07-01T10:10:00.000Z'),
     });
+    expect(collectSqlStrings(updateCalls[0]?.whereArgs[0]).join('')).toContain(' = ');
+    expect(collectSqlStrings(updateCalls[0]?.whereArgs[0]).join('')).toContain('pending');
   });
 
   it('marks a client pending sign-off reminder as sent', async () => {
@@ -198,5 +206,6 @@ describe('SignOffsRepository', () => {
       lastReminderAt: new Date('2026-07-01T10:05:00.000Z'),
       updatedAt: new Date('2026-07-01T10:05:00.000Z'),
     });
+    expect(collectSqlStrings(updateCalls[0]?.setArgs[0]).join('')).toContain(' + 1');
   });
 });

@@ -83,11 +83,19 @@ function createService(overrides: ServiceOverrides = {}) {
   const auditService = {
     recordEvent: vi.fn().mockResolvedValue(undefined),
   };
+  const commitHandlers = {
+    commit: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     auditService,
+    commitHandlers,
     repository,
-    service: new GraceWindowService(repository as never, auditService as never),
+    service: new GraceWindowService(
+      repository as never,
+      auditService as never,
+      commitHandlers as unknown as ConstructorParameters<typeof GraceWindowService>[2],
+    ),
   };
 }
 
@@ -351,7 +359,7 @@ describe('GraceWindowService', () => {
   });
 
   it('marks expired decisions committed for worker callers', async () => {
-    const { auditService, repository, service } = createService();
+    const { auditService, commitHandlers, repository, service } = createService();
 
     await expect(
       service.markExpiredDecisionCommitted({
@@ -370,6 +378,10 @@ describe('GraceWindowService', () => {
       decisionId: row.id,
       now: new Date('2026-07-01T09:12:00.000Z'),
     });
+    expect(commitHandlers.commit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: row.id, status: 'committed' }),
+      new Date('2026-07-01T09:12:00.000Z'),
+    );
     expect(auditService.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         audience: 'client',

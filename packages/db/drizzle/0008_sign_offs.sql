@@ -24,6 +24,7 @@ CREATE TABLE "sign_offs" (
 	CONSTRAINT "sign_offs_assigned_audience_check" CHECK ("assigned_audience" in ('org', 'participants', 'client')),
 	CONSTRAINT "sign_offs_required_action_check" CHECK ("required_action" in ('approve', 'sign')),
 	CONSTRAINT "sign_offs_status_check" CHECK ("status" in ('pending', 'approved', 'rejected', 'signed')),
+	CONSTRAINT "sign_offs_required_action_status_check" CHECK ("status" in ('pending', 'rejected') OR ("required_action" = 'approve' AND "status" = 'approved') OR ("required_action" = 'sign' AND "status" = 'signed')),
 	CONSTRAINT "sign_offs_reject_reason_check" CHECK ("status" != 'rejected' OR nullif(trim("resolution_reason"), '') IS NOT NULL)
 );
 --> statement-breakpoint

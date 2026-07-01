@@ -64,6 +64,10 @@ export const signOffs = pgTable(
     check('sign_offs_required_action_check', sql`"required_action" in ('approve', 'sign')`),
     check('sign_offs_status_check', sql`"status" in ('pending', 'approved', 'rejected', 'signed')`),
     check(
+      'sign_offs_required_action_status_check',
+      sql`"status" in ('pending', 'rejected') OR ("required_action" = 'approve' AND "status" = 'approved') OR ("required_action" = 'sign' AND "status" = 'signed')`,
+    ),
+    check(
       'sign_offs_reject_reason_check',
       sql`"status" != 'rejected' OR nullif(trim("resolution_reason"), '') IS NOT NULL`,
     ),

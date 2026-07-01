@@ -1734,6 +1734,10 @@
           "name": "sign_offs_status_check",
           "value": "\"status\" in ('pending', 'approved', 'rejected', 'signed')"
         },
+        "sign_offs_required_action_status_check": {
+          "name": "sign_offs_required_action_status_check",
+          "value": "\"status\" in ('pending', 'rejected') OR (\"required_action\" = 'approve' AND \"status\" = 'approved') OR (\"required_action\" = 'sign' AND \"status\" = 'signed')"
+        },
         "sign_offs_reject_reason_check": {
           "name": "sign_offs_reject_reason_check",
           "value": "\"status\" != 'rejected' OR nullif(trim(\"resolution_reason\"), '') IS NOT NULL"

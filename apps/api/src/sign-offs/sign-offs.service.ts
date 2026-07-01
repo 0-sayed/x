@@ -3,7 +3,9 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import type { OnModuleInit } from '@nestjs/common';
 import {
   createSignOffInputSchema,
   signOffListQuerySchema,
@@ -18,11 +20,13 @@ import {
   type SignOffListResponse,
   type SignOffResolutionAction,
   type SignOffStatus,
+  signOffResolutionActionSchema,
 } from '@materiabill/contracts';
-import type { SignOffRecord } from '@materiabill/db';
+import type { PendingDecisionRecord, SignOffRecord } from '@materiabill/db';
 import { randomUUID } from 'node:crypto';
 
 import { AuditService } from '../audit/audit.service.js';
+import { GraceWindowCommitHandlerRegistry } from '../grace-window/grace-window-commit-handlers.js';
 import { GraceWindowService } from '../grace-window/grace-window.service.js';
 import { SignOffsRepository } from './sign-offs.repository.js';
 import type {
@@ -41,12 +45,22 @@ type ListSignOffsInput = {
 };
 
 @Injectable()
-export class SignOffsService {
+export class SignOffsService implements OnModuleInit {
   constructor(
     private readonly repository: SignOffsRepository,
     private readonly graceWindowService: GraceWindowService,
     private readonly auditService: AuditService,
+    @Optional() private readonly commitHandlers?: GraceWindowCommitHandlerRegistry,
   ) {}
+
+  onModuleInit(): void {
+    this.commitHandlers?.register({
+      decisionType: 'signoff.resolve',
+      commit: async (decision, now) => {
+        await this.commitPendingDecisionResolution(toCommitSignOffResolutionInput(decision, now));
+      },
+    });
+  }
 
   async createSignOff(input: CreateSignOffInput): Promise<SignOff> {
     const { now = new Date(), ...contractInput } = input;
@@ -189,12 +203,37 @@ export class SignOffsService {
 
   async commitPendingDecisionResolution(input: CommitSignOffResolutionInput): Promise<SignOff> {
     const now = input.now ?? new Date();
+    const signOff = await this.repository.findByIdInWorkspace({
+      workspaceId: input.workspaceId,
+      signOffId: input.signOffId,
+    });
+
+    if (!signOff) {
+      throw new NotFoundException('Sign-off not found');
+    }
+
+    if (signOff.status !== 'pending') {
+      throw new ConflictException('Sign-off is no longer pending');
+    }
+
+    const reason = normalizeOptionalReason(input.reason);
+    if (input.action === 'reject' && !reason) {
+      throw new ConflictException('Rejecting a sign-off requires a reason');
+    }
+
+    if (
+      (input.action === 'approve' || input.action === 'sign') &&
+      input.action !== signOff.requiredAction
+    ) {
+      throw new ConflictException('Resolution action does not match required action');
+    }
+
     const resolved = await this.repository.resolve({
       workspaceId: input.workspaceId,
       signOffId: input.signOffId,
       status: statusForAction(input.action),
       resolvedByUserId: input.actorUserId,
-      resolutionReason: normalizeOptionalReason(input.reason),
+      resolutionReason: reason,
       resolutionDecisionId: input.decisionId,
       now,
     });
@@ -311,6 +350,46 @@ function normalizeOptionalReason(reason: string | undefined): string | null {
   const trimmed = reason?.trim() ?? '';
   if (trimmed.length === 0) return null;
   return trimmed;
+}
+
+function toCommitSignOffResolutionInput(
+  decision: PendingDecisionRecord,
+  now: Date,
+): CommitSignOffResolutionInput {
+  const payload = decision.commitPayload;
+  if (!isCommitPayload(payload)) {
+    throw new ConflictException('Invalid sign-off resolution payload');
+  }
+
+  const parsedAction = signOffResolutionActionSchema.safeParse(payload.action);
+  if (!parsedAction.success) {
+    throw new ConflictException('Invalid sign-off resolution payload');
+  }
+
+  return {
+    workspaceId: decision.workspaceId,
+    signOffId: payload.signOffId,
+    decisionId: decision.id,
+    actorUserId: payload.actorUserId,
+    action: parsedAction.data,
+    reason: typeof payload.reason === 'string' ? payload.reason : undefined,
+    now,
+  };
+}
+
+function isCommitPayload(payload: unknown): payload is {
+  readonly signOffId: string;
+  readonly actorUserId: string;
+  readonly action: unknown;
+  readonly reason?: unknown;
+} {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    typeof payload.signOffId === 'string' &&
+    typeof payload.actorUserId === 'string' &&
+    'action' in payload
+  );
 }
 
 function isPendingRecordUniqueViolation(error: unknown): boolean {

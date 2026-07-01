@@ -58,7 +58,19 @@ describe('SignOffsController', () => {
     });
   });
 
-  it('rejects invalid respond payloads and ids', async () => {
+  it('requires workspace context for responding', async () => {
+    const controller = new SignOffsController({
+      requestResolution: vi.fn(),
+    } as never);
+
+    await expect(
+      controller.respondToSignOff(undefined, '11111111-1111-4111-8111-111111111111', {
+        action: 'approve',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects invalid respond ids', async () => {
     const controller = new SignOffsController({
       requestResolution: vi.fn(),
     } as never);
@@ -70,6 +82,23 @@ describe('SignOffsController', () => {
           membership: { userId: '44444444-4444-4444-8444-444444444444' },
         } as never,
         'not-a-uuid',
+        { action: 'approve' },
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects invalid respond payloads', async () => {
+    const controller = new SignOffsController({
+      requestResolution: vi.fn(),
+    } as never);
+
+    await expect(
+      controller.respondToSignOff(
+        {
+          workspace: { id: '22222222-2222-4222-8222-222222222222' },
+          membership: { userId: '44444444-4444-4444-8444-444444444444' },
+        } as never,
+        '11111111-1111-4111-8111-111111111111',
         { action: 'reject' },
       ),
     ).rejects.toThrow(BadRequestException);
@@ -99,12 +128,26 @@ describe('SignOffsController', () => {
     });
   });
 
-  it('requires a workspace context for reminders and validates ids', async () => {
+  it('requires workspace context for reminders', async () => {
     const controller = new SignOffsController({ sendManualReminder: vi.fn() } as never);
 
-    await expect(controller.sendReminder(undefined, 'not-a-uuid')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      controller.sendReminder(undefined, '11111111-1111-4111-8111-111111111111'),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects invalid reminder ids', async () => {
+    const controller = new SignOffsController({ sendManualReminder: vi.fn() } as never);
+
+    await expect(
+      controller.sendReminder(
+        {
+          workspace: { id: '22222222-2222-4222-8222-222222222222' },
+          membership: { userId: '44444444-4444-4444-8444-444444444444' },
+        } as never,
+        'not-a-uuid',
+      ),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('passes workspace and actor ids when sending reminders', async () => {
