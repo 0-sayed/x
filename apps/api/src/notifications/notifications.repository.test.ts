@@ -232,23 +232,24 @@ describe('NotificationsRepository', () => {
     expect(rows).toEqual([{ id: 'preference-row' }]);
     expect(db.transaction).toHaveBeenCalledTimes(1);
     expect(insertCalls).toHaveLength(0);
-    expect(txInsertCalls).toHaveLength(3);
+    expect(txInsertCalls).toHaveLength(2);
     expect(txInsertCalls[0]?.table).toBe(notificationPreferences);
-    expect(txInsertCalls[1]?.valuesArgs[0]).toEqual(
+    expect(txInsertCalls[1]?.valuesArgs[0]).toEqual([
       expect.objectContaining({
         workspaceId,
         eventType: 'draw.approved',
         channel: 'email',
         enabled: false,
       }),
-    );
-    expect(txInsertCalls[2]?.valuesArgs[0]).toEqual(
       expect.objectContaining({
         workspaceId,
         eventType: 'snag.opened',
         channel: 'in_app',
         enabled: true,
       }),
+    ]);
+    expect(collectLeaves(txInsertCalls[1]?.onConflictArgs[0])).toEqual(
+      expect.arrayContaining(['excluded.enabled']),
     );
     expect(selectWhereArgs).toHaveLength(0);
     expect(collectLeaves(txSelectWhereArgs[0])).toEqual(
@@ -259,18 +260,40 @@ describe('NotificationsRepository', () => {
   it('lists workspace preferences after seeding defaults', async () => {
     const workspaceId = '82bf0afe-b730-4046-ac0b-30f74ce1db7a';
     const { db, insertCalls, selectBuilder, selectWhereArgs } = createDbMock({
-      selectResults: [[{ id: 'pref-1' }]],
+      selectResults: [[{ id: 'pref-1' }], [{ id: 'pref-1' }, { id: 'pref-2' }]],
     });
     const repository = new NotificationsRepository({ db } as never);
 
     const rows = await repository.listPreferences(workspaceId);
 
-    expect(rows).toEqual([{ id: 'pref-1' }]);
+    expect(rows).toEqual([{ id: 'pref-1' }, { id: 'pref-2' }]);
     expect(insertCalls[0]?.table).toBe(notificationPreferences);
     expect(selectBuilder.from).toHaveBeenCalledWith(notificationPreferences);
     expect(collectLeaves(selectWhereArgs[0])).toEqual(
       expect.arrayContaining(['workspace_id', workspaceId]),
     );
+  });
+
+  it('lists complete workspace preferences without seeding defaults', async () => {
+    const workspaceId = '82bf0afe-b730-4046-ac0b-30f74ce1db7a';
+    const completePreferences = notificationEventTypes.flatMap((eventType) =>
+      notificationChannels.map((channel) => ({
+        id: `${eventType}-${channel}`,
+        workspaceId,
+        eventType,
+        channel,
+        enabled: channel !== 'whatsapp',
+      })),
+    );
+    const { db, insertCalls } = createDbMock({
+      selectResults: [completePreferences],
+    });
+    const repository = new NotificationsRepository({ db } as never);
+
+    const rows = await repository.listPreferences(workspaceId);
+
+    expect(rows).toEqual(completePreferences);
+    expect(insertCalls).toHaveLength(0);
   });
 
   it('returns recipient ids without active workspace membership', async () => {

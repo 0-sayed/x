@@ -92,36 +92,42 @@ export class NotificationsRepository {
     return this.#db.transaction(async (tx) => {
       await this.#ensureDefaultPreferences(input.workspaceId, tx);
 
-      await Promise.all(
-        input.preferences.map((preference) =>
-          tx
-            .insert(notificationPreferences)
-            .values({
+      if (input.preferences.length > 0) {
+        await tx
+          .insert(notificationPreferences)
+          .values(
+            input.preferences.map((preference) => ({
               workspaceId: input.workspaceId,
               eventType: preference.eventType,
               channel: preference.channel,
               enabled: preference.enabled,
-            })
-            .onConflictDoUpdate({
-              target: [
-                notificationPreferences.workspaceId,
-                notificationPreferences.eventType,
-                notificationPreferences.channel,
-              ],
-              set: {
-                enabled: preference.enabled,
-                updatedAt: new Date(),
-              },
-            })
-            .returning(),
-        ),
-      );
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              notificationPreferences.workspaceId,
+              notificationPreferences.eventType,
+              notificationPreferences.channel,
+            ],
+            set: {
+              enabled: sql.raw('excluded.enabled'),
+              updatedAt: new Date(),
+            },
+          })
+          .returning();
+      }
 
       return this.#listPreferences(input.workspaceId, tx);
     });
   }
 
   async listPreferences(workspaceId: string): Promise<NotificationPreferenceRecord[]> {
+    const existing = await this.#listPreferences(workspaceId, this.#db);
+    const expectedCount = notificationEventTypes.length * notificationChannels.length;
+    if (existing.length === expectedCount) {
+      return existing;
+    }
+
     await this.#ensureDefaultPreferences(workspaceId, this.#db);
 
     return this.#listPreferences(workspaceId, this.#db);

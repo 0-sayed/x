@@ -301,14 +301,16 @@ export class NotificationsService {
       readAt: new Date(),
     });
 
-    this.realtimePublisher.publish({
-      workspaceId: input.workspaceId,
-      type: 'notifications.changed',
-      payload: {
-        recipientUserId: input.recipientUserId,
-        updatedCount,
-      },
-    });
+    if (updatedCount > 0) {
+      this.realtimePublisher.publish({
+        workspaceId: input.workspaceId,
+        type: 'notifications.changed',
+        payload: {
+          recipientUserId: input.recipientUserId,
+          updatedCount,
+        },
+      });
+    }
 
     return markAllNotificationsReadResponseSchema.parse({ updatedCount });
   }

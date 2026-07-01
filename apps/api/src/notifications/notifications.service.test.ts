@@ -567,6 +567,20 @@ describe('NotificationsService', () => {
     );
   });
 
+  it('does not publish realtime changes when no notifications were marked read', async () => {
+    const { realtimePublisher, repository, service } = createService();
+    repository.markAllRead.mockResolvedValueOnce(0);
+
+    await expect(
+      service.markAllRead({
+        workspaceId,
+        recipientUserId: userId,
+      }),
+    ).resolves.toEqual({ updatedCount: 0 });
+
+    expect(realtimePublisher.publish).not.toHaveBeenCalled();
+  });
+
   it('default email adapter records provider-unconfigured skips', async () => {
     const adapter = new UnconfiguredNotificationEmailAdapter();
 
