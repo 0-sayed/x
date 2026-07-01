@@ -1,9 +1,152 @@
 {
-  "id": "4100bcef-43c3-4650-931c-8ec34c67524a",
-  "prevId": "14025ae2-f74f-4348-8b39-74dce9386989",
+  "id": "1697649b-da32-4504-9757-eabe61c78ef9",
+  "prevId": "7c89e53e-a33e-491f-9fd3-5710c14f06c6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.audit_events": {
+      "name": "audit_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "audience": {
+          "name": "audience",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_workspace_occurred_at_idx": {
+          "name": "audit_events_workspace_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_workspace_audience_occurred_at_idx": {
+          "name": "audit_events_workspace_audience_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "audience",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audit_events_workspace_id_workspace_refs_id_fk": {
+          "name": "audit_events_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "audit_events_actor_user_id_inframodern_user_refs_id_fk": {
+          "name": "audit_events_actor_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "audit_events_audience_check": {
+          "name": "audit_events_audience_check",
+          "value": "\"audience\" in ('internal', 'client')"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.brand_refs": {
       "name": "brand_refs",
       "schema": "",
@@ -1190,6 +1333,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1300,14 +1450,19 @@
         }
       },
       "compositePrimaryKeys": {
-        "user_role_assignments_workspace_id_user_id_role_id_pk": {
-          "name": "user_role_assignments_workspace_id_user_id_role_id_pk",
-          "columns": ["workspace_id", "user_id", "role_id"]
+        "user_role_assignments_workspace_id_user_id_role_id_source_pk": {
+          "name": "user_role_assignments_workspace_id_user_id_role_id_source_pk",
+          "columns": ["workspace_id", "user_id", "role_id", "source"]
         }
       },
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "user_role_assignments_source_check": {
+          "name": "user_role_assignments_source_check",
+          "value": "\"user_role_assignments\".\"source\" IN ('manual', 'inframodern_admin')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.workspace_membership_refs": {

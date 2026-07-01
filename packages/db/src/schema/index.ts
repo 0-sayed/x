@@ -9,8 +9,17 @@ export {
   workspaceMembershipRefs,
   workspaceRefs,
 } from './projections.js';
+export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { sessionRecords } from './sessions.js';
 export type { AuditEventRecord, NewAuditEventRecord } from './audit.js';
+export type {
+  NewRolePermission,
+  NewUserRoleAssignment,
+  NewWorkspaceRole,
+  RolePermission,
+  UserRoleAssignment,
+  WorkspaceRole,
+} from './permissions.js';
 export type {
   BrandRef,
   ExchangeRateRef,

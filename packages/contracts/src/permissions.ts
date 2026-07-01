@@ -81,3 +81,98 @@ const permissionKeySet = new Set<string>(permissionKeys);
 export function isPermissionKey(value: string): value is PermissionKey {
   return permissionKeySet.has(value);
 }
+
+export const systemRoleKeySchema = z.enum([
+  'workspaceAdmin',
+  'projectManager',
+  'finance',
+  'viewer',
+]);
+
+export const roleNameSchema = z.string().trim().min(1).max(120);
+
+export const rolePermissionListSchema = z
+  .array(permissionKeySchema)
+  .min(1)
+  .refine((permissions) => new Set(permissions).size === permissions.length, {
+    message: 'Permission keys must be unique',
+  });
+
+export const roleSummarySchema = z
+  .object({
+    id: z.uuid(),
+    workspaceId: z.uuid(),
+    systemKey: systemRoleKeySchema.nullable(),
+    isSystem: z.boolean(),
+    nameEn: roleNameSchema,
+    nameAr: roleNameSchema,
+    permissions: rolePermissionListSchema,
+    clonedFromRoleId: z.uuid().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const createRoleRequestSchema = z
+  .object({
+    nameEn: roleNameSchema,
+    nameAr: roleNameSchema,
+    permissions: rolePermissionListSchema,
+  })
+  .strict();
+
+export const updateRoleRequestSchema = z
+  .object({
+    nameEn: roleNameSchema.optional(),
+    nameAr: roleNameSchema.optional(),
+    permissions: rolePermissionListSchema.optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one role field is required',
+  });
+
+export const cloneRoleRequestSchema = z
+  .object({
+    nameEn: roleNameSchema,
+    nameAr: roleNameSchema,
+  })
+  .strict();
+
+export const replaceUserRoleAssignmentsRequestSchema = z
+  .object({
+    userId: z.uuid(),
+    roleIds: z
+      .array(z.uuid())
+      .min(1)
+      .refine((roleIds) => new Set(roleIds).size === roleIds.length, {
+        message: 'Role ids must be unique',
+      }),
+  })
+  .strict();
+
+export const rolesResponseSchema = z
+  .object({
+    roles: z.array(roleSummarySchema),
+  })
+  .strict();
+
+export const userRoleAssignmentSummarySchema = z
+  .object({
+    workspaceId: z.uuid(),
+    userId: z.uuid(),
+    roleIds: z.array(z.uuid()),
+    permissions: rolePermissionListSchema,
+  })
+  .strict();
+
+export type SystemRoleKey = z.infer<typeof systemRoleKeySchema>;
+export type RoleSummary = z.infer<typeof roleSummarySchema>;
+export type CreateRoleRequest = z.infer<typeof createRoleRequestSchema>;
+export type UpdateRoleRequest = z.infer<typeof updateRoleRequestSchema>;
+export type CloneRoleRequest = z.infer<typeof cloneRoleRequestSchema>;
+export type ReplaceUserRoleAssignmentsRequest = z.infer<
+  typeof replaceUserRoleAssignmentsRequestSchema
+>;
+export type RolesResponse = z.infer<typeof rolesResponseSchema>;
+export type UserRoleAssignmentSummary = z.infer<typeof userRoleAssignmentSummarySchema>;

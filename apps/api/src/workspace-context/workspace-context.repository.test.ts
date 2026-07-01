@@ -69,7 +69,13 @@ describe('WorkspaceContextRepository', () => {
         isAdmin: true,
       },
     ]);
-    const repository = new WorkspaceContextRepository({ db } as never);
+    const permissionsRepository = {
+      findEffectivePermissions: vi.fn().mockResolvedValue(['manage_roles', 'workspace.view']),
+    };
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      permissionsRepository as never,
+    );
 
     await expect(
       repository.findMembershipContext(
@@ -83,7 +89,7 @@ describe('WorkspaceContextRepository', () => {
       paymentCurrency: 'SAR',
       userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
       roleKey: 'workspace_admin',
-      permissions: ['workspace.view'],
+      permissions: ['manage_roles', 'workspace.view'],
       isAdmin: true,
     });
 
@@ -92,13 +98,55 @@ describe('WorkspaceContextRepository', () => {
     const conditionLeaves = collectLeaves(selectBuilder.where.mock.calls[0]?.[0]);
     expect(conditionLeaves).toContain('3f43835d-7f3b-4b16-907b-d57db49832dd');
     expect(conditionLeaves).toContain('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
+    expect(conditionLeaves).toContain('workspace_id');
+    expect(conditionLeaves).toContain('user_id');
     expect(conditionLeaves).toContain('is_active');
     expect(conditionLeaves).toContain('deleted_at');
+    expect(permissionsRepository.findEffectivePermissions).toHaveBeenCalledWith(
+      '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      '3f43835d-7f3b-4b16-907b-d57db49832dd',
+    );
+  });
+
+  it('uses empty RBAC permissions as authoritative over projected permissions', async () => {
+    const { db } = createDbMock([
+      {
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        workspaceName: 'Demo Workspace',
+        workspaceSlug: 'demo-workspace',
+        paymentCurrency: 'SAR',
+        userId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        roleKey: 'workspace_admin',
+        permissions: ['workspace.view'],
+        isAdmin: true,
+      },
+    ]);
+    const permissionsRepository = {
+      findEffectivePermissions: vi.fn().mockResolvedValue([]),
+    };
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      permissionsRepository as never,
+    );
+
+    await expect(
+      repository.findMembershipContext(
+        '3f43835d-7f3b-4b16-907b-d57db49832dd',
+        '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        permissions: [],
+      }),
+    );
   });
 
   it('returns null when no membership is found', async () => {
     const { db } = createDbMock([]);
-    const repository = new WorkspaceContextRepository({ db } as never);
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      { findEffectivePermissions: vi.fn() } as never,
+    );
 
     await expect(
       repository.findMembershipContext(
@@ -110,7 +158,10 @@ describe('WorkspaceContextRepository', () => {
 
   it('updates the active workspace for the current user session', async () => {
     const { db, updateCalls } = createDbMock([], [{ id: 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2' }]);
-    const repository = new WorkspaceContextRepository({ db } as never);
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      { findEffectivePermissions: vi.fn() } as never,
+    );
 
     await expect(
       repository.updateActiveWorkspace(
@@ -136,7 +187,10 @@ describe('WorkspaceContextRepository', () => {
 
   it('returns false when no current session row is updated', async () => {
     const { db } = createDbMock([], []);
-    const repository = new WorkspaceContextRepository({ db } as never);
+    const repository = new WorkspaceContextRepository(
+      { db } as never,
+      { findEffectivePermissions: vi.fn() } as never,
+    );
 
     await expect(
       repository.updateActiveWorkspace(

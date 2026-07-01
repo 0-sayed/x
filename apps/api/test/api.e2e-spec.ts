@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
 import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import type { CurrentSessionUser } from '@materiabill/contracts';
 import cookieParser from 'cookie-parser';
@@ -15,6 +16,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { AppModule } from '../src/app.module.js';
 import { AuditService } from '../src/audit/audit.service.js';
 import { configureApiDocumentation } from '../src/main.js';
+import { PermissionsController } from '../src/permissions/permissions.controller.js';
+import { PermissionsGuard } from '../src/permissions/permissions.guard.js';
+import { PermissionsService } from '../src/permissions/permissions.service.js';
 import { SessionController } from '../src/session/session.controller.js';
 import { SessionGuard } from '../src/session/session.guard.js';
 import { SessionService } from '../src/session/session.service.js';
@@ -541,6 +545,178 @@ describe('audit endpoints', () => {
     await request(auditApp.getHttpServer())
       .get('/audit-events')
       .query({ audience: 'public', limit: '500' })
+      .expect(400);
+  });
+});
+
+describe('permissions endpoints', () => {
+  let permissionsApp: INestApplication;
+  const workspaceId = '82bf0afe-b730-4046-ac0b-30f74ce1db7a';
+  const roleId = '01890f8e-5f47-7cc3-98c4-dc0c0c07398f';
+  const userId = '3f43835d-7f3b-4b16-907b-d57db49832dd';
+  const roleSummary = {
+    id: roleId,
+    workspaceId,
+    systemKey: null,
+    isSystem: false,
+    nameEn: 'Custom Admin',
+    nameAr: 'مدير مخصص',
+    permissions: ['workspace.view', 'manage_roles'],
+    clonedFromRoleId: null,
+    createdAt: '2026-06-30T00:00:00.000Z',
+    updatedAt: '2026-06-30T00:00:00.000Z',
+  };
+  const permissionsService = {
+    getCatalog: vi.fn(() => ({
+      permissions: [
+        {
+          key: 'manage_roles',
+          area: 'people_roles',
+          labelEn: 'Manage roles',
+          labelAr: 'إدارة الأدوار',
+        },
+      ],
+      roleTemplates: {},
+    })),
+    listRoles: vi.fn().mockResolvedValue({ roles: [roleSummary] }),
+    createRole: vi.fn().mockResolvedValue(roleSummary),
+    updateRole: vi.fn().mockResolvedValue(roleSummary),
+    cloneRole: vi.fn().mockResolvedValue({ ...roleSummary, clonedFromRoleId: roleId }),
+    replaceUserRoleAssignments: vi.fn().mockResolvedValue({
+      workspaceId,
+      userId,
+      roleIds: [roleId],
+      permissions: ['manage_roles', 'workspace.view'],
+    }),
+  };
+  const workspaceContext = {
+    workspace: {
+      id: workspaceId,
+      name: 'Demo Workspace',
+      slug: 'demo-workspace',
+      paymentCurrency: 'SAR',
+    },
+    membership: {
+      userId,
+      roleKey: 'workspace_admin',
+      permissions: [
+        'workspace.view',
+        'roles.view',
+        'roles.create',
+        'roles.edit',
+        'manage_roles',
+        'user_role_assignments.manage',
+      ],
+      isAdmin: true,
+    },
+    access: {
+      appInstalled: true,
+      subscriptionActive: true,
+      membershipActive: true,
+    },
+  };
+  const workspaceGuardMock: CanActivate = {
+    canActivate: (context: ExecutionContext): boolean => {
+      const request = context.switchToHttp().getRequest<{
+        user?: CurrentSessionUser;
+        workspaceContext?: typeof workspaceContext;
+      }>();
+      request.user = sessionUser;
+      request.workspaceContext = workspaceContext;
+
+      return true;
+    },
+  };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [PermissionsController],
+      providers: [
+        { provide: PermissionsService, useValue: permissionsService },
+        Reflector,
+        PermissionsGuard,
+      ],
+    })
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(workspaceGuardMock)
+      .compile();
+
+    permissionsApp = moduleRef.createNestApplication();
+    await permissionsApp.init();
+  });
+
+  afterAll(async () => {
+    await permissionsApp.close();
+  });
+
+  it('serves the permissions catalog with workspace context only', async () => {
+    const response = await request(permissionsApp.getHttpServer())
+      .get('/permissions/catalog')
+      .expect(200);
+
+    expect(response.body.permissions).toEqual([
+      expect.objectContaining({ key: 'manage_roles', labelAr: 'إدارة الأدوار' }),
+    ]);
+  });
+
+  it('serves roles for callers with roles.view', async () => {
+    const response = await request(permissionsApp.getHttpServer()).get('/roles').expect(200);
+
+    expect(response.body).toEqual({ roles: [roleSummary] });
+    expect(permissionsService.listRoles).toHaveBeenCalledWith(workspaceId);
+  });
+
+  it('creates, updates, clones roles, and replaces user role assignments', async () => {
+    await request(permissionsApp.getHttpServer())
+      .post('/roles')
+      .send({
+        nameEn: 'Custom Admin',
+        nameAr: 'مدير مخصص',
+        permissions: ['workspace.view', 'manage_roles'],
+      })
+      .expect(201);
+
+    await request(permissionsApp.getHttpServer())
+      .patch(`/roles/${roleId}`)
+      .send({ permissions: ['workspace.view', 'manage_roles'] })
+      .expect(200);
+
+    await request(permissionsApp.getHttpServer())
+      .post(`/roles/${roleId}/clone`)
+      .send({ nameEn: 'Cloned Admin', nameAr: 'مدير منسوخ' })
+      .expect(201);
+
+    await request(permissionsApp.getHttpServer())
+      .post('/user-role-assignments')
+      .send({ userId, roleIds: [roleId] })
+      .expect(201);
+
+    expect(permissionsService.createRole).toHaveBeenCalledWith(workspaceId, {
+      nameEn: 'Custom Admin',
+      nameAr: 'مدير مخصص',
+      permissions: ['workspace.view', 'manage_roles'],
+    });
+    expect(permissionsService.updateRole).toHaveBeenCalledWith(workspaceId, roleId, {
+      permissions: ['workspace.view', 'manage_roles'],
+    });
+    expect(permissionsService.cloneRole).toHaveBeenCalledWith(workspaceId, roleId, {
+      nameEn: 'Cloned Admin',
+      nameAr: 'مدير منسوخ',
+    });
+    expect(permissionsService.replaceUserRoleAssignments).toHaveBeenCalledWith(workspaceId, {
+      userId,
+      roleIds: [roleId],
+    });
+  });
+
+  it('rejects invalid route params and request bodies before service calls', async () => {
+    await request(permissionsApp.getHttpServer())
+      .patch('/roles/not-a-uuid')
+      .send({ nameEn: 'Custom Admin' })
+      .expect(400);
+    await request(permissionsApp.getHttpServer())
+      .post('/roles')
+      .send({ nameEn: '', nameAr: 'مدير مخصص', permissions: ['workspace.view'] })
       .expect(400);
   });
 });

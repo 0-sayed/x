@@ -1,4 +1,5 @@
 export {
+  buildPermissionCatalogResponse,
   contractorPermissionKeys,
   defaultRoleTemplates,
   isPermissionKey,
@@ -9,4 +10,5 @@ export type {
   DefaultRoleTemplateKey,
   PermissionArea,
   PermissionCatalogEntry,
+  PermissionCatalogResponse,
 } from './catalog.js';

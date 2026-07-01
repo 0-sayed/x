@@ -43,7 +43,7 @@ describe('audit schema', () => {
 
   it('keeps the generated migration check constraint unqualified', () => {
     const migrationSql = readFileSync(
-      new URL('../../drizzle/0003_audit_events.sql', import.meta.url),
+      new URL('../../drizzle/0005_audit_events.sql', import.meta.url),
       'utf8',
     );
 
