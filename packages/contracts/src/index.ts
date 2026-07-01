@@ -60,6 +60,7 @@ export * from './settings.js';
 export * from './audit.js';
 export * from './audience.js';
 export * from './grace-window.js';
+export * from './notifications.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
 export * from './projects.js';

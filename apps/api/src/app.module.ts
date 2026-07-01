@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { GraceWindowModule } from './grace-window/grace-window.module.js';
 import { FileStorageModule } from './file-storage/file-storage.module.js';
 import { HealthController } from './health.controller.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { PermissionsController } from './permissions/permissions.controller.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
@@ -32,6 +33,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     GraceWindowModule,
     SignOffsModule,
     FileStorageModule,
+    NotificationsModule,
     PermissionsModule,
     ProjectsModule,
     SettingsModule,
