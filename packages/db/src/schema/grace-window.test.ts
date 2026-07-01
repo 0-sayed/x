@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 
 import { pendingDecisions } from './grace-window.js';
 
@@ -16,5 +17,11 @@ describe('pendingDecisions schema', () => {
     expect(pendingDecisions.commitPayload.name).toBe('commit_payload');
     expect(pendingDecisions.undoPayload.name).toBe('undo_payload');
     expect(pendingDecisions.expiresAt.name).toBe('expires_at');
+  });
+
+  it('enforces one pending decision per record identity', () => {
+    const indexes = getTableConfig(pendingDecisions).indexes.map((index) => index.config.name);
+
+    expect(indexes).toContain('pending_decisions_pending_record_unique_idx');
   });
 });

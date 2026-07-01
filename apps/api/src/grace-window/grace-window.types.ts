@@ -14,6 +14,14 @@ export type FindPendingDecisionInput = {
   readonly decisionId: string;
 };
 
+export type FindActivePendingDecisionByRecordInput = {
+  readonly workspaceId: string;
+  readonly decisionType: string;
+  readonly recordType: string;
+  readonly recordId: string;
+  readonly now: Date;
+};
+
 export type MutatePendingDecisionInput = {
   readonly workspaceId: string;
   readonly decisionId: string;

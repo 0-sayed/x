@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   createPendingDecisionInputSchema,
@@ -21,7 +22,9 @@ import type { PendingDecisionRecord } from '@materiabill/db';
 import { randomUUID } from 'node:crypto';
 
 import { AuditService } from '../audit/audit.service.js';
+import { GraceWindowCommitHandlerRegistry } from './grace-window-commit-handlers.js';
 import { GraceWindowRepository } from './grace-window.repository.js';
+import type { FindActivePendingDecisionByRecordInput } from './grace-window.types.js';
 
 type ListActivePendingDecisionsInput = {
   readonly workspaceId: string;
@@ -47,6 +50,7 @@ export class GraceWindowService {
   constructor(
     private readonly repository: GraceWindowRepository,
     private readonly auditService: AuditService,
+    @Optional() private readonly commitHandlers?: GraceWindowCommitHandlerRegistry,
   ) {}
 
   async createPendingDecision(input: CreatePendingDecisionInput): Promise<PendingDecision> {
@@ -103,6 +107,14 @@ export class GraceWindowService {
     return pendingDecisionListResponseSchema.parse({
       decisions: rows.map((row) => toPendingDecision(row, now)),
     });
+  }
+
+  async hasActivePendingDecisionForRecord(
+    input: FindActivePendingDecisionByRecordInput,
+  ): Promise<boolean> {
+    const existing = await this.repository.findActiveByRecord(input);
+
+    return existing !== undefined;
   }
 
   async undoPendingDecision(input: UndoPendingDecisionInput): Promise<UndoPendingDecisionResponse> {
@@ -173,6 +185,15 @@ export class GraceWindowService {
       throw new ConflictException('Pending decision is not ready to commit');
     }
 
+    let commitError: unknown;
+    let commitFailed = false;
+    try {
+      await this.commitHandlers?.commit(committed, now);
+    } catch (error) {
+      commitError = error;
+      commitFailed = true;
+    }
+
     await this.auditService.recordEvent({
       workspaceId: committed.workspaceId,
       actorUserId: committed.requestedByUserId,
@@ -184,8 +205,14 @@ export class GraceWindowService {
         decisionType: committed.decisionType,
         recordType: committed.recordType,
         recordId: committed.recordId,
+        commitStatus: commitFailed ? 'failed' : 'succeeded',
+        ...(commitFailed ? { commitError: getErrorMessage(commitError) } : {}),
       },
     });
+
+    if (commitFailed) {
+      throw commitError;
+    }
 
     return toPendingDecision(committed, now);
   }
@@ -217,4 +244,11 @@ function remainingSeconds(expiresAt: Date, now: Date): number {
 
 function toAuditAudience(audience: DecisionAudience): AuditAudience {
   return audience === 'org' ? 'internal' : 'client';
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+
+  return 'Unknown commit error';
 }
