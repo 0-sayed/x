@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -6,8 +6,17 @@ import { describe, expect, it } from 'vitest';
 import { notificationDeliveries, notificationPreferences, notifications } from './notifications.js';
 
 describe('notifications schema', () => {
-  const notificationsMigrationSql = () =>
-    readFileSync(resolve(process.cwd(), 'drizzle/0009_notifications.sql'), 'utf8');
+  const notificationsMigrationSql = () => {
+    const migration = readdirSync(resolve(process.cwd(), 'drizzle')).find((fileName) =>
+      fileName.endsWith('_notifications.sql'),
+    );
+
+    if (!migration) {
+      throw new Error('Notifications migration not found');
+    }
+
+    return readFileSync(resolve(process.cwd(), 'drizzle', migration), 'utf8');
+  };
 
   it('uses workspace-scoped notification preference columns', () => {
     expect(notificationPreferences.id.name).toBe('id');

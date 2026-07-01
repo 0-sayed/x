@@ -163,6 +163,10 @@ describe('api bootstrap shell', () => {
     expect(response.text).toContain('Swagger UI');
   });
 
+  it('guards the projects backend routes', async () => {
+    await request(app.getHttpServer()).get('/projects').expect(401);
+  });
+
   it('uses structured json logger settings for http bootstrap', () => {
     const options = getApiLoggerOptions(
       getApiRuntimeConfig({

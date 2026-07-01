@@ -2,6 +2,7 @@ export { createDatabaseClient } from './client.js';
 export { getDatabaseHealth } from './health.js';
 export { getDbClient } from './client.js';
 export type { DbClient, MateriabillDatabase } from './client.js';
+export * from './settings-defaults.js';
 export {
   auditEvents,
   brandRefs,
@@ -14,6 +15,8 @@ export {
   notificationDeliveries,
   notificationPreferences,
   notifications,
+  projectParticipants,
+  projects,
   rolePermissions,
   sessionRecords,
   signOffs,
@@ -25,6 +28,7 @@ export {
   workspaceMembershipRefs,
   workspaceRefs,
   workspaceRoles,
+  workspaceSettings,
 } from './schema/index.js';
 export type {
   AuditEventRecord,
@@ -45,6 +49,8 @@ export type {
   NewNotificationPreferenceRecord,
   NewNotificationRecord,
   NewPendingDecisionRecord,
+  NewProjectParticipantRecord,
+  NewProjectRecord,
   NewRolePermission,
   NewSessionRecord,
   NewSignOffRecord,
@@ -59,6 +65,7 @@ export type {
   NotificationDeliveryRecord,
   NotificationPreferenceRecord,
   NotificationRecord,
+  NewWorkspaceSettingsRecord,
   RolePermission,
   SessionRecord,
   SignOffRecord,
@@ -69,9 +76,12 @@ export type {
   SyncInbox,
   TaxRef,
   PendingDecisionRecord,
+  ProjectParticipantRecord,
+  ProjectRecord,
   UserRoleAssignment,
   WorkspaceMembershipRef,
   WorkspaceRole,
   WorkspaceRef,
+  WorkspaceSettingsRecord,
 } from './schema/index.js';
 export type { DatabaseClient } from './client.js';
