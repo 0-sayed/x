@@ -45,6 +45,7 @@ export class RealtimeHub {
         const nextCount = Math.max(0, this.getSubscriberCount(workspaceId) - 1);
         if (nextCount === 0) {
           this.#subscriberCounts.delete(workspaceId);
+          this.#channels.delete(workspaceId);
           return;
         }
 
@@ -62,6 +63,10 @@ export class RealtimeHub {
 
   getSubscriberCount(workspaceId: string): number {
     return this.#subscriberCounts.get(workspaceId) ?? 0;
+  }
+
+  getChannelCount(): number {
+    return this.#channels.size;
   }
 
   #getChannel(workspaceId: string): Subject<RealtimeSseMessage> {

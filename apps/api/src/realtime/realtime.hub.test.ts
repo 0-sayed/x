@@ -99,13 +99,15 @@ describe('RealtimeHub', () => {
     });
   });
 
-  it('removes unsubscribed observers from the workspace channel', async () => {
+  it('removes unsubscribed observers from the workspace channel', () => {
     const hub = new RealtimeHub();
     const subscription = hub.subscribe(workspaceId).subscribe();
 
     expect(hub.getSubscriberCount(workspaceId)).toBe(1);
+    expect(hub.getChannelCount()).toBe(1);
     subscription.unsubscribe();
 
     expect(hub.getSubscriberCount(workspaceId)).toBe(0);
+    expect(hub.getChannelCount()).toBe(0);
   });
 });
