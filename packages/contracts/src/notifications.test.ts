@@ -79,6 +79,17 @@ describe('notification contracts', () => {
     ).toThrow();
   });
 
+  it('rejects duplicate preference event/channel pairs', () => {
+    expect(() =>
+      replaceNotificationPreferencesRequestSchema.parse({
+        preferences: [
+          { eventType: 'draw.approved', channel: 'email', enabled: true },
+          { eventType: 'draw.approved', channel: 'email', enabled: false },
+        ],
+      }),
+    ).toThrow();
+  });
+
   it('accepts disabled WhatsApp preferences and marks the channel unavailable', () => {
     expect(
       notificationPreferencesResponseSchema.parse({

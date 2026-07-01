@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { notificationDeliveries, notificationPreferences, notifications } from './notifications.js';
 
 describe('notifications schema', () => {
+  const notificationsMigrationSql = () =>
+    readFileSync(resolve(process.cwd(), 'drizzle/0009_notifications.sql'), 'utf8');
+
   it('uses workspace-scoped notification preference columns', () => {
     expect(notificationPreferences.id.name).toBe('id');
     expect(notificationPreferences.workspaceId.name).toBe('workspace_id');
@@ -19,7 +22,7 @@ describe('notifications schema', () => {
   it('does not define a default for enabled and rejects whatsapp opt-in at the database level', () => {
     expect(notificationPreferences.enabled.hasDefault).toBe(false);
 
-    const sql = readFileSync(resolve(process.cwd(), 'drizzle/0009_notifications.sql'), 'utf8');
+    const sql = notificationsMigrationSql();
     expect(sql).toContain(
       `CONSTRAINT "notification_preferences_whatsapp_enabled_check" CHECK (not ("notification_preferences"."channel" = 'whatsapp' and "notification_preferences"."enabled"))`,
     );
@@ -52,5 +55,16 @@ describe('notifications schema', () => {
     expect(notificationDeliveries.skippedReason.name).toBe('skipped_reason');
     expect(notificationDeliveries.errorMessage.name).toBe('error_message');
     expect(notificationDeliveries.attemptedAt.name).toBe('attempted_at');
+  });
+
+  it('keeps delivery notification references workspace-scoped', () => {
+    const sql = notificationsMigrationSql();
+
+    expect(sql).toContain(
+      `CONSTRAINT "notifications_workspace_id_id_unique" UNIQUE("workspace_id","id")`,
+    );
+    expect(sql).toContain(
+      `FOREIGN KEY ("workspace_id","notification_id") REFERENCES "public"."notifications"("workspace_id","id")`,
+    );
   });
 });

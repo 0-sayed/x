@@ -74,6 +74,15 @@ export type MarkAllNotificationsReadInput = CountUnreadNotificationsInput & {
   readonly readAt: Date;
 };
 
+export type UpdateNotificationDeliveryAttemptInput = {
+  readonly workspaceId: string;
+  readonly deliveryId: string;
+  readonly status: NotificationDeliveryStatus;
+  readonly providerMessageId: string | null;
+  readonly skippedReason: string | null;
+  readonly errorMessage: string | null;
+};
+
 export type ReplaceNotificationPreferencesInput = {
   readonly workspaceId: string;
   readonly preferences: ReplaceNotificationPreferencesRequest['preferences'];

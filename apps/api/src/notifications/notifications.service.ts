@@ -173,54 +173,35 @@ export class NotificationsService {
           continue;
         }
 
-        try {
-          const result = await this.emailAdapter.send({
+        deliveries.push(
+          toDelivery({
             workspaceId: parsed.workspaceId,
+            notificationId: null,
+            recipientUserId: recipient.userId,
             eventType: parsed.eventType,
-            to: recipient.email,
-            subject: parsed.title,
-            body: parsed.body,
-            payload: parsed.payload ?? {},
-          });
-
-          deliveries.push(
-            toDelivery({
-              workspaceId: parsed.workspaceId,
-              notificationId: null,
-              recipientUserId: recipient.userId,
-              eventType: parsed.eventType,
-              channel,
-              status: result.status,
-              recipientAddress: recipient.email,
-              providerMessageId: result.providerMessageId,
-              skippedReason: result.skippedReason,
-              errorMessage: result.errorMessage,
-              attemptedAt,
-            }),
-          );
-        } catch (error) {
-          deliveries.push(
-            toDelivery({
-              workspaceId: parsed.workspaceId,
-              notificationId: null,
-              recipientUserId: recipient.userId,
-              eventType: parsed.eventType,
-              channel,
-              status: 'failed',
-              recipientAddress: recipient.email,
-              providerMessageId: null,
-              skippedReason: null,
-              errorMessage: error instanceof Error ? error.message : 'Email adapter failed',
-              attemptedAt,
-            }),
-          );
-        }
+            channel,
+            status: 'placeholder',
+            recipientAddress: recipient.email,
+            providerMessageId: null,
+            skippedReason: 'email.pending',
+            errorMessage: null,
+            attemptedAt,
+          }),
+        );
       }
     }
 
     const createdRoutes = await this.repository.createNotificationRoutes({
       notifications: notificationRoutes,
       deliveries,
+    });
+    const createdDeliveries = await this.#sendPersistedEmailDeliveries({
+      workspaceId: parsed.workspaceId,
+      eventType: parsed.eventType,
+      subject: parsed.title,
+      body: parsed.body,
+      payload: parsed.payload ?? {},
+      deliveries: createdRoutes.deliveries,
     });
 
     try {
@@ -231,7 +212,7 @@ export class NotificationsService {
         action: 'notification.routed',
         resourceType: parsed.resourceType,
         resourceId: parsed.resourceId ?? null,
-        metadata: summarizeDeliveries(createdRoutes.deliveries),
+        metadata: summarizeDeliveries(createdDeliveries),
       });
     } catch (error) {
       this.#logger.warn(
@@ -251,7 +232,82 @@ export class NotificationsService {
       });
     }
 
-    return { deliveries: createdRoutes.deliveries };
+    return { deliveries: createdDeliveries };
+  }
+
+  async #sendPersistedEmailDeliveries(input: {
+    readonly workspaceId: string;
+    readonly eventType: NotificationEventType;
+    readonly subject: string;
+    readonly body: string;
+    readonly payload: Record<string, unknown>;
+    readonly deliveries: readonly NotificationDeliveryRecord[];
+  }): Promise<NotificationDeliveryRecord[]> {
+    const deliveries = [...input.deliveries];
+
+    for (const [index, delivery] of deliveries.entries()) {
+      if (
+        delivery.channel !== 'email' ||
+        delivery.status !== 'placeholder' ||
+        !delivery.recipientAddress
+      ) {
+        continue;
+      }
+
+      const update = await this.#sendEmailDelivery({
+        workspaceId: input.workspaceId,
+        eventType: input.eventType,
+        to: delivery.recipientAddress,
+        subject: input.subject,
+        body: input.body,
+        payload: input.payload,
+      });
+
+      try {
+        const updatedDelivery = await this.repository.updateDeliveryAttempt({
+          workspaceId: input.workspaceId,
+          deliveryId: delivery.id,
+          ...update,
+        });
+
+        if (updatedDelivery) {
+          deliveries[index] = updatedDelivery;
+        }
+      } catch (error) {
+        this.#logger.warn(
+          error instanceof Error ? error.message : 'Notification email delivery update failed',
+        );
+      }
+    }
+
+    return deliveries;
+  }
+
+  async #sendEmailDelivery(input: {
+    readonly workspaceId: string;
+    readonly eventType: NotificationEventType;
+    readonly to: string;
+    readonly subject: string;
+    readonly body: string;
+    readonly payload: Record<string, unknown>;
+  }) {
+    try {
+      const result = await this.emailAdapter.send(input);
+
+      return {
+        status: result.status,
+        providerMessageId: result.providerMessageId,
+        skippedReason: result.skippedReason,
+        errorMessage: result.errorMessage,
+      };
+    } catch (error) {
+      return {
+        status: 'failed' as const,
+        providerMessageId: null,
+        skippedReason: null,
+        errorMessage: error instanceof Error ? error.message : 'Email adapter failed',
+      };
+    }
   }
 
   async listCurrentUserNotifications(input: ListCurrentUserNotificationsInput) {

@@ -182,7 +182,23 @@ export const replaceNotificationPreferencesRequestSchema = z
   .object({
     preferences: z.array(notificationPreferenceUpdateSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) => {
+    const preferenceKeys = new Set<string>();
+    input.preferences.forEach((preference, index) => {
+      const key = `${preference.eventType}:${preference.channel}`;
+      if (preferenceKeys.has(key)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Preference eventType/channel pair must be unique',
+          path: ['preferences', index],
+        });
+        return;
+      }
+
+      preferenceKeys.add(key);
+    });
+  });
 
 export type NotificationEventType = z.infer<typeof notificationEventTypeSchema>;
 export type NotificationChannel = z.infer<typeof notificationChannelSchema>;

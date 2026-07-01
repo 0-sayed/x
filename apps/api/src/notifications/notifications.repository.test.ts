@@ -16,6 +16,7 @@ type InsertCall = {
   table: unknown;
   valuesArgs: unknown[];
   onConflictArgs: unknown[];
+  conflictMethods: string[];
 };
 
 type UpdateCall = {
@@ -102,7 +103,7 @@ function createDbMock({
   const txSelectBuilder = makeSelectBuilder(txSelectWhereArgs);
 
   const makeInsert = (calls: InsertCall[]) => (table: unknown) => {
-    const call: InsertCall = { table, valuesArgs: [], onConflictArgs: [] };
+    const call: InsertCall = { table, valuesArgs: [], onConflictArgs: [], conflictMethods: [] };
     calls.push(call);
 
     return {
@@ -112,6 +113,20 @@ function createDbMock({
         return {
           onConflictDoUpdate: vi.fn((args: unknown) => {
             call.onConflictArgs.push(args);
+            call.conflictMethods.push('update');
+
+            return {
+              returning: vi.fn(() =>
+                Promise.resolve(
+                  insertReturningFactory?.(table, values) ??
+                    (Array.isArray(values) ? values : [values]),
+                ),
+              ),
+            };
+          }),
+          onConflictDoNothing: vi.fn((args?: unknown) => {
+            call.onConflictArgs.push(args);
+            call.conflictMethods.push('nothing');
 
             return {
               returning: vi.fn(() =>
@@ -192,6 +207,7 @@ describe('NotificationsRepository', () => {
     await repository.ensureDefaultPreferences('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
 
     expect(insertCalls[0]?.table).toBe(notificationPreferences);
+    expect(insertCalls[0]?.conflictMethods).toEqual(['nothing']);
 
     const values = insertCalls[0]?.valuesArgs[0];
     expect(Array.isArray(values)).toBe(true);
@@ -234,6 +250,8 @@ describe('NotificationsRepository', () => {
     expect(insertCalls).toHaveLength(0);
     expect(txInsertCalls).toHaveLength(2);
     expect(txInsertCalls[0]?.table).toBe(notificationPreferences);
+    expect(txInsertCalls[0]?.conflictMethods).toEqual(['nothing']);
+    expect(txInsertCalls[1]?.conflictMethods).toEqual(['update']);
     expect(txInsertCalls[1]?.valuesArgs[0]).toEqual([
       expect.objectContaining({
         workspaceId,

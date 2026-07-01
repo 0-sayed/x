@@ -42,12 +42,13 @@ CREATE TABLE "notifications" (
 	"payload" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"read_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "notifications_workspace_id_id_unique" UNIQUE("workspace_id","id"),
 	CONSTRAINT "notifications_event_type_check" CHECK ("notifications"."event_type" in ('draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge'))
 );
 --> statement-breakpoint
 ALTER TABLE "notification_deliveries" ADD CONSTRAINT "notification_deliveries_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "notification_deliveries" ADD CONSTRAINT "notification_deliveries_notification_id_notifications_id_fk" FOREIGN KEY ("notification_id") REFERENCES "public"."notifications"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notification_deliveries" ADD CONSTRAINT "notification_deliveries_recipient_user_id_inframodern_user_refs_id_fk" FOREIGN KEY ("recipient_user_id") REFERENCES "public"."inframodern_user_refs"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notification_deliveries" ADD CONSTRAINT "notification_deliveries_workspace_notification_id_notifications_workspace_id_id_fk" FOREIGN KEY ("workspace_id","notification_id") REFERENCES "public"."notifications"("workspace_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notification_preferences" ADD CONSTRAINT "notification_preferences_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_user_id_inframodern_user_refs_id_fk" FOREIGN KEY ("recipient_user_id") REFERENCES "public"."inframodern_user_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

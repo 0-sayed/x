@@ -2,28 +2,36 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  foreignKey,
   index,
   jsonb,
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import type {
-  NotificationChannel,
-  NotificationDeliveryStatus,
-  NotificationEventType,
+import {
+  notificationChannelSchema,
+  notificationDeliveryStatusSchema,
+  notificationEventTypeSchema,
+  type NotificationChannel,
+  type NotificationDeliveryStatus,
+  type NotificationEventType,
 } from '@materiabill/contracts';
 
 import { inframodernUserRefs, workspaceRefs } from './projections.js';
 
 export type NotificationPayload = Record<string, unknown>;
 
-const notificationEventTypeSql = sql`'draw.approved', 'draw.released', 'snag.opened', 'snag.fixed', 'snag.closed', 'variation.submitted', 'variation.approved', 'document.signed', 'invite.accepted', 'invite.declined', 'invite.contractor_nudge'`;
-const notificationChannelSql = sql`'in_app', 'email', 'whatsapp'`;
-const notificationDeliveryStatusSql = sql`'sent', 'skipped', 'failed', 'placeholder'`;
+const sqlEnumList = (values: readonly string[]) =>
+  sql.raw(values.map((value) => `'${value.replaceAll("'", "''")}'`).join(', '));
+
+const notificationEventTypeSql = sqlEnumList(notificationEventTypeSchema.options);
+const notificationChannelSql = sqlEnumList(notificationChannelSchema.options);
+const notificationDeliveryStatusSql = sqlEnumList(notificationDeliveryStatusSchema.options);
 
 export const notificationPreferences = pgTable(
   'notification_preferences',
@@ -104,6 +112,7 @@ export const notifications = pgTable(
       table.readAt,
       table.createdAt,
     ),
+    unique('notifications_workspace_id_id_unique').on(table.workspaceId, table.id),
   ],
 );
 
@@ -116,9 +125,7 @@ export const notificationDeliveries = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaceRefs.id, { onDelete: 'cascade' }),
-    notificationId: uuid('notification_id').references(() => notifications.id, {
-      onDelete: 'set null',
-    }),
+    notificationId: uuid('notification_id'),
     recipientUserId: uuid('recipient_user_id').references(() => inframodernUserRefs.id, {
       onDelete: 'set null',
     }),
@@ -159,6 +166,11 @@ export const notificationDeliveries = pgTable(
       table.recipientUserId,
       table.attemptedAt,
     ),
+    foreignKey({
+      columns: [table.workspaceId, table.notificationId],
+      foreignColumns: [notifications.workspaceId, notifications.id],
+      name: 'notification_deliveries_workspace_notification_id_notifications_workspace_id_id_fk',
+    }),
   ],
 );
 

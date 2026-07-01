@@ -77,6 +77,23 @@ function createService() {
         deliveries: [...notificationRoutes.map((route) => route.delivery), ...deliveries],
       });
     }),
+    updateDeliveryAttempt: vi.fn().mockImplementation((input) =>
+      Promise.resolve({
+        id: input.deliveryId,
+        workspaceId: input.workspaceId,
+        notificationId: null,
+        recipientUserId: userId,
+        eventType: 'draw.approved',
+        channel: 'email',
+        status: input.status,
+        recipientAddress: 'pm@example.com',
+        providerMessageId: input.providerMessageId,
+        skippedReason: input.skippedReason,
+        errorMessage: input.errorMessage,
+        attemptedAt,
+        createdAt: attemptedAt,
+      }),
+    ),
     listNotifications: vi.fn().mockResolvedValue([notificationRow]),
     countUnread: vi.fn().mockResolvedValue(1),
     markRead: vi
@@ -143,11 +160,21 @@ describe('NotificationsService', () => {
       deliveries: [
         expect.objectContaining({
           channel: 'email',
-          status: 'skipped',
-          skippedReason: 'email.provider_unconfigured',
+          status: 'placeholder',
+          skippedReason: 'email.pending',
         }),
       ],
     });
+    expect(repository.createNotificationRoutes.mock.invocationCallOrder[0]).toBeLessThan(
+      emailAdapter.send.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(repository.updateDeliveryAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId,
+        status: 'skipped',
+        skippedReason: 'email.provider_unconfigured',
+      }),
+    );
     expect(realtimePublisher.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId,
@@ -214,11 +241,18 @@ describe('NotificationsService', () => {
       deliveries: [
         expect.objectContaining({
           channel: 'email',
-          status: 'failed',
-          errorMessage: 'smtp offline',
+          status: 'placeholder',
+          skippedReason: 'email.pending',
         }),
       ],
     });
+    expect(repository.updateDeliveryAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId,
+        status: 'failed',
+        errorMessage: 'smtp offline',
+      }),
+    );
     expect(realtimePublisher.publish).toHaveBeenCalledTimes(1);
     expect(auditService.recordEvent).toHaveBeenCalledTimes(1);
   });

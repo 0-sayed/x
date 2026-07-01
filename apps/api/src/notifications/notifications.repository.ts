@@ -23,6 +23,7 @@ import type {
   MarkAllNotificationsReadInput,
   MarkNotificationReadInput,
   ReplaceNotificationPreferencesInput,
+  UpdateNotificationDeliveryAttemptInput,
 } from './notifications.types.js';
 
 type Db = DatabaseClient['db'];
@@ -73,15 +74,12 @@ export class NotificationsRepository {
     return db
       .insert(notificationPreferences)
       .values(values)
-      .onConflictDoUpdate({
+      .onConflictDoNothing({
         target: [
           notificationPreferences.workspaceId,
           notificationPreferences.eventType,
           notificationPreferences.channel,
         ],
-        set: {
-          workspaceId: sql`excluded.workspace_id`,
-        },
       })
       .returning();
   }
@@ -234,6 +232,28 @@ export class NotificationsRepository {
       .insert(notificationDeliveries)
       .values([...inputs])
       .returning();
+  }
+
+  async updateDeliveryAttempt(
+    input: UpdateNotificationDeliveryAttemptInput,
+  ): Promise<NotificationDeliveryRecord | undefined> {
+    const rows = await this.#db
+      .update(notificationDeliveries)
+      .set({
+        status: input.status,
+        providerMessageId: input.providerMessageId,
+        skippedReason: input.skippedReason,
+        errorMessage: input.errorMessage,
+      })
+      .where(
+        and(
+          eq(notificationDeliveries.workspaceId, input.workspaceId),
+          eq(notificationDeliveries.id, input.deliveryId),
+        ),
+      )
+      .returning();
+
+    return rows[0];
   }
 
   async listNotifications(input: ListNotificationsInput): Promise<NotificationRecord[]> {

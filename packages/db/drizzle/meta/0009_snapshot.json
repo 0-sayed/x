@@ -1,5 +1,5 @@
 {
-  "id": "2157f762-2996-44de-b3c8-b359fec868cc",
+  "id": "3a0746ad-622c-43e9-89eb-23824c85f2b1",
   "prevId": "494fb764-f171-4993-a015-bdab1dada7b1",
   "version": "7",
   "dialect": "postgresql",
@@ -1087,19 +1087,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "notification_deliveries_notification_id_notifications_id_fk": {
-          "name": "notification_deliveries_notification_id_notifications_id_fk",
-          "tableFrom": "notification_deliveries",
-          "tableTo": "notifications",
-          "columnsFrom": [
-            "notification_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "notification_deliveries_recipient_user_id_inframodern_user_refs_id_fk": {
           "name": "notification_deliveries_recipient_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "notification_deliveries",
@@ -1111,6 +1098,21 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "notification_deliveries_workspace_notification_id_notifications_workspace_id_id_fk": {
+          "name": "notification_deliveries_workspace_notification_id_notifications_workspace_id_id_fk",
+          "tableFrom": "notification_deliveries",
+          "tableTo": "notifications",
+          "columnsFrom": [
+            "workspace_id",
+            "notification_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1411,7 +1413,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "notifications_workspace_id_id_unique": {
+          "name": "notifications_workspace_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "workspace_id",
+            "id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "notifications_event_type_check": {
