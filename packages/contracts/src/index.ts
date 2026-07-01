@@ -58,3 +58,4 @@ export type { CurrentSessionUser, SessionWorkspace } from './session.js';
 export * from './audit.js';
 export * from './grace-window.js';
 export * from './workspace-context.js';
+export * from './realtime.js';
