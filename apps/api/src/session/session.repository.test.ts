@@ -1,5 +1,6 @@
 import {
   inframodernUserRefs,
+  seedWorkspaceSettingsDefaults,
   sessionRecords,
   workspaceMembershipRefs,
   workspaceRefs,
@@ -7,6 +8,14 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 
 import { SessionRepository } from './session.repository.js';
+
+vi.mock('@materiabill/db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@materiabill/db')>();
+  return {
+    ...actual,
+    seedWorkspaceSettingsDefaults: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 type InsertCall = {
   readonly table: unknown;
@@ -294,6 +303,12 @@ describe('SessionRepository', () => {
       },
       db,
     );
+    expect(seedWorkspaceSettingsDefaults).toHaveBeenCalledWith(db, [
+      '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+    ]);
+    expect(seedWorkspaceSettingsDefaults).toHaveBeenCalledWith(db, [
+      '219cc5f7-6bf0-40fe-87c8-c550ee501af6',
+    ]);
   });
 
   it('returns null when bootstrap data has no workspaces', async () => {

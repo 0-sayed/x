@@ -18,7 +18,7 @@ export const createPendingDecisionInputSchema = z
     summaryLabel: z.string().trim().min(1).max(200),
     commitPayload: payloadSchema.optional(),
     undoPayload: payloadSchema.optional(),
-    graceWindowMinutes: z.coerce.number().int().min(1).max(1440).default(10),
+    graceWindowMinutes: z.coerce.number().int().min(1).max(1440).optional(),
     requestedAt: z.iso.datetime().optional(),
   })
   .strict();

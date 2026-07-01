@@ -22,6 +22,7 @@ import type { PendingDecisionRecord } from '@materiabill/db';
 import { randomUUID } from 'node:crypto';
 
 import { AuditService } from '../audit/audit.service.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { GraceWindowCommitHandlerRegistry } from './grace-window-commit-handlers.js';
 import { GraceWindowRepository } from './grace-window.repository.js';
 import type { FindActivePendingDecisionByRecordInput } from './grace-window.types.js';
@@ -50,13 +51,17 @@ export class GraceWindowService {
   constructor(
     private readonly repository: GraceWindowRepository,
     private readonly auditService: AuditService,
+    private readonly settingsService: SettingsService,
     @Optional() private readonly commitHandlers?: GraceWindowCommitHandlerRegistry,
   ) {}
 
   async createPendingDecision(input: CreatePendingDecisionInput): Promise<PendingDecision> {
     const parsed = createPendingDecisionInputSchema.parse(input);
     const requestedAt = parsed.requestedAt ? new Date(parsed.requestedAt) : new Date();
-    const expiresAt = new Date(requestedAt.getTime() + parsed.graceWindowMinutes * 60_000);
+    const graceWindowMinutes =
+      parsed.graceWindowMinutes ??
+      (await this.settingsService.getGraceWindowMinutes(parsed.workspaceId));
+    const expiresAt = new Date(requestedAt.getTime() + graceWindowMinutes * 60_000);
 
     const created = await this.repository.createDecision({
       id: randomUUID(),
