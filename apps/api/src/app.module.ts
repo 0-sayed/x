@@ -11,6 +11,7 @@ import { FileStorageModule } from './file-storage/file-storage.module.js';
 import { HealthController } from './health.controller.js';
 import { PermissionsController } from './permissions/permissions.controller.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { SignOffsModule } from './sign-offs/sign-offs.module.js';
@@ -32,6 +33,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     SignOffsModule,
     FileStorageModule,
     PermissionsModule,
+    ProjectsModule,
     SettingsModule,
   ],
   controllers: [HealthController, BootstrapInfoController, PermissionsController],

@@ -8,6 +8,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -108,7 +109,10 @@ export const locationRefs = pgTable(
     longitude: numeric('longitude', { precision: 10, scale: 7 }),
     ...projectionColumns(),
   },
-  (table) => [index('location_refs_workspace_id_idx').on(table.workspaceId)],
+  (table) => [
+    unique('location_refs_workspace_id_id_unique').on(table.workspaceId, table.id),
+    index('location_refs_workspace_id_idx').on(table.workspaceId),
+  ],
 );
 
 export const exchangeRateRefs = pgTable(
