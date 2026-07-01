@@ -10,15 +10,17 @@ import { ToastProvider } from '../ui/toast.js';
 
 export function AppProviders({
   children,
-  apiClient = createApiClient(),
+  apiClient,
 }: {
   readonly children: ReactNode;
   readonly apiClient?: ApiClient;
 }) {
   const [queryClient] = useState(() => new QueryClient());
+  const [defaultApiClient] = useState(() => createApiClient());
+  const resolvedApiClient = apiClient ?? defaultApiClient;
 
   return (
-    <ApiClientContext.Provider value={apiClient}>
+    <ApiClientContext.Provider value={resolvedApiClient}>
       <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>

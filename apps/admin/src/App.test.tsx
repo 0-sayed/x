@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError, createApiClient } from './api/client.js';
+import { useApiClient } from './api/hooks.js';
 import { App } from './App.js';
 import { i18n } from './i18n/i18n.js';
+import { AppProviders } from './providers/AppProviders.js';
+import { useConfirm } from './ui/confirm.js';
+import { useToast } from './ui/toast.js';
 
 const sessionUser = {
   id: '3f43835d-7f3b-4b16-907b-d57db49832dd',
@@ -55,10 +60,18 @@ const workspaceContext = {
   },
 };
 
-function createAuthenticatedFetchMock() {
+function createAuthenticatedFetchMock({
+  logoutStatus = 204,
+  switcherActiveWorkspaceId = sessionUser.activeWorkspaceId,
+  workspaceContextResponse = workspaceContext,
+}: {
+  readonly logoutStatus?: number;
+  readonly switcherActiveWorkspaceId?: string | null;
+  readonly workspaceContextResponse?: typeof workspaceContext | Promise<Response>;
+} = {}) {
   let loggedOut = false;
 
-  return vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+  return vi.fn((input: RequestInfo | URL, init?: RequestInit): Response | Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
     if (url.endsWith('/user')) {
@@ -71,13 +84,17 @@ function createAuthenticatedFetchMock() {
 
     if (url.endsWith('/workspaces') && init?.method !== 'POST') {
       return Response.json({
-        activeWorkspaceId: sessionUser.activeWorkspaceId,
+        activeWorkspaceId: switcherActiveWorkspaceId,
         workspaces: sessionUser.workspaces,
       });
     }
 
     if (url.endsWith('/workspace-context')) {
-      return Response.json(workspaceContext);
+      if (workspaceContextResponse instanceof Promise) {
+        return workspaceContextResponse;
+      }
+
+      return Response.json(workspaceContextResponse);
     }
 
     if (url.endsWith('/workspaces/active')) {
@@ -88,8 +105,11 @@ function createAuthenticatedFetchMock() {
     }
 
     if (url.endsWith('/auth/logout')) {
-      loggedOut = true;
-      return new Response(null, { status: 204 });
+      if (logoutStatus === 204) {
+        loggedOut = true;
+      }
+
+      return new Response(null, { status: logoutStatus });
     }
 
     return new Response('', { status: 404 });
@@ -106,7 +126,9 @@ beforeEach(async () => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
+  window.history.pushState({}, '', '/');
 });
 
 describe('ApiClient', () => {
@@ -133,6 +155,220 @@ describe('ApiClient', () => {
 
     await expect(client.getCurrentUser()).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('wraps non-json successful responses in ApiError', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+    const client = createApiClient('http://127.0.0.1:3000', fetchMock);
+
+    await expect(client.getCurrentUser()).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 200,
+    });
+  });
+});
+
+describe('AppProviders', () => {
+  it('keeps the default API client stable across rerenders', () => {
+    const clients: unknown[] = [];
+
+    function CaptureClient() {
+      const [count, setCount] = useState(0);
+      clients.push(useApiClient());
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setCount((current) => current + 1);
+          }}
+        >
+          rerender {count}
+        </button>
+      );
+    }
+
+    function RerenderProvider() {
+      const [count, setCount] = useState(0);
+
+      return (
+        <AppProviders>
+          <CaptureClient />
+          <button
+            type="button"
+            onClick={() => {
+              setCount((current) => current + 1);
+            }}
+          >
+            rerender provider {count}
+          </button>
+        </AppProviders>
+      );
+    }
+
+    render(<RerenderProvider />);
+
+    fireEvent.click(screen.getByRole('button', { name: /rerender provider/i }));
+
+    expect(clients.length).toBeGreaterThanOrEqual(2);
+    expect(clients[1]).toBe(clients[0]);
+  });
+});
+
+describe('ToastProvider', () => {
+  it('keeps newer toasts visible for their own timeout window', () => {
+    vi.useFakeTimers();
+    vi.spyOn(Date, 'now').mockReturnValue(1_000);
+
+    function TriggerToasts() {
+      const toast = useToast();
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            toast.showToast('First');
+            window.setTimeout(() => {
+              toast.showToast('Second');
+            }, 1_000);
+          }}
+        >
+          show toasts
+        </button>
+      );
+    }
+
+    render(
+      <AppProviders>
+        <TriggerToasts />
+      </AppProviders>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'show toasts' }));
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+    expect(screen.getByText('First')).toBeVisible();
+    expect(screen.getByText('Second')).toBeVisible();
+
+    act(() => {
+      vi.advanceTimersByTime(1_800);
+    });
+
+    expect(screen.queryByText('First')).not.toBeInTheDocument();
+    expect(screen.getByText('Second')).toBeVisible();
+  });
+
+  it('clears pending toast timers on unmount', () => {
+    vi.useFakeTimers();
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
+
+    function TriggerToast() {
+      const toast = useToast();
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            toast.showToast('Queued');
+          }}
+        >
+          show toast
+        </button>
+      );
+    }
+
+    const { unmount } = render(
+      <AppProviders>
+        <TriggerToast />
+      </AppProviders>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'show toast' }));
+    unmount();
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+});
+
+describe('ConfirmProvider', () => {
+  it('keeps concurrent confirm calls resolvable', async () => {
+    const resolutions: boolean[] = [];
+
+    function TriggerConfirms() {
+      const confirmDialog = useConfirm();
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void confirmDialog
+              .confirm({ title: 'First?', message: 'First message' })
+              .then((value) => {
+                resolutions.push(value);
+              });
+            void confirmDialog
+              .confirm({ title: 'Second?', message: 'Second message' })
+              .then((value) => {
+                resolutions.push(value);
+              });
+          }}
+        >
+          confirm twice
+        </button>
+      );
+    }
+
+    render(
+      <AppProviders>
+        <TriggerConfirms />
+      </AppProviders>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'confirm twice' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => {
+      expect(resolutions).toEqual([false, true]);
+    });
+  });
+
+  it('cycles focus inside the confirm dialog', async () => {
+    function TriggerConfirm() {
+      const confirmDialog = useConfirm();
+
+      return (
+        <>
+          <button type="button">outside</button>
+          <button
+            type="button"
+            onClick={() => void confirmDialog.confirm({ title: 'Confirm?', message: 'Message' })}
+          >
+            open
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <AppProviders>
+        <TriggerConfirm />
+      </AppProviders>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'open' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Confirm?' });
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    const confirm = screen.getByRole('button', { name: 'Confirm' });
+
+    expect(cancel).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(confirm).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(cancel).toHaveFocus();
+  });
 });
 
 describe('App', () => {
@@ -151,7 +387,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Workspace home' })).toBeVisible();
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeVisible();
+    expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
     await waitFor(() => {
       expect(screen.getByLabelText('Workspace')).toHaveValue(
         '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
@@ -186,6 +422,24 @@ describe('App', () => {
     });
   });
 
+  it('selects the first workspace while the backend active workspace is null', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createAuthenticatedFetchMock({
+        switcherActiveWorkspaceId: null,
+      }),
+    );
+
+    render(<App />);
+
+    await screen.findByRole('heading', { level: 1, name: 'Workspace home' });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Workspace')).toHaveValue(
+        '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      );
+    });
+  });
+
   it('confirms logout before clearing the session', async () => {
     const fetchMock = createAuthenticatedFetchMock();
     vi.stubGlobal('fetch', fetchMock);
@@ -209,6 +463,67 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: /continue with inframodern/i })).toBeVisible();
   });
 
+  it('surfaces logout failures without clearing the session', async () => {
+    vi.stubGlobal('fetch', createAuthenticatedFetchMock({ logoutStatus: 500 }));
+
+    render(<App />);
+
+    await screen.findByRole('heading', { level: 1, name: 'Workspace home' });
+    fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('Sign out failed.')).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1, name: 'Workspace home' })).toBeVisible();
+  });
+
+  it('holds route content until workspace context has loaded', async () => {
+    let resolveWorkspaceContext!: (response: Response) => void;
+    const pendingWorkspaceContext = new Promise<Response>((resolve) => {
+      resolveWorkspaceContext = resolve;
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      createAuthenticatedFetchMock({
+        workspaceContextResponse: pendingWorkspaceContext,
+      }),
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Loading workspace...')).toBeVisible();
+    });
+    expect(
+      screen.queryByRole('heading', { level: 1, name: 'Workspace home' }),
+    ).not.toBeInTheDocument();
+
+    resolveWorkspaceContext(Response.json(workspaceContext));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Workspace home' })).toBeVisible();
+  });
+
+  it('blocks directly addressed routes without the required permission', async () => {
+    window.history.pushState({}, '', '/settings');
+    vi.stubGlobal(
+      'fetch',
+      createAuthenticatedFetchMock({
+        workspaceContextResponse: {
+          ...workspaceContext,
+          membership: {
+            ...workspaceContext.membership,
+            permissions: ['workspace.view'],
+          },
+        },
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText('You do not have access to this section.')).toBeVisible();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument();
+  });
+
   it('switches the document to Arabic RTL when Arabic is selected', async () => {
     vi.stubGlobal('fetch', createAuthenticatedFetchMock());
 
@@ -222,5 +537,17 @@ describe('App', () => {
       expect(document.documentElement).toHaveAttribute('dir', 'rtl');
     });
     expect(screen.getByRole('button', { name: 'English' })).toBeVisible();
+  });
+
+  it('uses accurate Arabic sign-out copy', async () => {
+    vi.stubGlobal('fetch', createAuthenticatedFetchMock());
+
+    render(<App />);
+
+    await screen.findByRole('heading', { level: 1, name: 'Workspace home' });
+    fireEvent.click(screen.getByRole('button', { name: 'العربية' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'تسجيل الخروج' }));
+
+    expect(await screen.findByText('سيتم حذف ملف تعريف ارتباط الجلسة على الخادم.')).toBeVisible();
   });
 });

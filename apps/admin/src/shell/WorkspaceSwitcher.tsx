@@ -12,13 +12,14 @@ export function WorkspaceSwitcher({ switcher }: WorkspaceSwitcherProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const switchWorkspace = useSwitchWorkspace();
+  const selectedWorkspaceId = switcher?.activeWorkspaceId ?? switcher?.workspaces[0]?.id ?? '';
 
   return (
     <label className="workspace-switcher">
       <span>{t('shell.workspace')}</span>
       <select
         aria-label={t('shell.workspace')}
-        value={switcher?.activeWorkspaceId ?? ''}
+        value={selectedWorkspaceId}
         disabled={!switcher || switchWorkspace.isPending}
         onChange={(event) => {
           switchWorkspace.mutate(event.target.value, {

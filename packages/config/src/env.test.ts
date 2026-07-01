@@ -165,6 +165,33 @@ describe('session runtime config', () => {
     });
   });
 
+  it('derives the local admin URL from the assigned admin port', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        ADMIN_URL: 'http://localhost:4173',
+        ADMIN_PORT: '55965',
+      }),
+    ).toMatchObject({
+      adminUrl: 'http://127.0.0.1:55965',
+    });
+  });
+
+  it('normalizes the default local admin URL host', () => {
+    expect(
+      getSessionRuntimeConfig({
+        ...baseEnv,
+        ADMIN_URL: 'http://localhost:4173',
+      }),
+    ).toMatchObject({
+      adminUrl: 'http://127.0.0.1:4173',
+    });
+  });
+
+  it('treats an empty optional web port as unset', () => {
+    expect(parseRuntimeEnv({ WEB_PORT: '' }).WEB_PORT).toBeUndefined();
+  });
+
   it('preserves an explicit non-default admin URL with an assigned web port', () => {
     expect(
       getSessionRuntimeConfig({

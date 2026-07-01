@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router';
 
 import { ShellHome } from './pages/ShellHome.js';
 import { ShellPlaceholder } from './pages/ShellPlaceholder.js';
-import { AuthGate } from './shell/AuthGate.js';
+import { AuthGate, PermissionGate } from './shell/AuthGate.js';
 
 export function createAdminRouter() {
   return createBrowserRouter([
@@ -16,19 +16,35 @@ export function createAdminRouter() {
         },
         {
           path: 'projects',
-          element: <ShellPlaceholder titleKey="shell.projects" />,
+          element: (
+            <PermissionGate requiredPermission="projects.view">
+              <ShellPlaceholder titleKey="shell.projects" />
+            </PermissionGate>
+          ),
         },
         {
           path: 'activity',
-          element: <ShellPlaceholder titleKey="shell.activity" />,
+          element: (
+            <PermissionGate requiredPermission="audit.view">
+              <ShellPlaceholder titleKey="shell.activity" />
+            </PermissionGate>
+          ),
         },
         {
           path: 'people',
-          element: <ShellPlaceholder titleKey="shell.people" />,
+          element: (
+            <PermissionGate requiredPermission="people.view">
+              <ShellPlaceholder titleKey="shell.people" />
+            </PermissionGate>
+          ),
         },
         {
           path: 'settings',
-          element: <ShellPlaceholder titleKey="shell.settings" />,
+          element: (
+            <PermissionGate requiredPermission="settings.view">
+              <ShellPlaceholder titleKey="shell.settings" />
+            </PermissionGate>
+          ),
         },
       ],
     },

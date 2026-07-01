@@ -1,11 +1,12 @@
 import { Activity, FolderKanban, Home, Settings, Users } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import type { PermissionKey } from '@materiabill/contracts';
 
 type NavItem = {
   readonly to: string;
   readonly labelKey: string;
-  readonly permission?: string;
+  readonly permission?: PermissionKey;
   readonly icon: typeof Home;
 };
 
@@ -22,7 +23,7 @@ export function GlobalNav({ permissions }: { readonly permissions: readonly stri
   const permissionSet = new Set(permissions);
 
   return (
-    <nav className="global-nav" aria-label="Primary">
+    <nav className="global-nav" aria-label={t('shell.primaryNav')}>
       {navItems
         .filter((item) => !item.permission || permissionSet.has(item.permission))
         .map((item) => {

@@ -30,7 +30,7 @@ export type ApiClient = {
   loginUrl(): string;
 };
 
-export function getDefaultApiBaseUrl(): string {
+function getDefaultApiBaseUrl(): string {
   const rawApiBaseUrl =
     typeof import.meta.env.VITE_API_BASE_URL === 'string'
       ? import.meta.env.VITE_API_BASE_URL
@@ -121,11 +121,12 @@ async function requestJson<TSchema extends z.ZodType>({
 }): Promise<z.infer<TSchema> | null> {
   const response = await fetchImpl(`${baseUrl}${path}`, {
     credentials: 'include',
-    headers: body
-      ? { Accept: 'application/json', 'Content-Type': 'application/json' }
-      : { Accept: 'application/json' },
+    headers:
+      body !== undefined
+        ? { Accept: 'application/json', 'Content-Type': 'application/json' }
+        : { Accept: 'application/json' },
     method,
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
   if (response.status === 401 && unauthenticatedAsNull) {
@@ -136,7 +137,14 @@ async function requestJson<TSchema extends z.ZodType>({
     throw new ApiError(`Request failed with status ${String(response.status)}`, response.status);
   }
 
-  const parsed = schema.safeParse(await response.json());
+  let json: unknown;
+  try {
+    json = await response.json();
+  } catch {
+    throw new ApiError('API response did not match the expected contract', response.status);
+  }
+
+  const parsed = schema.safeParse(json);
   if (!parsed.success) {
     throw new ApiError('API response did not match the expected contract', response.status);
   }

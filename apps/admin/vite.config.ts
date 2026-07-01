@@ -21,7 +21,7 @@ function resolveApiBaseUrl(env: Record<string, string>): string {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const adminPort = parsePort(env.WEB_PORT ?? env.ADMIN_PORT, 4173);
+  const adminPort = parsePort(env.ADMIN_PORT, 4173);
   const apiBaseUrl = resolveApiBaseUrl(env);
 
   return {

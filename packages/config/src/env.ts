@@ -7,6 +7,10 @@ const optionalUrlSchema = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.url().optional(),
 );
+const optionalPositiveIntegerSchema = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.coerce.number().int().positive().optional(),
+);
 const namespaceTokenSchema = z
   .string()
   .trim()
@@ -42,7 +46,8 @@ const mimeListSchema = z
 const runtimeEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(3000),
-  WEB_PORT: z.coerce.number().int().positive().optional(),
+  ADMIN_PORT: optionalPositiveIntegerSchema,
+  WEB_PORT: optionalPositiveIntegerSchema,
   LOG_LEVEL: runtimeLogLevelSchema.default('info'),
   API_LOG_LEVEL: runtimeLogLevelSchema.optional(),
   WORKER_LOG_LEVEL: runtimeLogLevelSchema.optional(),
@@ -204,8 +209,8 @@ function requireConfigValue(value: string | undefined, message: string): string 
 }
 
 function resolveAdminUrl(parsed: RuntimeEnv): string {
-  if (parsed.ADMIN_URL === 'http://localhost:4173' && parsed.WEB_PORT && parsed.WEB_PORT !== 4173) {
-    return `http://127.0.0.1:${String(parsed.WEB_PORT)}`;
+  if (parsed.ADMIN_URL === 'http://localhost:4173') {
+    return `http://127.0.0.1:${String(parsed.WEB_PORT ?? parsed.ADMIN_PORT ?? 4173)}`;
   }
 
   return requireConfigValue(parsed.ADMIN_URL, 'Missing admin URL');

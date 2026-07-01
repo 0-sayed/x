@@ -46,8 +46,12 @@ export function AppShell({
       return;
     }
 
-    await logout.mutateAsync();
-    toast.showToast(t('toast.signedOut'));
+    try {
+      await logout.mutateAsync();
+      toast.showToast(t('toast.signedOut'));
+    } catch {
+      toast.showToast(t('toast.signOutFailed'));
+    }
   }
 
   return (

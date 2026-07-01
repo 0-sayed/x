@@ -1,8 +1,7 @@
 import i18next, { type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-export const supportedLanguages = ['en', 'ar'] as const;
-export type SupportedLanguage = (typeof supportedLanguages)[number];
+const supportedLanguages = ['en', 'ar'] as const;
 
 const resources = {
   en: {
@@ -23,6 +22,7 @@ const resources = {
         workspace: 'Workspace',
         signOut: 'Sign out',
         signedInAs: 'Signed in as',
+        primaryNav: 'Primary navigation',
       },
       workspace: {
         switchFailed: 'Workspace switch failed.',
@@ -30,6 +30,7 @@ const resources = {
         loadFailed: 'Workspace shell could not load.',
         retry: 'Retry',
         accessBlocked: 'Workspace access is blocked.',
+        routeBlocked: 'You do not have access to this section.',
       },
       confirm: {
         cancel: 'Cancel',
@@ -39,6 +40,7 @@ const resources = {
       },
       toast: {
         signedOut: 'Signed out.',
+        signOutFailed: 'Sign out failed.',
       },
       pages: {
         placeholder: 'This shell route is ready for a later task.',
@@ -67,6 +69,7 @@ const resources = {
         workspace: 'مساحة العمل',
         signOut: 'تسجيل الخروج',
         signedInAs: 'تم تسجيل الدخول باسم',
+        primaryNav: 'التنقل الرئيسي',
       },
       workspace: {
         switchFailed: 'تعذر تبديل مساحة العمل.',
@@ -74,15 +77,17 @@ const resources = {
         loadFailed: 'تعذر تحميل واجهة مساحة العمل.',
         retry: 'إعادة المحاولة',
         accessBlocked: 'تم حظر الوصول إلى مساحة العمل.',
+        routeBlocked: 'ليست لديك صلاحية للوصول إلى هذا القسم.',
       },
       confirm: {
         cancel: 'إلغاء',
         confirm: 'تأكيد',
         signOutTitle: 'تسجيل الخروج؟',
-        signOutMessage: 'سيتم حذف ملف جلسة الخادم.',
+        signOutMessage: 'سيتم حذف ملف تعريف ارتباط الجلسة على الخادم.',
       },
       toast: {
         signedOut: 'تم تسجيل الخروج.',
+        signOutFailed: 'تعذر تسجيل الخروج.',
       },
       pages: {
         placeholder: 'هذا المسار جاهز لمهمة لاحقة.',
@@ -109,7 +114,7 @@ void i18n.use(initReactI18next).init({
 i18n.on('languageChanged', setDocumentLanguageAttributes);
 setDocumentLanguageAttributes(i18n.resolvedLanguage ?? 'en');
 
-export function setDocumentLanguageAttributes(language: string): void {
+function setDocumentLanguageAttributes(language: string): void {
   const direction = i18n.dir(language);
   document.documentElement.lang = language === 'ar' ? 'ar' : 'en';
   document.documentElement.dir = direction;

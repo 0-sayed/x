@@ -14,7 +14,7 @@ import type {
 
 import type { ApiClient, ApiError } from './client.js';
 
-export const queryKeys = {
+const queryKeys = {
   currentUser: ['session', 'user'] as const,
   workspaceSwitcher: ['workspace', 'switcher'] as const,
   workspaceContext: ['workspace', 'context'] as const,
@@ -92,7 +92,9 @@ export function useLogout(): UseMutationResult<void, ApiError, void> {
   return useMutation({
     mutationFn: () => client.logout(),
     onSuccess: () => {
-      queryClient.clear();
+      queryClient.setQueryData(queryKeys.currentUser, null);
+      queryClient.removeQueries({ queryKey: queryKeys.workspaceSwitcher });
+      queryClient.removeQueries({ queryKey: queryKeys.workspaceContext });
     },
   });
 }
