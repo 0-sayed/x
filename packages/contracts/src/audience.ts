@@ -20,7 +20,12 @@ export function canReadAudience(
   const recordAudienceRank = audienceScopeRank[recordAudience];
   const viewerAudienceRank = audienceScopeRank[viewerAudience];
 
-  if (typeof recordAudienceRank === 'number' && typeof viewerAudienceRank === 'number') {
+  if (
+    Object.hasOwn(audienceScopeRank, recordAudience) &&
+    Object.hasOwn(audienceScopeRank, viewerAudience) &&
+    typeof recordAudienceRank === 'number' &&
+    typeof viewerAudienceRank === 'number'
+  ) {
     return viewerAudienceRank >= recordAudienceRank;
   }
 
@@ -53,7 +58,11 @@ export function canReadMoneyKind(
 ): boolean {
   const viewerAudienceRank = audienceScopeRank[viewerAudience];
 
-  if (moneyVisibilityKinds.has(kind) && typeof viewerAudienceRank === 'number') {
+  if (
+    moneyVisibilityKinds.has(kind) &&
+    Object.hasOwn(audienceScopeRank, viewerAudience) &&
+    typeof viewerAudienceRank === 'number'
+  ) {
     return kind === 'money_in' || viewerAudience === 'org';
   }
 

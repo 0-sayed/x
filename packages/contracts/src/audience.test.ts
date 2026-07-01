@@ -44,6 +44,20 @@ describe('audience contracts', () => {
     expect(parseAudienceScope).not.toHaveBeenCalled();
   });
 
+  it('parses audience values inherited from Object.prototype instead of using rank shortcuts', () => {
+    Object.defineProperty(Object.prototype, 'public', {
+      configurable: true,
+      value: 1,
+    });
+
+    try {
+      expect(() => canReadAudience('public' as never, 'org')).toThrow();
+      expect(() => canReadAudience('client', 'public' as never)).toThrow();
+    } finally {
+      delete (Object.prototype as { public?: number }).public;
+    }
+  });
+
   it('denies viewers from reading broader record audiences', () => {
     expect(canReadAudience('org', 'participants')).toBe(false);
     expect(canReadAudience('org', 'client')).toBe(false);
@@ -93,5 +107,19 @@ describe('audience contracts', () => {
 
     expect(parseMoneyVisibilityKind).not.toHaveBeenCalled();
     expect(parseAudienceScope).not.toHaveBeenCalled();
+  });
+
+  it('parses money visibility audiences inherited from Object.prototype instead of using rank shortcuts', () => {
+    Object.defineProperty(Object.prototype, 'public', {
+      configurable: true,
+      value: 1,
+    });
+
+    try {
+      expect(() => canReadMoneyKind('money_in', 'public' as never)).toThrow();
+      expect(() => canReadMoneyKind('money_out', 'public' as never)).toThrow();
+    } finally {
+      delete (Object.prototype as { public?: number }).public;
+    }
   });
 });
