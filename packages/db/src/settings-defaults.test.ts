@@ -31,4 +31,14 @@ describe('settings defaults', () => {
 
     expect(db.insert).not.toHaveBeenCalled();
   });
+
+  it('ignores blank workspace ids before seeding defaults', async () => {
+    const onConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+    const values = vi.fn(() => ({ onConflictDoNothing }));
+    const insert = vi.fn(() => ({ values }));
+
+    await seedWorkspaceSettingsDefaults({ insert }, ['', workspaceId, workspaceId]);
+
+    expect(values).toHaveBeenCalledWith([buildWorkspaceSettingsDefaults(workspaceId)]);
+  });
 });

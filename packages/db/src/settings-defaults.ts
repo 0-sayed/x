@@ -36,7 +36,7 @@ export async function seedWorkspaceSettingsDefaults(
   db: InsertableDb,
   workspaceIds: readonly string[],
 ): Promise<void> {
-  const uniqueWorkspaceIds = [...new Set(workspaceIds)];
+  const uniqueWorkspaceIds = [...new Set(workspaceIds.filter(Boolean))];
   if (uniqueWorkspaceIds.length === 0) {
     return;
   }
