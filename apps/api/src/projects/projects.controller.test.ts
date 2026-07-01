@@ -1,8 +1,11 @@
 import 'reflect-metadata';
 
 import { BadRequestException } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
 
+import { PermissionsGuard } from '../permissions/permissions.guard.js';
+import { WorkspaceContextGuard } from '../workspace-context/workspace-context.guard.js';
 import { ProjectsController } from './projects.controller.js';
 
 const workspaceContext = {
@@ -18,6 +21,13 @@ const workspaceContext = {
 } as const;
 
 describe('ProjectsController', () => {
+  it('registers guards by class for Nest dependency injection', () => {
+    expect(Reflect.getMetadata(GUARDS_METADATA, ProjectsController)).toEqual([
+      WorkspaceContextGuard,
+      PermissionsGuard,
+    ]);
+  });
+
   it('rejects invalid project ids before calling service', async () => {
     const service = { getProject: vi.fn() };
     const controller = new ProjectsController(service as never);

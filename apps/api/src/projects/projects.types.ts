@@ -19,8 +19,7 @@ export type ProjectIdentityInput = {
   readonly projectId: string;
 };
 
-export type UpdateProjectRecordInput = ProjectIdentityInput &
-  Omit<UpdateProjectRequest, 'baselineDeliveryDate'>;
+export type UpdateProjectRecordInput = ProjectIdentityInput & UpdateProjectRequest;
 
 export type ArchiveProjectInput = ProjectIdentityInput & {
   readonly archivedAt: Date;

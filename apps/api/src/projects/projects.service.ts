@@ -87,12 +87,12 @@ export class ProjectsService {
       throw new ConflictException('Project baseline delivery date is immutable');
     }
 
+    const parsed = parseRequest(updateProjectRequestSchema, body, 'Invalid project update request');
     const existing = await this.requireProject(workspaceContext.workspace.id, projectId);
     if (existing.archivedAt) {
       throw new ConflictException('Archived projects cannot be edited');
     }
 
-    const parsed = parseRequest(updateProjectRequestSchema, body, 'Invalid project update request');
     const updated = await this.projectsRepository.updateProject({
       ...parsed,
       workspaceId: workspaceContext.workspace.id,
@@ -164,16 +164,16 @@ export class ProjectsService {
     projectId: string,
     body: unknown,
   ): Promise<ProjectParticipantsResponse> {
-    const project = await this.requireProject(workspaceContext.workspace.id, projectId);
-    if (project.archivedAt) {
-      throw new ConflictException('Archived project participants cannot be edited');
-    }
-
     const parsed = parseRequest(
       replaceProjectParticipantsRequestSchema,
       body,
       'Invalid project participants request',
     );
+    const project = await this.requireProject(workspaceContext.workspace.id, projectId);
+    if (project.archivedAt) {
+      throw new ConflictException('Archived project participants cannot be edited');
+    }
+
     const userIds = parsed.participants.map((participant) => participant.userId);
     const activeUserIds = await this.projectsRepository.findActiveMembershipUserIds(
       workspaceContext.workspace.id,

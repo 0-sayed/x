@@ -250,7 +250,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "location_refs_workspace_id_id_unique": {
+          "name": "location_refs_workspace_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1182,33 +1188,6 @@
         }
       },
       "foreignKeys": {
-        "project_participants_project_id_projects_id_fk": {
-          "name": "project_participants_project_id_projects_id_fk",
-          "tableFrom": "project_participants",
-          "tableTo": "projects",
-          "columnsFrom": ["project_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "project_participants_workspace_id_workspace_refs_id_fk": {
-          "name": "project_participants_workspace_id_workspace_refs_id_fk",
-          "tableFrom": "project_participants",
-          "tableTo": "workspace_refs",
-          "columnsFrom": ["workspace_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "project_participants_user_id_inframodern_user_refs_id_fk": {
-          "name": "project_participants_user_id_inframodern_user_refs_id_fk",
-          "tableFrom": "project_participants",
-          "tableTo": "inframodern_user_refs",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "project_participants_workspace_id_project_id_projects_workspace_id_id_fk": {
           "name": "project_participants_workspace_id_project_id_projects_workspace_id_id_fk",
           "tableFrom": "project_participants",
@@ -1399,6 +1378,27 @@
           "method": "btree",
           "with": {}
         },
+        "projects_workspace_location_idx": {
+          "name": "projects_workspace_location_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "location_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "projects_workspace_client_org_idx": {
           "name": "projects_workspace_client_org_idx",
           "columns": [
@@ -1447,6 +1447,24 @@
           "columnsFrom": ["location_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "projects_workspace_id_pm_user_id_workspace_membership_refs_workspace_id_user_id_fk": {
+          "name": "projects_workspace_id_pm_user_id_workspace_membership_refs_workspace_id_user_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "workspace_membership_refs",
+          "columnsFrom": ["workspace_id", "pm_user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_workspace_id_location_id_location_refs_workspace_id_id_fk": {
+          "name": "projects_workspace_id_location_id_location_refs_workspace_id_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "location_refs",
+          "columnsFrom": ["workspace_id", "location_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "projects_client_org_id_workspace_refs_id_fk": {

@@ -7,7 +7,7 @@ import {
   type ProjectParticipantRecord,
   type ProjectRecord,
 } from '@materiabill/db';
-import { and, count, desc, eq, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
 
 import { DATABASE_CLIENT } from '../database/database.module.js';
 import type {
@@ -46,6 +46,14 @@ export class ProjectsRepository {
   }
 
   async listProjects(input: ListProjectsInput): Promise<ProjectSummaryRow[]> {
+    const cursorProject = input.cursor
+      ? await this.findProjectCursor({ workspaceId: input.workspaceId, projectId: input.cursor })
+      : undefined;
+
+    if (input.cursor && !cursorProject) {
+      return [];
+    }
+
     const filters = [
       eq(projects.workspaceId, input.workspaceId),
       input.includeArchived ? undefined : isNull(projects.archivedAt),
@@ -54,7 +62,12 @@ export class ProjectsRepository {
       input.status ? eq(projects.status, input.status) : undefined,
       input.role === 'main_contractor' ? isNull(projects.clientOrgId) : undefined,
       input.role === 'as_subcontract' ? isNotNull(projects.clientOrgId) : undefined,
-      input.cursor ? lt(projects.id, input.cursor) : undefined,
+      cursorProject
+        ? or(
+            lt(projects.createdAt, cursorProject.createdAt),
+            and(eq(projects.createdAt, cursorProject.createdAt), lt(projects.id, cursorProject.id)),
+          )
+        : undefined,
     ].filter((filter): filter is NonNullable<typeof filter> => filter !== undefined);
 
     const rows = await this.#db
@@ -66,7 +79,7 @@ export class ProjectsRepository {
       .leftJoin(projectParticipants, eq(projects.id, projectParticipants.projectId))
       .where(and(...filters))
       .groupBy(projects.id)
-      .orderBy(desc(projects.id))
+      .orderBy(desc(projects.createdAt), desc(projects.id))
       .limit(input.limit);
 
     return rows.map((row) => ({
@@ -106,6 +119,18 @@ export class ProjectsRepository {
   async findProject(input: ProjectIdentityInput): Promise<ProjectRecord | undefined> {
     const rows = await this.#db
       .select()
+      .from(projects)
+      .where(and(eq(projects.workspaceId, input.workspaceId), eq(projects.id, input.projectId)))
+      .limit(1);
+
+    return rows[0];
+  }
+
+  private async findProjectCursor(
+    input: ProjectIdentityInput,
+  ): Promise<Pick<ProjectRecord, 'id' | 'createdAt'> | undefined> {
+    const rows = await this.#db
+      .select({ id: projects.id, createdAt: projects.createdAt })
       .from(projects)
       .where(and(eq(projects.workspaceId, input.workspaceId), eq(projects.id, input.projectId)))
       .limit(1);

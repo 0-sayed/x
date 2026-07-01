@@ -11,7 +11,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import type { WorkspaceContext as WorkspaceContextValue } from '@materiabill/contracts';
 import { projectIdSchema } from '@materiabill/contracts';
 
@@ -21,10 +20,8 @@ import { WorkspaceContext } from '../workspace-context/workspace-context.decorat
 import { WorkspaceContextGuard } from '../workspace-context/workspace-context.guard.js';
 import { ProjectsService } from './projects.service.js';
 
-const permissionsGuard = new PermissionsGuard(new Reflector());
-
 @Controller('projects')
-@UseGuards(WorkspaceContextGuard, permissionsGuard)
+@UseGuards(WorkspaceContextGuard, PermissionsGuard)
 export class ProjectsController {
   constructor(
     @Inject(ProjectsService)

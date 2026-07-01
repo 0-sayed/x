@@ -3,17 +3,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { projectParticipants, projects, workspaceMembershipRefs } from '@materiabill/db';
 import { ProjectsRepository } from './projects.repository.js';
 
-function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly unknown[] = []) {
+function createDbMock(
+  selectRows: readonly unknown[] | readonly (readonly unknown[])[] = [],
+  updateRows: readonly unknown[] = [],
+) {
   const calls: unknown[] = [];
+  const selectResultQueue: unknown[][] = Array.isArray(selectRows[0])
+    ? (selectRows as readonly (readonly unknown[])[]).map((rows) => [...rows])
+    : [[...(selectRows as readonly unknown[])]];
+  let activeSelectRows = selectResultQueue[0] ?? [];
   const selectBuilder = {
     from: vi.fn(),
     leftJoin: vi.fn(),
     where: vi.fn(),
     groupBy: vi.fn(),
     orderBy: vi.fn(),
-    limit: vi.fn().mockResolvedValue(selectRows),
+    limit: vi.fn(() => Promise.resolve(activeSelectRows)),
     then: vi.fn((onFulfilled: (value: readonly unknown[]) => unknown) =>
-      Promise.resolve(onFulfilled(selectRows)),
+      Promise.resolve(onFulfilled(activeSelectRows)),
     ),
   };
   selectBuilder.from.mockReturnValue(selectBuilder);
@@ -24,7 +31,10 @@ function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly 
 
   const updateCalls: { table: unknown; setArgs: unknown[]; whereArgs: unknown[] }[] = [];
   const transactionDb = {
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => {
+      activeSelectRows = selectResultQueue.shift() ?? [];
+      return selectBuilder;
+    }),
     delete: vi.fn((table: unknown) => {
       calls.push({ op: 'delete', table });
       return {
@@ -42,7 +52,10 @@ function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly 
   };
 
   const db = {
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => {
+      activeSelectRows = selectResultQueue.shift() ?? [];
+      return selectBuilder;
+    }),
     insert: vi.fn((table: unknown) => {
       calls.push({ op: 'insert', table });
       return {
@@ -186,11 +199,68 @@ describe('ProjectsRepository', () => {
     expect(selectBuilder.from).toHaveBeenCalledWith(projects);
     expect(selectBuilder.leftJoin).toHaveBeenCalledWith(projectParticipants, expect.any(Object));
     expect(selectBuilder.groupBy).toHaveBeenCalledWith(projects.id);
+    expect(collectConditionColumnNames(selectBuilder.orderBy.mock.calls[0])).toEqual([
+      'created_at',
+      'id',
+    ]);
     expect(selectBuilder.limit).toHaveBeenCalledWith(20);
     const conditionLeaves = collectLeaves(selectBuilder.where.mock.calls[0]?.[0]);
     expect(conditionLeaves).toContain('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
     expect(conditionLeaves).toContain('workspace_id');
     expect(conditionLeaves).toContain('archived_at');
+  });
+
+  it('uses the cursor project timestamp for newest-first pagination', async () => {
+    const cursorProject = {
+      id: '11111111-1111-4111-8111-111111111111',
+      createdAt: new Date('2026-07-01T09:00:00.000Z'),
+    };
+    const pageProject = {
+      id: 'c5d9ed84-6469-4889-995d-cd38994fb7dd',
+      workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      name: 'Villa A12',
+      city: 'Riyadh',
+      currency: 'SAR',
+      status: 'on_plan',
+      now: null,
+      bottleneck: null,
+      baselineDeliveryDate: '2026-12-15',
+      pmUserId: null,
+      locationId: null,
+      clientOrgId: null,
+      createdByUserId: null,
+      archivedAt: null,
+      createdAt: new Date('2026-07-01T08:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T08:00:00.000Z'),
+    };
+    const { db, selectBuilder } = createDbMock([
+      [cursorProject],
+      [{ project: pageProject, participantCount: 0 }],
+    ]);
+    const repository = new ProjectsRepository({ db } as never);
+
+    await expect(
+      repository.listProjects({
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        includeArchived: false,
+        limit: 20,
+        cursor: cursorProject.id,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: pageProject.id,
+        participantCount: 0,
+      }),
+    ]);
+
+    expect(db.select).toHaveBeenCalledTimes(2);
+    expect(collectConditionColumnNames(selectBuilder.orderBy.mock.calls[0])).toEqual([
+      'created_at',
+      'id',
+    ]);
+    expect(collectConditionColumnNames(selectBuilder.where.mock.calls.at(-1)?.[0])).toEqual(
+      expect.arrayContaining(['created_at', 'id']),
+    );
   });
 
   it('updates only mutable project fields inside one workspace', async () => {

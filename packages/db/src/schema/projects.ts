@@ -61,6 +61,16 @@ export const projects = pgTable(
   (table) => [
     check('projects_status_check', sql`${table.status} in (${projectStatusSql})`),
     unique('projects_workspace_id_id_unique').on(table.workspaceId, table.id),
+    foreignKey({
+      columns: [table.workspaceId, table.pmUserId],
+      foreignColumns: [workspaceMembershipRefs.workspaceId, workspaceMembershipRefs.userId],
+      name: 'projects_workspace_id_pm_user_id_workspace_membership_refs_workspace_id_user_id_fk',
+    }),
+    foreignKey({
+      columns: [table.workspaceId, table.locationId],
+      foreignColumns: [locationRefs.workspaceId, locationRefs.id],
+      name: 'projects_workspace_id_location_id_location_refs_workspace_id_id_fk',
+    }),
     index('projects_workspace_archived_status_city_idx').on(
       table.workspaceId,
       table.archivedAt,
@@ -68,6 +78,7 @@ export const projects = pgTable(
       table.city,
     ),
     index('projects_workspace_pm_user_idx').on(table.workspaceId, table.pmUserId),
+    index('projects_workspace_location_idx').on(table.workspaceId, table.locationId),
     index('projects_workspace_client_org_idx').on(table.workspaceId, table.clientOrgId),
   ],
 );
@@ -75,15 +86,9 @@ export const projects = pgTable(
 export const projectParticipants = pgTable(
   'project_participants',
   {
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    workspaceId: uuid('workspace_id')
-      .notNull()
-      .references(() => workspaceRefs.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => inframodernUserRefs.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').notNull(),
+    workspaceId: uuid('workspace_id').notNull(),
+    userId: uuid('user_id').notNull(),
     roleLabel: text('role_label').notNull(),
     ...auditColumns(),
   },

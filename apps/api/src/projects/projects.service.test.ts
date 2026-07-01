@@ -215,6 +215,19 @@ describe('ProjectsService', () => {
     expect(repository.updateProject).not.toHaveBeenCalled();
   });
 
+  it('rejects invalid update bodies before loading the project', async () => {
+    const { service, repository, project } = createService();
+
+    await expect(
+      service.updateProject(workspaceContext as never, project.id, {
+        unexpected: true,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.findProject).not.toHaveBeenCalled();
+    expect(repository.updateProject).not.toHaveBeenCalled();
+  });
+
   it('rejects updates to archived projects', async () => {
     const { service, repository, project } = createService();
     repository.findProject.mockResolvedValue({
@@ -336,6 +349,20 @@ describe('ProjectsService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
+    expect(repository.replaceParticipants).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid participant replacement bodies before loading the project', async () => {
+    const { service, repository, project } = createService();
+
+    await expect(
+      service.replaceParticipants(workspaceContext as never, project.id, {
+        participants: [{ userId: 'not-a-uuid', roleLabel: 'PM' }],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.findProject).not.toHaveBeenCalled();
+    expect(repository.findActiveMembershipUserIds).not.toHaveBeenCalled();
     expect(repository.replaceParticipants).not.toHaveBeenCalled();
   });
 
