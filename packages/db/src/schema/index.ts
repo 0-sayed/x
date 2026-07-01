@@ -11,6 +11,7 @@ export {
 } from './projections.js';
 export { fileAssets } from './file-assets.js';
 export { pendingDecisions } from './grace-window.js';
+export { signOffs } from './signoffs.js';
 export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { projectParticipants, projects } from './projects.js';
 export { sessionRecords } from './sessions.js';
@@ -43,6 +44,7 @@ export type {
 } from './projections.js';
 export type { FileAsset, NewFileAsset } from './file-assets.js';
 export type { NewPendingDecisionRecord, PendingDecisionRecord } from './grace-window.js';
+export type { NewSignOffRecord, SignOffRecord } from './signoffs.js';
 export type { NewSessionRecord, SessionRecord } from './sessions.js';
 export type {
   NewProjectParticipantRecord,

@@ -5,6 +5,7 @@ import { and, asc, eq, gt, lte } from 'drizzle-orm';
 import { DATABASE_CLIENT } from '../database/database.module.js';
 import type {
   CreatePendingDecisionRecordInput,
+  FindActivePendingDecisionByRecordInput,
   FindPendingDecisionInput,
   ListActivePendingDecisionsInput,
   MutatePendingDecisionInput,
@@ -57,6 +58,27 @@ export class GraceWindowRepository {
         and(
           eq(pendingDecisions.workspaceId, input.workspaceId),
           eq(pendingDecisions.id, input.decisionId),
+        ),
+      )
+      .limit(1);
+
+    return rows[0];
+  }
+
+  async findActiveByRecord(
+    input: FindActivePendingDecisionByRecordInput,
+  ): Promise<PendingDecisionRecord | undefined> {
+    const rows = await this.#db
+      .select()
+      .from(pendingDecisions)
+      .where(
+        and(
+          eq(pendingDecisions.workspaceId, input.workspaceId),
+          eq(pendingDecisions.status, 'pending'),
+          eq(pendingDecisions.decisionType, input.decisionType),
+          eq(pendingDecisions.recordType, input.recordType),
+          eq(pendingDecisions.recordId, input.recordId),
+          gt(pendingDecisions.expiresAt, input.now),
         ),
       )
       .limit(1);

@@ -52,7 +52,9 @@ const sqlText = (value: unknown): string | undefined => {
 };
 
 const permissionsMigrationSql = () =>
-  readFileSync(new URL('../../drizzle/0003_permissions_rbac.sql', import.meta.url), 'utf8');
+  ['../../drizzle/0003_permissions_rbac.sql', '../../drizzle/0008_sign_offs.sql']
+    .map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n');
 
 const roleAssignmentSourcesMigrationSql = () =>
   readFileSync(new URL('../../drizzle/0004_role_assignment_sources.sql', import.meta.url), 'utf8');

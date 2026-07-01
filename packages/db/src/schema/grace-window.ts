@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { check, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  check,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import type { DecisionAudience, PendingDecisionStatus } from '@materiabill/contracts';
 
 import { inframodernUserRefs, workspaceRefs } from './projections.js';
@@ -60,6 +70,9 @@ export const pendingDecisions = pgTable(
       table.status,
       table.expiresAt,
     ),
+    uniqueIndex('pending_decisions_pending_record_unique_idx')
+      .on(table.workspaceId, table.decisionType, table.recordType, table.recordId)
+      .where(sql`status = 'pending' AND record_id IS NOT NULL`),
     index('pending_decisions_requested_by_user_id_idx').on(table.requestedByUserId),
   ],
 );
