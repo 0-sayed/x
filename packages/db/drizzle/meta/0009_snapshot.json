@@ -1,6 +1,6 @@
 {
-  "id": "494fb764-f171-4993-a015-bdab1dada7b1",
-  "prevId": "9425dd98-b312-4a3b-9a31-f88a67ada106",
+  "id": "7a80ff19-e935-4236-a70b-967195d02042",
+  "prevId": "494fb764-f171-4993-a015-bdab1dada7b1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1064,21 +1064,6 @@
           "method": "btree",
           "with": {}
         },
-        "pending_decisions_requested_by_user_id_idx": {
-          "name": "pending_decisions_requested_by_user_id_idx",
-          "columns": [
-            {
-              "expression": "requested_by_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "pending_decisions_pending_record_unique_idx": {
           "name": "pending_decisions_pending_record_unique_idx",
           "columns": [
@@ -1108,9 +1093,24 @@
             }
           ],
           "isUnique": true,
+          "where": "status = 'pending' AND record_id IS NOT NULL",
           "concurrently": false,
           "method": "btree",
-          "where": "status = 'pending' AND record_id IS NOT NULL",
+          "with": {}
+        },
+        "pending_decisions_requested_by_user_id_idx": {
+          "name": "pending_decisions_requested_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "requested_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
           "with": {}
         }
       },
@@ -1251,7 +1251,7 @@
       "checkConstraints": {
         "role_permissions_permission_key_catalog_check": {
           "name": "role_permissions_permission_key_catalog_check",
-          "value": "\"role_permissions\".\"permission_key\" IN ('workspace.view', 'projects.view', 'projects.create', 'projects.edit', 'projects.archive', 'agreement_terms.view', 'agreement_terms.configure', 'schedule.view', 'schedule.manage', 'schedule.propose_baseline', 'milestones.complete', 'draws.view', 'draws.create', 'draws.submit', 'draws.release', 'draws.release_retention', 'payables.view', 'payables.create', 'payables.pay', 'continuity.view', 'continuity.pause', 'budget.view', 'budget.manage', 'budget.set_audience', 'materials.view', 'materials.create', 'materials.edit', 'materials.receive', 'materials.use', 'materials.manage_po', 'suggestions.view', 'suggestions.resolve', 'subcontractors.view', 'subcontractors.create', 'subcontractors.edit', 'subcontractors.manage_compliance', 'submittals.view', 'submittals.create', 'submittals.review', 'submittals.approve', 'variations.view', 'variations.create', 'variations.approve', 'documents.view', 'documents.create', 'documents.send_for_signature', 'documents.void', 'manage_documents', 'certificates.view', 'certificates.generate', 'signoffs.view', 'signoffs.respond', 'signoffs.remind', 'snags.view', 'snags.create', 'snags.assign', 'snags.fix', 'manage_snags', 'people.view', 'roles.view', 'roles.create', 'roles.edit', 'manage_roles', 'user_role_assignments.manage', 'branding.view', 'branding.manage', 'settings.view', 'settings.manage_defaults', 'audit.view', 'search.use')"
+          "value": "\"role_permissions\".\"permission_key\" IN ('workspace.view', 'projects.view', 'projects.create', 'projects.edit', 'projects.archive', 'agreement_terms.view', 'agreement_terms.configure', 'schedule.view', 'schedule.manage', 'schedule.propose_baseline', 'milestones.complete', 'draws.view', 'draws.create', 'draws.submit', 'draws.release', 'draws.release_retention', 'payables.view', 'payables.create', 'payables.pay', 'continuity.view', 'continuity.pause', 'budget.view', 'budget.manage', 'budget.set_audience', 'materials.view', 'materials.create', 'materials.edit', 'materials.receive', 'materials.use', 'materials.manage_po', 'suggestions.view', 'suggestions.resolve', 'subcontractors.view', 'subcontractors.create', 'subcontractors.edit', 'subcontractors.manage_compliance', 'submittals.view', 'submittals.create', 'submittals.review', 'submittals.approve', 'variations.view', 'variations.create', 'variations.approve', 'documents.view', 'documents.create', 'documents.send_for_signature', 'documents.void', 'manage_documents', 'certificates.view', 'certificates.generate', 'signoffs.view', 'snags.view', 'snags.create', 'snags.assign', 'snags.fix', 'manage_snags', 'people.view', 'roles.view', 'roles.create', 'roles.edit', 'manage_roles', 'user_role_assignments.manage', 'branding.view', 'branding.manage', 'settings.view', 'settings.manage_defaults', 'audit.view', 'search.use')"
         }
       },
       "isRLSEnabled": false
@@ -2637,6 +2637,141 @@
       },
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.workspace_settings": {
+      "name": "workspace_settings",
+      "schema": "",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SAR'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Asia/Riyadh'"
+        },
+        "default_language": {
+          "name": "default_language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "default_retention_percentage": {
+          "name": "default_retention_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5
+        },
+        "grace_window_minutes": {
+          "name": "grace_window_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "default_disclosure_depth": {
+          "name": "default_disclosure_depth",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'none'"
+        },
+        "suggestion_throttle_per_material": {
+          "name": "suggestion_throttle_per_material",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5
+        },
+        "invite_auto_nudge_hours": {
+          "name": "invite_auto_nudge_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 48
+        },
+        "notification_preferences": {
+          "name": "notification_preferences",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"default\":{\"inApp\":true,\"email\":true,\"whatsapp\":false},\"contractorInviteAutoNudge\":{\"inApp\":true,\"email\":true,\"whatsapp\":false}}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "workspace_settings_workspace_id_workspace_refs_id_fk": {
+          "name": "workspace_settings_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "workspace_settings",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "workspace_settings_currency_check": {
+          "name": "workspace_settings_currency_check",
+          "value": "\"workspace_settings\".\"currency\" IN ('SAR', 'EGP')"
+        },
+        "workspace_settings_default_language_check": {
+          "name": "workspace_settings_default_language_check",
+          "value": "\"workspace_settings\".\"default_language\" IN ('en', 'ar')"
+        },
+        "workspace_settings_default_retention_percentage_check": {
+          "name": "workspace_settings_default_retention_percentage_check",
+          "value": "\"workspace_settings\".\"default_retention_percentage\" >= 0 AND \"workspace_settings\".\"default_retention_percentage\" <= 100"
+        },
+        "workspace_settings_grace_window_minutes_check": {
+          "name": "workspace_settings_grace_window_minutes_check",
+          "value": "\"workspace_settings\".\"grace_window_minutes\" >= 1 AND \"workspace_settings\".\"grace_window_minutes\" <= 1440"
+        },
+        "workspace_settings_default_disclosure_depth_check": {
+          "name": "workspace_settings_default_disclosure_depth_check",
+          "value": "\"workspace_settings\".\"default_disclosure_depth\" IN ('none', 'category', 'line')"
+        },
+        "workspace_settings_suggestion_throttle_per_material_check": {
+          "name": "workspace_settings_suggestion_throttle_per_material_check",
+          "value": "\"workspace_settings\".\"suggestion_throttle_per_material\" >= 0 AND \"workspace_settings\".\"suggestion_throttle_per_material\" <= 100"
+        },
+        "workspace_settings_invite_auto_nudge_hours_check": {
+          "name": "workspace_settings_invite_auto_nudge_hours_check",
+          "value": "\"workspace_settings\".\"invite_auto_nudge_hours\" >= 1 AND \"workspace_settings\".\"invite_auto_nudge_hours\" <= 720"
+        }
+      },
       "isRLSEnabled": false
     }
   },

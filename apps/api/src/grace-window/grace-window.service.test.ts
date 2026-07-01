@@ -3,6 +3,7 @@ import type { WorkspaceContext } from '@materiabill/contracts';
 import type { PendingDecisionRecord } from '@materiabill/db';
 import { describe, expect, it, vi } from 'vitest';
 
+import { GraceWindowCommitHandlerRegistry } from './grace-window-commit-handlers.js';
 import { GraceWindowService } from './grace-window.service.js';
 
 const requesterUserId = '3f43835d-7f3b-4b16-907b-d57db49832dd';
@@ -52,6 +53,8 @@ type ServiceOverrides = {
   readonly find?: PendingDecisionRecord | undefined;
   readonly undo?: PendingDecisionRecord | undefined;
   readonly commit?: PendingDecisionRecord | undefined;
+  readonly activeByRecord?: PendingDecisionRecord | undefined;
+  readonly commitHandlers?: ConstructorParameters<typeof GraceWindowService>[3];
 };
 
 function createService(overrides: ServiceOverrides = {}) {
@@ -65,6 +68,9 @@ function createService(overrides: ServiceOverrides = {}) {
     })),
     listActive: vi.fn().mockResolvedValue([row]),
     findByIdInWorkspace: vi.fn().mockResolvedValue('find' in overrides ? overrides.find : row),
+    findActiveByRecord: vi
+      .fn()
+      .mockResolvedValue('activeByRecord' in overrides ? overrides.activeByRecord : row),
     undoPending: vi.fn().mockResolvedValue(
       overrides.undo ?? {
         ...row,
@@ -88,14 +94,20 @@ function createService(overrides: ServiceOverrides = {}) {
   const settingsService = {
     getGraceWindowMinutes: vi.fn().mockResolvedValue(12),
   };
+  const commitHandlers = {
+    commit: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     auditService,
+    commitHandlers,
     repository,
     service: new GraceWindowService(
       repository as never,
       auditService as never,
       settingsService as never,
+      overrides.commitHandlers ??
+        (commitHandlers as unknown as ConstructorParameters<typeof GraceWindowService>[3]),
     ),
     settingsService,
   };
@@ -248,6 +260,34 @@ describe('GraceWindowService', () => {
     });
   });
 
+  it('reports whether a record has an active pending decision', async () => {
+    const { repository, service } = createService({
+      activeByRecord: {
+        ...row,
+        recordType: 'signoff',
+        recordId: 'signoff-1',
+      },
+    });
+
+    await expect(
+      service.hasActivePendingDecisionForRecord({
+        workspaceId: row.workspaceId,
+        decisionType: 'signoff.approve',
+        recordType: 'signoff',
+        recordId: 'signoff-1',
+        now: new Date('2026-07-01T09:00:00.000Z'),
+      }),
+    ).resolves.toBe(true);
+
+    expect(repository.findActiveByRecord).toHaveBeenCalledWith({
+      workspaceId: row.workspaceId,
+      decisionType: 'signoff.approve',
+      recordType: 'signoff',
+      recordId: 'signoff-1',
+      now: new Date('2026-07-01T09:00:00.000Z'),
+    });
+  });
+
   it('allows the original requester to undo an active pending decision', async () => {
     const { auditService, repository, service } = createService();
 
@@ -369,7 +409,7 @@ describe('GraceWindowService', () => {
   });
 
   it('marks expired decisions committed for worker callers', async () => {
-    const { auditService, repository, service } = createService();
+    const { auditService, commitHandlers, repository, service } = createService();
 
     await expect(
       service.markExpiredDecisionCommitted({
@@ -388,10 +428,63 @@ describe('GraceWindowService', () => {
       decisionId: row.id,
       now: new Date('2026-07-01T09:12:00.000Z'),
     });
+    expect(commitHandlers.commit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: row.id, status: 'committed' }),
+      new Date('2026-07-01T09:12:00.000Z'),
+    );
     expect(auditService.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         audience: 'client',
         action: 'grace_window.committed',
+      }),
+    );
+  });
+
+  it('records committed audit metadata before rethrowing commit handler failures', async () => {
+    const commitError = new Error('domain commit failed');
+    const { auditService, commitHandlers, service } = createService();
+    commitHandlers.commit.mockRejectedValueOnce(commitError);
+
+    await expect(
+      service.markExpiredDecisionCommitted({
+        workspaceId: row.workspaceId,
+        decisionId: row.id,
+        now: new Date('2026-07-01T09:12:00.000Z'),
+      }),
+    ).rejects.toThrow(commitError);
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'grace_window.committed',
+        metadata: expect.objectContaining({
+          commitStatus: 'failed',
+          commitError: 'domain commit failed',
+        }),
+      }),
+    );
+  });
+
+  it('fails missing commit handlers instead of silently committing only the pending row', async () => {
+    const { auditService, service } = createService({
+      commitHandlers: new GraceWindowCommitHandlerRegistry(),
+    });
+
+    await expect(
+      service.markExpiredDecisionCommitted({
+        workspaceId: row.workspaceId,
+        decisionId: row.id,
+        now: new Date('2026-07-01T09:12:00.000Z'),
+      }),
+    ).rejects.toThrow('No grace-window commit handler registered for decision type');
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'grace_window.committed',
+        metadata: expect.objectContaining({
+          commitStatus: 'failed',
+          commitError:
+            'No grace-window commit handler registered for decision type: signoff.approve',
+        }),
       }),
     );
   });
