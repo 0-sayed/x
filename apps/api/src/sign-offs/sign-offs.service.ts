@@ -384,12 +384,15 @@ function isCommitPayload(payload: unknown): payload is {
   readonly reason?: unknown;
 } {
   return (
-    typeof payload === 'object' &&
-    payload !== null &&
+    isRecord(payload) &&
     typeof payload.signOffId === 'string' &&
     typeof payload.actorUserId === 'string' &&
     'action' in payload
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function isPendingRecordUniqueViolation(error: unknown): boolean {
