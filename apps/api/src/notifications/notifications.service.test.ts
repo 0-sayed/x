@@ -257,6 +257,50 @@ describe('NotificationsService', () => {
     expect(auditService.recordEvent).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the email attempt result when delivery update persistence fails', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementationOnce(() => undefined);
+    const { repository, emailAdapter, auditService, service } = createService();
+    emailAdapter.send.mockResolvedValueOnce({
+      status: 'sent',
+      providerMessageId: 'provider-message-1',
+      skippedReason: null,
+      errorMessage: null,
+    });
+    repository.updateDeliveryAttempt.mockRejectedValueOnce(new Error('delivery update failed'));
+
+    await expect(
+      service.routeEvent({
+        workspaceId,
+        actorUserId: userId,
+        eventType: 'draw.approved',
+        title: 'Draw approved',
+        body: 'Client approved draw D-104',
+        resourceType: 'draw',
+        resourceId: 'draw-104',
+        recipients: [{ userId, email: 'pm@example.com' }],
+        channels: ['email'],
+      }),
+    ).resolves.toEqual({
+      deliveries: [
+        expect.objectContaining({
+          channel: 'email',
+          status: 'sent',
+          providerMessageId: 'provider-message-1',
+          skippedReason: null,
+          errorMessage: null,
+        }),
+      ],
+    });
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: { 'email.sent': 1 },
+      }),
+    );
+    expect(warnSpy).toHaveBeenCalledWith('delivery update failed');
+    warnSpy.mockRestore();
+  });
+
   it('skips disabled email preferences without calling the adapter', async () => {
     const { repository, emailAdapter, service } = createService();
     repository.listPreferences.mockResolvedValue([

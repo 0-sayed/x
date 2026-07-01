@@ -262,6 +262,10 @@ export class NotificationsService {
         body: input.body,
         payload: input.payload,
       });
+      deliveries[index] = {
+        ...delivery,
+        ...update,
+      };
 
       try {
         const updatedDelivery = await this.repository.updateDeliveryAttempt({
