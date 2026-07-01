@@ -57,6 +57,13 @@
       "when": 1782915272038,
       "tag": "0007_pending_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782936948651,
+      "tag": "0008_projects",
+      "breakpoints": true
     }
   ]
 }

@@ -60,3 +60,4 @@ export * from './audience.js';
 export * from './grace-window.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
+export * from './projects.js';
