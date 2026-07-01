@@ -52,6 +52,7 @@ type ServiceOverrides = {
   readonly find?: PendingDecisionRecord | undefined;
   readonly undo?: PendingDecisionRecord | undefined;
   readonly commit?: PendingDecisionRecord | undefined;
+  readonly activeByRecord?: PendingDecisionRecord | undefined;
 };
 
 function createService(overrides: ServiceOverrides = {}) {
@@ -59,6 +60,9 @@ function createService(overrides: ServiceOverrides = {}) {
     createDecision: vi.fn().mockResolvedValue(row),
     listActive: vi.fn().mockResolvedValue([row]),
     findByIdInWorkspace: vi.fn().mockResolvedValue('find' in overrides ? overrides.find : row),
+    findActiveByRecord: vi
+      .fn()
+      .mockResolvedValue('activeByRecord' in overrides ? overrides.activeByRecord : row),
     undoPending: vi.fn().mockResolvedValue(
       overrides.undo ?? {
         ...row,
@@ -195,6 +199,34 @@ describe('GraceWindowService', () => {
       projectId: undefined,
       now: new Date('2026-07-01T09:05:30.000Z'),
       limit: 50,
+    });
+  });
+
+  it('reports whether a record has an active pending decision', async () => {
+    const { repository, service } = createService({
+      activeByRecord: {
+        ...row,
+        recordType: 'signoff',
+        recordId: 'signoff-1',
+      },
+    });
+
+    await expect(
+      service.hasActivePendingDecisionForRecord({
+        workspaceId: row.workspaceId,
+        decisionType: 'signoff.approve',
+        recordType: 'signoff',
+        recordId: 'signoff-1',
+        now: new Date('2026-07-01T09:00:00.000Z'),
+      }),
+    ).resolves.toBe(true);
+
+    expect(repository.findActiveByRecord).toHaveBeenCalledWith({
+      workspaceId: row.workspaceId,
+      decisionType: 'signoff.approve',
+      recordType: 'signoff',
+      recordId: 'signoff-1',
+      now: new Date('2026-07-01T09:00:00.000Z'),
     });
   });
 

@@ -1,4 +1,3 @@
-import { permissionKeys } from '@materiabill/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -8,6 +7,7 @@ import {
   isPermissionKey,
   permissionCatalog,
 } from './catalog.js';
+import { permissionKeys } from '@materiabill/contracts';
 
 type HasPush<T> = 'push' extends keyof T ? true : false;
 
@@ -35,8 +35,19 @@ describe('permission catalog', () => {
       labelEn: 'View workspace',
       labelAr: 'عرض مساحة العمل',
     });
+    expect(permissionCatalog.find((entry) => entry.key === 'signoffs.respond')).toEqual({
+      key: 'signoffs.respond',
+      area: 'signoffs',
+      labelEn: 'Respond to sign-offs',
+      labelAr: 'الرد على الاعتمادات النهائية',
+    });
 
     expect(defaultRoleTemplates.workspaceAdmin.nameAr).toBe('مدير مساحة العمل');
+    expect(defaultRoleTemplates.projectManager.permissions).toContain('signoffs.respond');
+    expect(defaultRoleTemplates.projectManager.permissions).toContain('signoffs.remind');
+    expect(defaultRoleTemplates.viewer.permissions).toContain('signoffs.view');
+    expect(defaultRoleTemplates.viewer.permissions).not.toContain('signoffs.respond');
+    expect(defaultRoleTemplates.viewer.permissions).not.toContain('signoffs.remind');
     expect(defaultRoleTemplates.viewer.permissions).toContain('search.use');
   });
 

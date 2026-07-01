@@ -12,6 +12,7 @@ import { HealthController } from './health.controller.js';
 import { PermissionsController } from './permissions/permissions.controller.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { SignOffsModule } from './sign-offs/sign-offs.module.js';
 import { SyncAdminModule } from './sync-admin/sync-admin.module.js';
 import { SessionModule } from './session/session.module.js';
 import { WorkspaceContextModule } from './workspace-context/workspace-context.module.js';
@@ -27,6 +28,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     AuditModule,
     AudienceModule,
     GraceWindowModule,
+    SignOffsModule,
     FileStorageModule,
     PermissionsModule,
   ],

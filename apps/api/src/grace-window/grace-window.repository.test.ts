@@ -107,6 +107,21 @@ describe('GraceWindowRepository', () => {
     expect(selectBuilder.limit).toHaveBeenCalledWith(50);
   });
 
+  it('finds an active pending decision by workspace and record identity', async () => {
+    const { db } = createDbMock([], [pendingRow]);
+    const repository = new GraceWindowRepository({ db } as never);
+
+    const row = await repository.findActiveByRecord({
+      workspaceId: pendingRow.workspaceId,
+      decisionType: pendingRow.decisionType,
+      recordType: pendingRow.recordType,
+      recordId: pendingRow.recordId,
+      now: new Date('2026-07-01T09:05:00.000Z'),
+    });
+
+    expect(row?.id).toBe(pendingRow.id);
+  });
+
   it('atomically marks a pending decision undone', async () => {
     const undoneRow = {
       ...pendingRow,

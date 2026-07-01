@@ -22,6 +22,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AuditService } from '../audit/audit.service.js';
 import { GraceWindowRepository } from './grace-window.repository.js';
+import type { FindActivePendingDecisionByRecordInput } from './grace-window.types.js';
 
 type ListActivePendingDecisionsInput = {
   readonly workspaceId: string;
@@ -103,6 +104,14 @@ export class GraceWindowService {
     return pendingDecisionListResponseSchema.parse({
       decisions: rows.map((row) => toPendingDecision(row, now)),
     });
+  }
+
+  async hasActivePendingDecisionForRecord(
+    input: FindActivePendingDecisionByRecordInput,
+  ): Promise<boolean> {
+    const existing = await this.repository.findActiveByRecord(input);
+
+    return existing !== undefined;
   }
 
   async undoPendingDecision(input: UndoPendingDecisionInput): Promise<UndoPendingDecisionResponse> {

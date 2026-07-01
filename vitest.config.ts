@@ -1,6 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@materiabill/contracts': new URL('./packages/contracts/src/index.ts', import.meta.url)
+        .pathname,
+      '@materiabill/db': new URL('./packages/db/src/index.ts', import.meta.url).pathname,
+    },
+  },
   test: {
     environment: 'node',
     globals: false,

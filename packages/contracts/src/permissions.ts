@@ -52,6 +52,8 @@ export const permissionKeys = [
   'certificates.view',
   'certificates.generate',
   'signoffs.view',
+  'signoffs.respond',
+  'signoffs.remind',
   'snags.view',
   'snags.create',
   'snags.assign',
