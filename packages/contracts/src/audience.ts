@@ -11,11 +11,19 @@ const audienceScopeRank: Record<AudienceScope, number> = {
   participants: 2,
   client: 1,
 };
+const moneyVisibilityKinds = new Set<string>(moneyVisibilityKindSchema.options);
 
 export function canReadAudience(
   recordAudience: AudienceScope,
   viewerAudience: AudienceScope,
 ): boolean {
+  const recordAudienceRank = audienceScopeRank[recordAudience];
+  const viewerAudienceRank = audienceScopeRank[viewerAudience];
+
+  if (typeof recordAudienceRank === 'number' && typeof viewerAudienceRank === 'number') {
+    return viewerAudienceRank >= recordAudienceRank;
+  }
+
   const parsedRecordAudience = audienceScopeSchema.parse(recordAudience);
   const parsedViewerAudience = audienceScopeSchema.parse(viewerAudience);
 
@@ -43,6 +51,12 @@ export function canReadMoneyKind(
   kind: MoneyVisibilityKind,
   viewerAudience: AudienceScope,
 ): boolean {
+  const viewerAudienceRank = audienceScopeRank[viewerAudience];
+
+  if (moneyVisibilityKinds.has(kind) && typeof viewerAudienceRank === 'number') {
+    return kind === 'money_in' || viewerAudience === 'org';
+  }
+
   const parsedKind = moneyVisibilityKindSchema.parse(kind);
   const parsedViewerAudience = audienceScopeSchema.parse(viewerAudience);
 

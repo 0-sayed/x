@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   assertMoneyKindReadable,
@@ -11,6 +11,10 @@ import {
 } from './audience.js';
 
 describe('audience contracts', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('accepts the operational audience scopes in display order', () => {
     expect(audienceScopeSchema.options).toEqual(['org', 'participants', 'client']);
     expect(audienceScopeSchema.parse('org')).toBe('org');
@@ -29,6 +33,15 @@ describe('audience contracts', () => {
     expect(canReadAudience('participants', 'participants')).toBe(true);
     expect(canReadAudience('client', 'participants')).toBe(true);
     expect(canReadAudience('client', 'client')).toBe(true);
+  });
+
+  it('skips schema parsing for valid audience visibility checks', () => {
+    const parseAudienceScope = vi.spyOn(audienceScopeSchema, 'parse');
+
+    expect(canReadAudience('client', 'participants')).toBe(true);
+    expect(canReadAudience('org', 'client')).toBe(false);
+
+    expect(parseAudienceScope).not.toHaveBeenCalled();
   });
 
   it('denies viewers from reading broader record audiences', () => {
@@ -69,5 +82,16 @@ describe('audience contracts', () => {
     expect(() => {
       assertMoneyKindReadable('money_out', 'client');
     }).toThrow('Money-out records are not visible to this audience');
+  });
+
+  it('skips schema parsing for valid money visibility checks', () => {
+    const parseMoneyVisibilityKind = vi.spyOn(moneyVisibilityKindSchema, 'parse');
+    const parseAudienceScope = vi.spyOn(audienceScopeSchema, 'parse');
+
+    expect(canReadMoneyKind('money_in', 'client')).toBe(true);
+    expect(canReadMoneyKind('money_out', 'participants')).toBe(false);
+
+    expect(parseMoneyVisibilityKind).not.toHaveBeenCalled();
+    expect(parseAudienceScope).not.toHaveBeenCalled();
   });
 });

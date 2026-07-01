@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
-  assertMoneyKindReadable as assertContractMoneyKindReadable,
-  assertReadableAudience,
+  canReadAudience,
+  canReadMoneyKind,
   filterAudienceItems,
   type AudienceScope,
   type MoneyVisibilityKind,
@@ -13,13 +13,8 @@ const moneyOutDeniedMessage = 'Money-out records are not visible to this audienc
 @Injectable()
 export class AudienceService {
   assertReadable(recordAudience: AudienceScope, viewerAudience: AudienceScope): void {
-    try {
-      assertReadableAudience(recordAudience, viewerAudience);
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === audienceScopeDeniedMessage) {
-        throw new ForbiddenException(audienceScopeDeniedMessage);
-      }
-      throw error;
+    if (!canReadAudience(recordAudience, viewerAudience)) {
+      throw new ForbiddenException(audienceScopeDeniedMessage);
     }
   }
 
@@ -32,13 +27,8 @@ export class AudienceService {
   }
 
   assertMoneyKindReadable(kind: MoneyVisibilityKind, viewerAudience: AudienceScope): void {
-    try {
-      assertContractMoneyKindReadable(kind, viewerAudience);
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === moneyOutDeniedMessage) {
-        throw new ForbiddenException(moneyOutDeniedMessage);
-      }
-      throw error;
+    if (!canReadMoneyKind(kind, viewerAudience)) {
+      throw new ForbiddenException(moneyOutDeniedMessage);
     }
   }
 }
