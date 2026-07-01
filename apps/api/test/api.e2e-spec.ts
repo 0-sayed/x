@@ -11,9 +11,10 @@ import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import type { CurrentSessionUser } from '@materiabill/contracts';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
+import { AuditService } from '../src/audit/audit.service.js';
 import { configureApiDocumentation } from '../src/main.js';
 import { PermissionsController } from '../src/permissions/permissions.controller.js';
 import { PermissionsGuard } from '../src/permissions/permissions.guard.js';
@@ -429,6 +430,121 @@ describe('workspace context endpoints', () => {
     await request(workspaceApp.getHttpServer())
       .post('/workspaces/active')
       .send({ workspaceId: 'not-a-uuid' })
+      .expect(400);
+  });
+});
+
+describe('audit endpoints', () => {
+  let auditApp: INestApplication;
+  const auditWorkspaceContext = {
+    workspace: {
+      id: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      name: 'Demo Workspace',
+      slug: 'demo-workspace',
+      paymentCurrency: 'SAR',
+    },
+    membership: {
+      userId: sessionUser.id,
+      roleKey: 'workspace_admin',
+      permissions: ['workspace.view', 'audit.view'],
+      isAdmin: true,
+    },
+    access: {
+      appInstalled: true,
+      subscriptionActive: true,
+      membershipActive: true,
+    },
+  };
+  const auditWorkspaceGuardMock: CanActivate = {
+    canActivate: (context: ExecutionContext): boolean => {
+      const request = context.switchToHttp().getRequest<{
+        sessionId?: string;
+        user?: CurrentSessionUser;
+        workspaceContext?: typeof auditWorkspaceContext;
+      }>();
+      request.sessionId = 'a3f0cf17-bfd5-4cd0-a664-3d15339cdab2';
+      request.user = sessionUser;
+      request.workspaceContext = auditWorkspaceContext;
+
+      return true;
+    },
+  };
+  const auditService = {
+    listEvents: vi.fn().mockResolvedValue({
+      events: [
+        {
+          id: '98d9e64c-7686-4e40-91ce-3f861fd169e5',
+          workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+          actorUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+          audience: 'internal',
+          action: 'workspace.switch',
+          resourceType: 'workspace',
+          resourceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+          metadata: { source: 'workspace-switcher' },
+          occurredAt: '2026-06-30T12:00:00.000Z',
+        },
+      ],
+    }),
+  };
+
+  beforeAll(async () => {
+    setSessionTestEnv();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(auditWorkspaceGuardMock)
+      .overrideProvider(AuditService)
+      .useValue(auditService)
+      .compile();
+
+    auditApp = moduleRef.createNestApplication();
+    await auditApp.init();
+  });
+
+  afterAll(async () => {
+    await auditApp.close();
+  });
+
+  beforeEach(() => {
+    auditWorkspaceContext.membership.permissions = ['workspace.view', 'audit.view'];
+    auditWorkspaceContext.membership.isAdmin = true;
+    auditService.listEvents.mockClear();
+  });
+
+  it('lists audit events for the resolved workspace context', async () => {
+    const response = await request(auditApp.getHttpServer())
+      .get('/audit-events')
+      .query({
+        audience: 'internal',
+        before: '2026-06-30T13:00:00.000Z',
+        limit: '25',
+      })
+      .expect(200);
+
+    expect(response.body.events).toHaveLength(1);
+    expect(auditService.listEvents).toHaveBeenCalledWith({
+      workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      audience: 'internal',
+      before: '2026-06-30T13:00:00.000Z',
+      limit: 25,
+    });
+  });
+
+  it('rejects audit event listing without audit.view permission', async () => {
+    auditWorkspaceContext.membership.permissions = ['workspace.view'];
+    auditWorkspaceContext.membership.isAdmin = false;
+
+    await request(auditApp.getHttpServer()).get('/audit-events').expect(403);
+
+    expect(auditService.listEvents).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid audit query params', async () => {
+    await request(auditApp.getHttpServer())
+      .get('/audit-events')
+      .query({ audience: 'public', limit: '500' })
       .expect(400);
   });
 });

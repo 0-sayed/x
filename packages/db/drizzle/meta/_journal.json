@@ -36,6 +36,13 @@
       "when": 1782855092721,
       "tag": "0004_role_assignment_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782882999591,
+      "tag": "0005_audit_events",
+      "breakpoints": true
     }
   ]
 }

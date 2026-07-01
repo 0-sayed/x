@@ -1,3 +1,4 @@
+export { auditEvents } from './audit.js';
 export {
   brandRefs,
   exchangeRateRefs,
@@ -10,6 +11,7 @@ export {
 } from './projections.js';
 export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { sessionRecords } from './sessions.js';
+export type { AuditEventRecord, NewAuditEventRecord } from './audit.js';
 export type {
   NewRolePermission,
   NewUserRoleAssignment,
