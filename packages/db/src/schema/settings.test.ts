@@ -12,9 +12,7 @@ describe('workspaceSettings schema', () => {
     expect(workspaceSettings.currency.name).toBe('currency');
     expect(workspaceSettings.timezone.name).toBe('timezone');
     expect(workspaceSettings.defaultLanguage.name).toBe('default_language');
-    expect(workspaceSettings.defaultRetentionPercentage.name).toBe(
-      'default_retention_percentage',
-    );
+    expect(workspaceSettings.defaultRetentionPercentage.name).toBe('default_retention_percentage');
     expect(workspaceSettings.graceWindowMinutes.name).toBe('grace_window_minutes');
     expect(workspaceSettings.defaultDisclosureDepth.name).toBe('default_disclosure_depth');
     expect(workspaceSettings.suggestionThrottlePerMaterial.name).toBe(

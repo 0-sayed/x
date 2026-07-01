@@ -54,14 +54,10 @@ export const workspaceSettingsResponseSchema = z
 
 export type DefaultDisclosureDepth = z.infer<typeof defaultDisclosureDepthSchema>;
 export type DefaultLanguage = z.infer<typeof defaultLanguageSchema>;
-export type NotificationChannelPreference = z.infer<
-  typeof notificationChannelPreferenceSchema
->;
+export type NotificationChannelPreference = z.infer<typeof notificationChannelPreferenceSchema>;
 export type WorkspaceNotificationPreferences = z.infer<
   typeof workspaceNotificationPreferencesSchema
 >;
 export type WorkspaceSettings = z.infer<typeof workspaceSettingsSchema>;
-export type UpdateWorkspaceSettingsRequest = z.infer<
-  typeof updateWorkspaceSettingsRequestSchema
->;
+export type UpdateWorkspaceSettingsRequest = z.infer<typeof updateWorkspaceSettingsRequestSchema>;
 export type WorkspaceSettingsResponse = z.infer<typeof workspaceSettingsResponseSchema>;

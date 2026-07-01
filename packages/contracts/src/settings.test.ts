@@ -69,8 +69,9 @@ describe('settings contracts', () => {
     expect(() =>
       workspaceSettingsSchema.parse({ ...settingsPayload, defaultRetentionPercentage: 101 }),
     ).toThrow();
-    expect(() => workspaceSettingsSchema.parse({ ...settingsPayload, graceWindowMinutes: 0 }))
-      .toThrow();
+    expect(() =>
+      workspaceSettingsSchema.parse({ ...settingsPayload, graceWindowMinutes: 0 }),
+    ).toThrow();
     expect(() =>
       workspaceSettingsSchema.parse({ ...settingsPayload, suggestionThrottlePerMaterial: -1 }),
     ).toThrow();

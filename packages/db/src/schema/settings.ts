@@ -39,9 +39,7 @@ export const workspaceSettings = pgTable(
       .$type<DefaultDisclosureDepth>()
       .notNull()
       .default('none'),
-    suggestionThrottlePerMaterial: integer('suggestion_throttle_per_material')
-      .notNull()
-      .default(5),
+    suggestionThrottlePerMaterial: integer('suggestion_throttle_per_material').notNull().default(5),
     inviteAutoNudgeHours: integer('invite_auto_nudge_hours').notNull().default(48),
     notificationPreferences: jsonb('notification_preferences')
       .$type<WorkspaceNotificationPreferences>()

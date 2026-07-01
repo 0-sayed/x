@@ -27,7 +27,7 @@ describe('settings defaults', () => {
   it('does not write when no workspace ids are provided', async () => {
     const db = { insert: vi.fn() };
 
-    await seedWorkspaceSettingsDefaults(db as never, []);
+    await seedWorkspaceSettingsDefaults(db, []);
 
     expect(db.insert).not.toHaveBeenCalled();
   });

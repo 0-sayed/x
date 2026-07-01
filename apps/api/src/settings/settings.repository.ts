@@ -42,7 +42,9 @@ export class SettingsRepository {
     return row;
   }
 
-  private async findRequiredWorkspaceSettings(workspaceId: string): Promise<WorkspaceSettingsRecord> {
+  private async findRequiredWorkspaceSettings(
+    workspaceId: string,
+  ): Promise<WorkspaceSettingsRecord> {
     const rows = await this.#db
       .select()
       .from(workspaceSettings)

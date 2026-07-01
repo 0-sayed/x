@@ -121,12 +121,8 @@
           "name": "audit_events_workspace_id_workspace_refs_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -134,12 +130,8 @@
           "name": "audit_events_actor_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -251,12 +243,8 @@
           "name": "brand_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "brand_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -548,12 +536,8 @@
           "name": "file_assets_workspace_id_workspace_refs_id_fk",
           "tableFrom": "file_assets",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -561,12 +545,8 @@
           "name": "file_assets_uploaded_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "file_assets",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "uploaded_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -576,9 +556,7 @@
         "file_assets_storage_key_uidx": {
           "name": "file_assets_storage_key_uidx",
           "nullsNotDistinct": false,
-          "columns": [
-            "storage_key"
-          ]
+          "columns": ["storage_key"]
         }
       },
       "policies": {},
@@ -803,12 +781,8 @@
           "name": "location_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "location_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1111,12 +1085,8 @@
           "name": "pending_decisions_workspace_id_workspace_refs_id_fk",
           "tableFrom": "pending_decisions",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1124,12 +1094,8 @@
           "name": "pending_decisions_requested_by_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "pending_decisions",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "requested_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["requested_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1216,12 +1182,8 @@
           "name": "role_permissions_role_id_workspace_roles_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1229,12 +1191,8 @@
           "name": "role_permissions_workspace_id_workspace_refs_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1242,14 +1200,8 @@
           "name": "role_permissions_workspace_id_role_id_workspace_roles_workspace_id_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "workspace_roles",
-          "columnsFrom": [
-            "workspace_id",
-            "role_id"
-          ],
-          "columnsTo": [
-            "workspace_id",
-            "id"
-          ],
+          "columnsFrom": ["workspace_id", "role_id"],
+          "columnsTo": ["workspace_id", "id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1257,10 +1209,7 @@
       "compositePrimaryKeys": {
         "role_permissions_role_id_permission_key_pk": {
           "name": "role_permissions_role_id_permission_key_pk",
-          "columns": [
-            "role_id",
-            "permission_key"
-          ]
+          "columns": ["role_id", "permission_key"]
         }
       },
       "uniqueConstraints": {},
@@ -1392,12 +1341,8 @@
           "name": "session_records_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "session_records",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1405,12 +1350,8 @@
           "name": "session_records_active_workspace_id_workspace_refs_id_fk",
           "tableFrom": "session_records",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "active_workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["active_workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1604,12 +1545,8 @@
           "name": "sync_failures_event_id_sync_inbox_event_id_fk",
           "tableFrom": "sync_failures",
           "tableTo": "sync_inbox",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "event_id"
-          ],
+          "columnsFrom": ["event_id"],
+          "columnsTo": ["event_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1898,12 +1835,8 @@
           "name": "user_role_assignments_workspace_id_workspace_refs_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1911,12 +1844,8 @@
           "name": "user_role_assignments_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1924,12 +1853,8 @@
           "name": "user_role_assignments_role_id_workspace_roles_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1937,14 +1862,8 @@
           "name": "user_role_assignments_workspace_id_user_id_workspace_membership_refs_workspace_id_user_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_membership_refs",
-          "columnsFrom": [
-            "workspace_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "workspace_id",
-            "user_id"
-          ],
+          "columnsFrom": ["workspace_id", "user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1952,14 +1871,8 @@
           "name": "user_role_assignments_workspace_id_role_id_workspace_roles_workspace_id_id_fk",
           "tableFrom": "user_role_assignments",
           "tableTo": "workspace_roles",
-          "columnsFrom": [
-            "workspace_id",
-            "role_id"
-          ],
-          "columnsTo": [
-            "workspace_id",
-            "id"
-          ],
+          "columnsFrom": ["workspace_id", "role_id"],
+          "columnsTo": ["workspace_id", "id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1967,12 +1880,7 @@
       "compositePrimaryKeys": {
         "user_role_assignments_workspace_id_user_id_role_id_source_pk": {
           "name": "user_role_assignments_workspace_id_user_id_role_id_source_pk",
-          "columns": [
-            "workspace_id",
-            "user_id",
-            "role_id",
-            "source"
-          ]
+          "columns": ["workspace_id", "user_id", "role_id", "source"]
         }
       },
       "uniqueConstraints": {},
@@ -2084,12 +1992,8 @@
           "name": "workspace_membership_refs_workspace_id_workspace_refs_id_fk",
           "tableFrom": "workspace_membership_refs",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2097,12 +2001,8 @@
           "name": "workspace_membership_refs_user_id_inframodern_user_refs_id_fk",
           "tableFrom": "workspace_membership_refs",
           "tableTo": "inframodern_user_refs",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2110,10 +2010,7 @@
       "compositePrimaryKeys": {
         "workspace_membership_refs_workspace_id_user_id_pk": {
           "name": "workspace_membership_refs_workspace_id_user_id_pk",
-          "columns": [
-            "workspace_id",
-            "user_id"
-          ]
+          "columns": ["workspace_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2341,12 +2238,8 @@
           "name": "workspace_roles_workspace_id_workspace_refs_id_fk",
           "tableFrom": "workspace_roles",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2356,10 +2249,7 @@
         "workspace_roles_workspace_id_id_unique": {
           "name": "workspace_roles_workspace_id_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "id"
-          ]
+          "columns": ["workspace_id", "id"]
         }
       },
       "policies": {},
@@ -2460,12 +2350,8 @@
           "name": "workspace_settings_workspace_id_workspace_refs_id_fk",
           "tableFrom": "workspace_settings",
           "tableTo": "workspace_refs",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -157,7 +157,7 @@ export class SessionRepository {
         },
         db as Db,
       );
-      await seedWorkspaceSettingsDefaults(db as Db, [workspace.id]);
+      await seedWorkspaceSettingsDefaults(db, [workspace.id]);
     }
 
     return workspaces[0]?.id ?? null;

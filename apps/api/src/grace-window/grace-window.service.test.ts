@@ -56,7 +56,7 @@ type ServiceOverrides = {
 
 function createService(overrides: ServiceOverrides = {}) {
   const repository = {
-    createDecision: vi.fn().mockImplementation(async (input) => ({
+    createDecision: vi.fn().mockImplementation((input) => ({
       ...row,
       ...input,
       id: row.id,
