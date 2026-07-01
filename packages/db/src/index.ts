@@ -3,6 +3,7 @@ export { getDatabaseHealth } from './health.js';
 export { getDbClient } from './client.js';
 export type { DbClient, MateriabillDatabase } from './client.js';
 export {
+  auditEvents,
   brandRefs,
   exchangeRateRefs,
   fileAssets,
@@ -21,12 +22,14 @@ export {
   workspaceRoles,
 } from './schema/index.js';
 export type {
+  AuditEventRecord,
   BrandRef,
   ExchangeRateRef,
   FileAsset,
   InframodernUserRef,
   LocationRef,
   MeasurementUnitRef,
+  NewAuditEventRecord,
   NewBrandRef,
   NewExchangeRateRef,
   NewFileAsset,
