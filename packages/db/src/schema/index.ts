@@ -9,7 +9,16 @@ export {
   workspaceRefs,
 } from './projections.js';
 export { fileAssets } from './file-assets.js';
+export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { sessionRecords } from './sessions.js';
+export type {
+  NewRolePermission,
+  NewUserRoleAssignment,
+  NewWorkspaceRole,
+  RolePermission,
+  UserRoleAssignment,
+  WorkspaceRole,
+} from './permissions.js';
 export type {
   BrandRef,
   ExchangeRateRef,

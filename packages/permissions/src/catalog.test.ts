@@ -2,6 +2,7 @@ import { permissionKeys } from '@materiabill/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildPermissionCatalogResponse,
   contractorPermissionKeys,
   defaultRoleTemplates,
   isPermissionKey,
@@ -25,6 +26,25 @@ describe('permission catalog', () => {
     expect(
       Object.values(defaultRoleTemplates).flatMap((template) => template.permissions),
     ).not.toContain('draws.approve');
+  });
+
+  it('publishes bilingual catalog labels and default role templates', () => {
+    expect(permissionCatalog[0]).toEqual({
+      key: 'workspace.view',
+      area: 'workspace',
+      labelEn: 'View workspace',
+      labelAr: 'عرض مساحة العمل',
+    });
+
+    expect(defaultRoleTemplates.workspaceAdmin.nameAr).toBe('مدير مساحة العمل');
+    expect(defaultRoleTemplates.viewer.permissions).toContain('search.use');
+  });
+
+  it('builds the catalog response with bilingual permissions and role templates', () => {
+    expect(buildPermissionCatalogResponse()).toEqual({
+      permissions: permissionCatalog,
+      roleTemplates: defaultRoleTemplates,
+    });
   });
 
   it('seeds a workspace admin with every active contractor permission', () => {

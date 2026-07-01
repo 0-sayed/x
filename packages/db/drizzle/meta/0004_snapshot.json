@@ -1,6 +1,6 @@
 {
-  "id": "4100bcef-43c3-4650-931c-8ec34c67524a",
-  "prevId": "14025ae2-f74f-4348-8b39-74dce9386989",
+  "id": "7c89e53e-a33e-491f-9fd3-5710c14f06c6",
+  "prevId": "4100bcef-43c3-4650-931c-8ec34c67524a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1190,6 +1190,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1300,14 +1307,19 @@
         }
       },
       "compositePrimaryKeys": {
-        "user_role_assignments_workspace_id_user_id_role_id_pk": {
-          "name": "user_role_assignments_workspace_id_user_id_role_id_pk",
-          "columns": ["workspace_id", "user_id", "role_id"]
+        "user_role_assignments_workspace_id_user_id_role_id_source_pk": {
+          "name": "user_role_assignments_workspace_id_user_id_role_id_source_pk",
+          "columns": ["workspace_id", "user_id", "role_id", "source"]
         }
       },
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "user_role_assignments_source_check": {
+          "name": "user_role_assignments_source_check",
+          "value": "\"user_role_assignments\".\"source\" IN ('manual', 'inframodern_admin')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.workspace_membership_refs": {

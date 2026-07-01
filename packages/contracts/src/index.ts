@@ -12,12 +12,32 @@ export type {
   HealthPayload,
 } from './bootstrap.js';
 export {
+  cloneRoleRequestSchema,
+  createRoleRequestSchema,
   isPermissionKey,
   permissionCatalogSchema,
   permissionKeys,
   permissionKeySchema,
+  replaceUserRoleAssignmentsRequestSchema,
+  roleNameSchema,
+  rolePermissionListSchema,
+  rolesResponseSchema,
+  roleSummarySchema,
+  systemRoleKeySchema,
+  updateRoleRequestSchema,
+  userRoleAssignmentSummarySchema,
 } from './permissions.js';
-export type { PermissionKey } from './permissions.js';
+export type {
+  CloneRoleRequest,
+  CreateRoleRequest,
+  PermissionKey,
+  ReplaceUserRoleAssignmentsRequest,
+  RoleSummary,
+  RolesResponse,
+  SystemRoleKey,
+  UpdateRoleRequest,
+  UserRoleAssignmentSummary,
+} from './permissions.js';
 export {
   addMoney,
   currencyCodeSchema,
