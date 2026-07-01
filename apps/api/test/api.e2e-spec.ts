@@ -136,6 +136,17 @@ describe('api bootstrap shell', () => {
     expect(response.body.paths['/realtime/events']).toBeDefined();
   });
 
+  it('registers notification endpoints in the OpenAPI document', async () => {
+    const response = await request(app.getHttpServer()).get('/docs-json').expect(200);
+
+    expect(response.body.paths['/notifications'].get).toBeDefined();
+    expect(response.body.paths['/notifications/unread-count'].get).toBeDefined();
+    expect(response.body.paths['/notifications/{notificationId}/read'].patch).toBeDefined();
+    expect(response.body.paths['/notifications/read-all'].post).toBeDefined();
+    expect(response.body.paths['/notification-preferences'].get).toBeDefined();
+    expect(response.body.paths['/notification-preferences'].put).toBeDefined();
+  });
+
   it('serves bootstrap metadata with contractor permission catalog keys', async () => {
     const response = await request(app.getHttpServer()).get('/bootstrap').expect(200);
 
