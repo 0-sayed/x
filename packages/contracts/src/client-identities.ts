@@ -2,9 +2,8 @@ import { z } from 'zod';
 
 export const clientIdentityIdSchema = z.uuid();
 export const clientIdentityEmailSchema = z
-  .string()
-  .trim()
   .email()
+  .trim()
   .max(320)
   .transform((value) => value.toLowerCase());
 export const clientIdentityPhoneE164Schema = z
