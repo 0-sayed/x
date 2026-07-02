@@ -18,6 +18,8 @@ ALTER TABLE "client_identities" ADD CONSTRAINT "client_identities_inframodern_us
 CREATE UNIQUE INDEX "client_identities_email_unique" ON "client_identities" USING btree (lower("email")) WHERE "client_identities"."email" is not null;--> statement-breakpoint
 CREATE UNIQUE INDEX "client_identities_phone_e164_unique" ON "client_identities" USING btree ("phone_e164") WHERE "client_identities"."phone_e164" is not null;--> statement-breakpoint
 CREATE INDEX "client_identities_inframodern_user_idx" ON "client_identities" USING btree ("inframodern_user_id");--> statement-breakpoint
-ALTER TABLE "projects" ADD CONSTRAINT "projects_end_customer_id_client_identities_id_fk" FOREIGN KEY ("end_customer_id") REFERENCES "public"."client_identities"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "projects" DROP CONSTRAINT "projects_client_org_id_workspace_refs_id_fk";--> statement-breakpoint
+ALTER TABLE "projects" ADD CONSTRAINT "projects_client_org_id_workspace_refs_id_fk" FOREIGN KEY ("client_org_id") REFERENCES "public"."workspace_refs"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "projects" ADD CONSTRAINT "projects_end_customer_id_client_identities_id_fk" FOREIGN KEY ("end_customer_id") REFERENCES "public"."client_identities"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "projects_workspace_end_customer_idx" ON "projects" USING btree ("workspace_id","end_customer_id");--> statement-breakpoint
-ALTER TABLE "projects" ADD CONSTRAINT "projects_exactly_one_client_check" CHECK (num_nonnulls("projects"."end_customer_id", "projects"."client_org_id") = 1);
+ALTER TABLE "projects" ADD CONSTRAINT "projects_exactly_one_client_check" CHECK (num_nonnulls("projects"."end_customer_id", "projects"."client_org_id") = 1) NOT VALID;

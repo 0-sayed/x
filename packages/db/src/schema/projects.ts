@@ -51,10 +51,10 @@ export const projects = pgTable(
     }),
     locationId: uuid('location_id').references(() => locationRefs.id, { onDelete: 'set null' }),
     endCustomerId: uuid('end_customer_id').references(() => clientIdentities.id, {
-      onDelete: 'set null',
+      onDelete: 'restrict',
     }),
     clientOrgId: uuid('client_org_id').references(() => workspaceRefs.id, {
-      onDelete: 'set null',
+      onDelete: 'restrict',
     }),
     createdByUserId: uuid('created_by_user_id').references(() => inframodernUserRefs.id, {
       onDelete: 'set null',

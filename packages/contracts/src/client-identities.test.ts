@@ -44,6 +44,26 @@ describe('client identity contracts', () => {
     });
   });
 
+  it('rejects verification timestamps without their contact channel', () => {
+    expect(() =>
+      createClientIdentityRequestSchema.parse({
+        displayName: 'Client One',
+        verifiedEmailAt: '2026-07-02T00:00:00.000Z',
+        phoneE164: '+966555123456',
+        verifiedPhoneAt: '2026-07-02T00:00:00.000Z',
+      }),
+    ).toThrow();
+
+    expect(() =>
+      createClientIdentityRequestSchema.parse({
+        displayName: 'Client One',
+        email: 'client@example.com',
+        verifiedEmailAt: '2026-07-02T00:00:00.000Z',
+        verifiedPhoneAt: '2026-07-02T00:00:00.000Z',
+      }),
+    ).toThrow();
+  });
+
   it('serializes identity records with nullable contact fields', () => {
     expect(
       clientIdentitySchema.parse({

@@ -348,6 +348,16 @@ describe('ProjectsService', () => {
     );
   });
 
+  it('does not revalidate the existing end customer when it is not updated', async () => {
+    const { service, clientIdentitiesService, project } = createService();
+
+    await service.updateProject(workspaceContext as never, project.id, {
+      name: 'Villa A12 Phase 2',
+    });
+
+    expect(clientIdentitiesService.identityExists).not.toHaveBeenCalled();
+  });
+
   it('archives a project and records an internal audit event', async () => {
     const { service, auditService, participants, project } = createService();
 

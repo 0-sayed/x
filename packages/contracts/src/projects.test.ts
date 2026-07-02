@@ -84,6 +84,15 @@ describe('project contracts', () => {
     ).toThrow();
   });
 
+  it('rejects update requests that explicitly clear both client references', () => {
+    expect(() =>
+      updateProjectRequestSchema.parse({
+        endCustomerId: null,
+        clientOrgId: null,
+      }),
+    ).toThrow();
+  });
+
   it('parses list filters and pagination defaults', () => {
     expect(
       projectListQuerySchema.parse({

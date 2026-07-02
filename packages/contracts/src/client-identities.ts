@@ -55,6 +55,18 @@ export const createClientIdentityRequestSchema = z
         message: 'Verified phone timestamp is required',
       });
     }
+    if (value.verifiedEmailAt && !value.email) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Email is required when verifiedEmailAt is provided',
+      });
+    }
+    if (value.verifiedPhoneAt && !value.phoneE164) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Phone is required when verifiedPhoneAt is provided',
+      });
+    }
   });
 
 export const clientIdentitySchema = z

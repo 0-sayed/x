@@ -2149,7 +2149,7 @@
           "tableTo": "client_identities",
           "columnsFrom": ["end_customer_id"],
           "columnsTo": ["id"],
-          "onDelete": "set null",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "projects_client_org_id_workspace_refs_id_fk": {
@@ -2158,7 +2158,7 @@
           "tableTo": "workspace_refs",
           "columnsFrom": ["client_org_id"],
           "columnsTo": ["id"],
-          "onDelete": "set null",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "projects_created_by_user_id_inframodern_user_refs_id_fk": {

@@ -98,12 +98,17 @@ export class ProjectsService {
       throw new ConflictException('Archived projects cannot be edited');
     }
 
-    const finalEndCustomerId =
-      'endCustomerId' in parsed ? (parsed.endCustomerId ?? null) : existing.endCustomerId;
+    const isEndCustomerIdModified =
+      'endCustomerId' in parsed && parsed.endCustomerId !== existing.endCustomerId;
+    const finalEndCustomerId = isEndCustomerIdModified
+      ? (parsed.endCustomerId ?? null)
+      : existing.endCustomerId;
     const finalClientOrgId =
       'clientOrgId' in parsed ? (parsed.clientOrgId ?? null) : existing.clientOrgId;
     this.assertExactlyOneProjectClient(finalEndCustomerId, finalClientOrgId);
-    await this.assertKnownEndCustomer(finalEndCustomerId);
+    if (isEndCustomerIdModified) {
+      await this.assertKnownEndCustomer(finalEndCustomerId);
+    }
 
     const updated = await this.projectsRepository.updateProject({
       ...parsed,

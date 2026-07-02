@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { getTableColumns } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
@@ -74,5 +76,17 @@ describe('projects schema', () => {
     expect(foreignKeyNames(projects)).toEqual(
       expect.arrayContaining(['projects_end_customer_id_client_identities_id_fk']),
     );
+  });
+
+  it('keeps the client identity migration safe for existing direct-client projects', () => {
+    const migrationSql = readFileSync(
+      new URL('../../drizzle/0012_client_identities.sql', import.meta.url),
+      'utf8',
+    );
+
+    expect(migrationSql).toContain(
+      'CHECK (num_nonnulls("projects"."end_customer_id", "projects"."client_org_id") = 1) NOT VALID',
+    );
+    expect(migrationSql).toContain('ON DELETE restrict ON UPDATE no action');
   });
 });

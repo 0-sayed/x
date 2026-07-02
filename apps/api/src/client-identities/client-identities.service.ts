@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
 import {
   clientIdentityContactSchema,
   clientIdentitySchema,
@@ -29,18 +29,26 @@ export class ClientIdentitiesService {
   ): Promise<ClientIdentity | undefined> {
     const parsed = parseRequest(clientIdentityContactSchema, contact, 'Invalid client contact');
 
+    let recordByEmail: ClientIdentityRecord | undefined;
+    let recordByPhone: ClientIdentityRecord | undefined;
+
     if (parsed.email) {
-      const record = await this.clientIdentitiesRepository.findByEmail(parsed.email);
-      if (record) {
-        return this.toClientIdentity(record);
-      }
+      recordByEmail = await this.clientIdentitiesRepository.findByEmail(parsed.email);
     }
 
     if (parsed.phoneE164) {
-      const record = await this.clientIdentitiesRepository.findByPhone(parsed.phoneE164);
-      if (record) {
-        return this.toClientIdentity(record);
-      }
+      recordByPhone = await this.clientIdentitiesRepository.findByPhone(parsed.phoneE164);
+    }
+
+    if (recordByEmail && recordByPhone && recordByEmail.id !== recordByPhone.id) {
+      throw new BadRequestException(
+        'The provided email and phone number belong to different client identities',
+      );
+    }
+
+    const record = recordByEmail ?? recordByPhone;
+    if (record) {
+      return this.toClientIdentity(record);
     }
 
     return undefined;
@@ -52,8 +60,17 @@ export class ClientIdentitiesService {
       input,
       'Invalid client identity',
     );
-    const record = await this.clientIdentitiesRepository.createIdentity(parsed);
-    return this.toClientIdentity(record);
+    try {
+      const record = await this.clientIdentitiesRepository.createIdentity(parsed);
+      return this.toClientIdentity(record);
+    } catch (error) {
+      if (isPostgresUniqueViolation(error)) {
+        throw new ConflictException(
+          'A client identity with this email or phone number already exists',
+        );
+      }
+      throw error;
+    }
   }
 
   async findOrCreateByVerifiedContact(input: CreateClientIdentityInput): Promise<ClientIdentity> {
@@ -71,7 +88,23 @@ export class ClientIdentitiesService {
       return existing;
     }
 
-    return this.createIdentity(parsed);
+    try {
+      return await this.createIdentity(parsed);
+    } catch (error) {
+      if (!(error instanceof ConflictException)) {
+        throw error;
+      }
+
+      const createdConcurrently = await this.findByVerifiedContact({
+        email: parsed.email,
+        phoneE164: parsed.phoneE164,
+      });
+      if (createdConcurrently) {
+        return createdConcurrently;
+      }
+
+      throw error;
+    }
   }
 
   private toClientIdentity(record: ClientIdentityRecord): ClientIdentity {
@@ -99,4 +132,8 @@ function parseRequest<T>(schema: RequestSchema<T>, value: unknown, message: stri
     throw new BadRequestException(message);
   }
   return parsed.data;
+}
+
+function isPostgresUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
 }

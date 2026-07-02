@@ -1,4 +1,4 @@
-import { getTableColumns } from 'drizzle-orm';
+import { getTableColumns, getTableName } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 
@@ -8,6 +8,7 @@ describe('client identities schema', () => {
   it('uses native cross-workspace identity columns', () => {
     const columns = getTableColumns(clientIdentities);
 
+    expect(getTableName(clientIdentities)).toBe('client_identities');
     expect(columns.id.name).toBe('id');
     expect(columns.displayName.name).toBe('display_name');
     expect(columns.email.name).toBe('email');
@@ -16,7 +17,9 @@ describe('client identities schema', () => {
     expect(columns.verifiedPhoneAt.name).toBe('verified_phone_at');
     expect(columns.inframodernUserId.name).toBe('inframodern_user_id');
     expect(columns.createdAt.name).toBe('created_at');
+    expect(columns.createdAt.notNull).toBe(true);
     expect(columns.updatedAt.name).toBe('updated_at');
+    expect(columns.updatedAt.notNull).toBe(true);
     expect('workspaceId' in columns).toBe(false);
   });
 

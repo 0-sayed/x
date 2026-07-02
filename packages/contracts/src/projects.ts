@@ -71,10 +71,10 @@ export const updateProjectRequestSchema = z
     message: 'At least one project field is required',
   })
   .superRefine((value, ctx) => {
-    if (value.endCustomerId && value.clientOrgId) {
+    if ('endCustomerId' in value && 'clientOrgId' in value && !hasExactlyOneProjectClient(value)) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Project cannot have both endCustomerId and clientOrgId',
+        message: 'Project cannot have both or neither endCustomerId and clientOrgId',
       });
     }
   });
