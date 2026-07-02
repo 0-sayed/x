@@ -28,6 +28,7 @@ import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service.js';
 import { GraceWindowCommitHandlerRegistry } from '../grace-window/grace-window-commit-handlers.js';
 import { GraceWindowService } from '../grace-window/grace-window.service.js';
+import { SignOffResolutionHandlerRegistry } from './sign-off-resolution-handlers.js';
 import { SignOffsRepository } from './sign-offs.repository.js';
 import type {
   CommitSignOffResolutionInput,
@@ -51,6 +52,7 @@ export class SignOffsService implements OnModuleInit {
     private readonly graceWindowService: GraceWindowService,
     private readonly auditService: AuditService,
     @Optional() private readonly commitHandlers?: GraceWindowCommitHandlerRegistry,
+    @Optional() private readonly resolutionHandlers?: SignOffResolutionHandlerRegistry,
   ) {}
 
   onModuleInit(): void {
@@ -255,6 +257,12 @@ export class SignOffsService implements OnModuleInit {
         reason: resolved.resolutionReason,
       },
       occurredAt: now,
+    });
+
+    await this.resolutionHandlers?.handle(resolved, {
+      actorUserId: input.actorUserId,
+      decisionId: input.decisionId,
+      resolvedAt: now,
     });
 
     return toSignOff(resolved);

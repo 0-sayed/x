@@ -21,6 +21,7 @@ import { PermissionsController } from '../src/permissions/permissions.controller
 import { PermissionsGuard } from '../src/permissions/permissions.guard.js';
 import { PermissionsService } from '../src/permissions/permissions.service.js';
 import { RealtimeHub } from '../src/realtime/realtime.hub.js';
+import { ScheduleService } from '../src/schedule/schedule.service.js';
 import { SessionController } from '../src/session/session.controller.js';
 import { SessionGuard } from '../src/session/session.guard.js';
 import { SessionService } from '../src/session/session.service.js';
@@ -319,6 +320,92 @@ describe('session auth endpoints', () => {
 
     await agent.post('/auth/logout').expect(204);
     expect(sessionService.logout).toHaveBeenCalledWith('a3f0cf17-bfd5-4cd0-a664-3d15339cdab2');
+  });
+});
+
+describe('schedule endpoints', () => {
+  let scheduleApp: INestApplication;
+  const scheduleWorkspaceContext = {
+    workspace: {
+      id: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+      name: 'Demo Workspace',
+      slug: 'demo-workspace',
+      paymentCurrency: 'SAR',
+    },
+    membership: {
+      userId: sessionUser.id,
+      roleKey: 'workspace_admin',
+      permissions: ['workspace.view', 'schedule.view'],
+      isAdmin: true,
+    },
+    access: {
+      appInstalled: true,
+      subscriptionActive: true,
+      membershipActive: true,
+    },
+  };
+  const projectId = '33333333-3333-4333-8333-333333333333';
+  const scheduleService = {
+    getSchedule: vi.fn().mockResolvedValue({
+      projectId,
+      phases: [],
+      milestones: [],
+      baseline: null,
+      forecastMoves: [],
+    }),
+  };
+  const scheduleWorkspaceGuardMock: CanActivate = {
+    canActivate: (context: ExecutionContext): boolean => {
+      const request = context.switchToHttp().getRequest<{
+        user?: CurrentSessionUser;
+        workspaceContext?: typeof scheduleWorkspaceContext;
+      }>();
+      request.user = sessionUser;
+      request.workspaceContext = scheduleWorkspaceContext;
+
+      return true;
+    },
+  };
+
+  beforeAll(async () => {
+    setSessionTestEnv();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(scheduleWorkspaceGuardMock)
+      .overrideGuard(PermissionsGuard)
+      .useValue(new PermissionsGuard(new Reflector()))
+      .overrideProvider(ScheduleService)
+      .useValue(scheduleService)
+      .compile();
+
+    scheduleApp = moduleRef.createNestApplication();
+    await scheduleApp.init();
+  });
+
+  afterAll(async () => {
+    await scheduleApp.close();
+  });
+
+  beforeEach(() => {
+    scheduleService.getSchedule.mockClear();
+  });
+
+  it('serves an empty schedule for an existing project in the active workspace', async () => {
+    const response = await request(scheduleApp.getHttpServer())
+      .get(`/projects/${projectId}/schedule`)
+      .expect(200);
+
+    expect(response.body).toEqual({
+      projectId,
+      phases: [],
+      milestones: [],
+      baseline: null,
+      forecastMoves: [],
+    });
+    expect(scheduleService.getSchedule).toHaveBeenCalledWith(scheduleWorkspaceContext, projectId);
   });
 });
 

@@ -64,3 +64,4 @@ export * from './notifications.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
 export * from './projects.js';
+export * from './schedule.js';

@@ -12,6 +12,14 @@ export {
 export { fileAssets } from './file-assets.js';
 export { pendingDecisions } from './grace-window.js';
 export { notificationDeliveries, notificationPreferences, notifications } from './notifications.js';
+export {
+  milestoneDrawLinks,
+  scheduleBaselineMilestones,
+  scheduleBaselines,
+  scheduleForecastMoves,
+  scheduleMilestones,
+  schedulePhases,
+} from './schedule.js';
 export { signOffs } from './signoffs.js';
 export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissions.js';
 export { projectParticipants, projects } from './projects.js';
@@ -46,6 +54,20 @@ export type {
 } from './projections.js';
 export type { FileAsset, NewFileAsset } from './file-assets.js';
 export type { NewPendingDecisionRecord, PendingDecisionRecord } from './grace-window.js';
+export type {
+  MilestoneDrawLinkRecord,
+  NewMilestoneDrawLinkRecord,
+  NewScheduleBaselineMilestoneRecord,
+  NewScheduleBaselineRecord,
+  NewScheduleForecastMoveRecord,
+  NewScheduleMilestoneRecord,
+  NewSchedulePhaseRecord,
+  ScheduleBaselineMilestoneRecord,
+  ScheduleBaselineRecord,
+  ScheduleForecastMoveRecord,
+  ScheduleMilestoneRecord,
+  SchedulePhaseRecord,
+} from './schedule.js';
 export type {
   NewNotificationDeliveryRecord,
   NewNotificationPreferenceRecord,
