@@ -9,6 +9,10 @@ export const projectRoleFilterSchema = z.enum(['main_contractor', 'as_subcontrac
 const nullableUuidSchema = z.uuid().nullable().optional();
 const projectTextSchema = z.string().trim().min(1);
 const dateOnlySchema = z.iso.date();
+const hasExactlyOneProjectClient = (value: {
+  readonly endCustomerId?: string | null;
+  readonly clientOrgId?: string | null;
+}) => Number(Boolean(value.endCustomerId)) + Number(Boolean(value.clientOrgId)) === 1;
 const booleanQuerySchema = z.preprocess((value) => {
   if (value === 'true') {
     return true;
@@ -38,8 +42,17 @@ export const createProjectRequestSchema = z
     pmUserId: nullableUuidSchema,
     locationId: nullableUuidSchema,
     clientOrgId: nullableUuidSchema,
+    endCustomerId: nullableUuidSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (!hasExactlyOneProjectClient(value)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Exactly one project client is required',
+      });
+    }
+  });
 
 export const updateProjectRequestSchema = z
   .object({
@@ -51,10 +64,19 @@ export const updateProjectRequestSchema = z
     pmUserId: nullableUuidSchema,
     locationId: nullableUuidSchema,
     clientOrgId: nullableUuidSchema,
+    endCustomerId: nullableUuidSchema,
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one project field is required',
+  })
+  .superRefine((value, ctx) => {
+    if ('endCustomerId' in value && 'clientOrgId' in value && !hasExactlyOneProjectClient(value)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Project cannot have both or neither endCustomerId and clientOrgId',
+      });
+    }
   });
 
 export const projectListQuerySchema = z
@@ -109,6 +131,7 @@ export const projectSummarySchema = z
     pmUserId: z.uuid().nullable(),
     locationId: z.uuid().nullable(),
     clientOrgId: z.uuid().nullable(),
+    endCustomerId: z.uuid().nullable(),
     archivedAt: z.iso.datetime().nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),

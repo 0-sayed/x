@@ -6,6 +6,7 @@ export * from './settings-defaults.js';
 export {
   auditEvents,
   brandRefs,
+  clientIdentities,
   exchangeRateRefs,
   fileAssets,
   inframodernUserRefs,
@@ -33,6 +34,7 @@ export {
 export type {
   AuditEventRecord,
   BrandRef,
+  ClientIdentityRecord,
   ExchangeRateRef,
   FileAsset,
   InframodernUserRef,
@@ -40,6 +42,7 @@ export type {
   MeasurementUnitRef,
   NewAuditEventRecord,
   NewBrandRef,
+  NewClientIdentityRecord,
   NewExchangeRateRef,
   NewFileAsset,
   NewInframodernUserRef,
