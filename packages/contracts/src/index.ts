@@ -64,3 +64,12 @@ export * from './notifications.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
 export * from './projects.js';
+export * from './agreement-terms.js';
+export type {
+  AgreementTerms,
+  AgreementTermsResponse,
+  BillingCycle,
+  CommercialModel,
+  ConfigureAgreementTermsRequest,
+  FeeBasis,
+} from './agreement-terms.js';

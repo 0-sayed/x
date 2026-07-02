@@ -85,6 +85,13 @@
       "when": 1782943692237,
       "tag": "0011_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782945214920,
+      "tag": "0012_agreement_terms",
+      "breakpoints": true
     }
   ]
 }

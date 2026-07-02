@@ -4,6 +4,7 @@ export { getDbClient } from './client.js';
 export type { DbClient, MateriabillDatabase } from './client.js';
 export * from './settings-defaults.js';
 export {
+  agreementTerms,
   auditEvents,
   brandRefs,
   exchangeRateRefs,
@@ -31,6 +32,7 @@ export {
   workspaceSettings,
 } from './schema/index.js';
 export type {
+  AgreementTermsRecord,
   AuditEventRecord,
   BrandRef,
   ExchangeRateRef,
@@ -39,6 +41,7 @@ export type {
   LocationRef,
   MeasurementUnitRef,
   NewAuditEventRecord,
+  NewAgreementTermsRecord,
   NewBrandRef,
   NewExchangeRateRef,
   NewFileAsset,
