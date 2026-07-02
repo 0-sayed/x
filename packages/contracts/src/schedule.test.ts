@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createSchedulePhaseRequestSchema,
   moveForecastDateRequestSchema,
   replaceMilestoneDrawLinksRequestSchema,
+  schedulePhaseSchema,
   scheduleResponseSchema,
   selfCertifyBaselineRequestSchema,
+  updateSchedulePhaseRequestSchema,
 } from './schedule.js';
 
 describe('schedule contracts', () => {
@@ -41,6 +44,35 @@ describe('schedule contracts', () => {
         reason: 'Client approval happened outside the portal',
       }).success,
     ).toBe(true);
+  });
+
+  it('rejects phase ranges where endsOn is before startsOn', () => {
+    expect(
+      createSchedulePhaseRequestSchema.safeParse({
+        name: 'Structure',
+        startsOn: '2026-08-10',
+        endsOn: '2026-08-09',
+      }).success,
+    ).toBe(false);
+    expect(
+      updateSchedulePhaseRequestSchema.safeParse({
+        startsOn: '2026-08-10',
+        endsOn: '2026-08-09',
+      }).success,
+    ).toBe(false);
+    expect(
+      schedulePhaseSchema.safeParse({
+        id: '33333333-3333-4333-8333-333333333333',
+        projectId: '22222222-2222-4222-8222-222222222222',
+        workspaceId: '44444444-4444-4444-8444-444444444444',
+        name: 'Structure',
+        startsOn: '2026-08-10',
+        endsOn: '2026-08-09',
+        displayOrder: 10,
+        createdAt: '2026-07-02T09:00:00.000Z',
+        updatedAt: '2026-07-02T09:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
 
   it('serializes schedule responses with phases, milestones, baseline, moves, and draw links', () => {

@@ -13,7 +13,8 @@ CREATE TABLE "schedule_baseline_milestones" (
 	"phase_name" text NOT NULL,
 	"milestone_name" text NOT NULL,
 	"baseline_date" date NOT NULL,
-	"display_order" integer DEFAULT 0 NOT NULL
+	"display_order" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "schedule_baseline_milestones_display_order_check" CHECK ("schedule_baseline_milestones"."display_order" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "schedule_baselines" (
@@ -61,6 +62,7 @@ CREATE TABLE "schedule_milestones" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "schedule_milestones_workspace_id_id_unique" UNIQUE("workspace_id","id"),
+	CONSTRAINT "schedule_milestones_workspace_id_project_id_id_unique" UNIQUE("workspace_id","project_id","id"),
 	CONSTRAINT "schedule_milestones_display_order_check" CHECK ("schedule_milestones"."display_order" >= 0)
 );
 --> statement-breakpoint
@@ -75,22 +77,24 @@ CREATE TABLE "schedule_phases" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "schedule_phases_workspace_id_id_unique" UNIQUE("workspace_id","id"),
+	CONSTRAINT "schedule_phases_workspace_id_project_id_id_unique" UNIQUE("workspace_id","project_id","id"),
 	CONSTRAINT "schedule_phases_display_order_check" CHECK ("schedule_phases"."display_order" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "milestone_draw_links" ADD CONSTRAINT "milestone_draw_links_workspace_id_milestone_id_milestones_fk" FOREIGN KEY ("workspace_id","milestone_id") REFERENCES "public"."schedule_milestones"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baseline_milestones" ADD CONSTRAINT "schedule_baseline_milestones_baseline_id_schedule_baselines_id_fk" FOREIGN KEY ("baseline_id") REFERENCES "public"."schedule_baselines"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_sign_off_id_sign_offs_id_fk" FOREIGN KEY ("sign_off_id") REFERENCES "public"."sign_offs"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sign_offs" ADD CONSTRAINT "sign_offs_workspace_id_project_id_id_unique" UNIQUE("workspace_id","project_id","id");--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_project_id_projects_workspace_id_id_fk" FOREIGN KEY ("workspace_id","project_id") REFERENCES "public"."projects"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_proposed_by_user_id_membership_fk" FOREIGN KEY ("workspace_id","proposed_by_user_id") REFERENCES "public"."workspace_membership_refs"("workspace_id","user_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_project_id_sign_off_id_sign_offs_workspace_id_project_id_id_fk" FOREIGN KEY ("workspace_id","project_id","sign_off_id") REFERENCES "public"."sign_offs"("workspace_id","project_id","id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_self_certified_by_user_id_membership_fk" FOREIGN KEY ("workspace_id","self_certified_by_user_id") REFERENCES "public"."workspace_membership_refs"("workspace_id","user_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_forecast_moves" ADD CONSTRAINT "schedule_forecast_moves_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "schedule_forecast_moves" ADD CONSTRAINT "schedule_forecast_moves_workspace_id_milestone_id_milestones_fk" FOREIGN KEY ("workspace_id","milestone_id") REFERENCES "public"."schedule_milestones"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "schedule_forecast_moves" ADD CONSTRAINT "schedule_forecast_moves_workspace_id_project_id_milestone_id_milestones_fk" FOREIGN KEY ("workspace_id","project_id","milestone_id") REFERENCES "public"."schedule_milestones"("workspace_id","project_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_forecast_moves" ADD CONSTRAINT "schedule_forecast_moves_workspace_id_moved_by_user_id_membership_fk" FOREIGN KEY ("workspace_id","moved_by_user_id") REFERENCES "public"."workspace_membership_refs"("workspace_id","user_id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_milestones" ADD CONSTRAINT "schedule_milestones_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_milestones" ADD CONSTRAINT "schedule_milestones_workspace_id_project_id_projects_workspace_id_id_fk" FOREIGN KEY ("workspace_id","project_id") REFERENCES "public"."projects"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "schedule_milestones" ADD CONSTRAINT "schedule_milestones_workspace_id_phase_id_schedule_phases_workspace_id_id_fk" FOREIGN KEY ("workspace_id","phase_id") REFERENCES "public"."schedule_phases"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "schedule_milestones" ADD CONSTRAINT "schedule_milestones_workspace_id_project_id_phase_id_schedule_phases_workspace_id_project_id_id_fk" FOREIGN KEY ("workspace_id","project_id","phase_id") REFERENCES "public"."schedule_phases"("workspace_id","project_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_milestones" ADD CONSTRAINT "schedule_milestones_workspace_id_completed_by_user_id_membership_fk" FOREIGN KEY ("workspace_id","completed_by_user_id") REFERENCES "public"."workspace_membership_refs"("workspace_id","user_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_phases" ADD CONSTRAINT "schedule_phases_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_phases" ADD CONSTRAINT "schedule_phases_workspace_id_project_id_projects_workspace_id_id_fk" FOREIGN KEY ("workspace_id","project_id") REFERENCES "public"."projects"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

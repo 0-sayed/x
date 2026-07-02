@@ -56,6 +56,11 @@ export const schedulePhases = pgTable(
       table.displayOrder,
     ),
     unique('schedule_phases_workspace_id_id_unique').on(table.workspaceId, table.id),
+    unique('schedule_phases_workspace_id_project_id_id_unique').on(
+      table.workspaceId,
+      table.projectId,
+      table.id,
+    ),
   ],
 );
 
@@ -85,9 +90,9 @@ export const scheduleMilestones = pgTable(
       name: 'schedule_milestones_workspace_id_project_id_projects_workspace_id_id_fk',
     }).onDelete('cascade'),
     foreignKey({
-      columns: [table.workspaceId, table.phaseId],
-      foreignColumns: [schedulePhases.workspaceId, schedulePhases.id],
-      name: 'schedule_milestones_workspace_id_phase_id_schedule_phases_workspace_id_id_fk',
+      columns: [table.workspaceId, table.projectId, table.phaseId],
+      foreignColumns: [schedulePhases.workspaceId, schedulePhases.projectId, schedulePhases.id],
+      name: 'schedule_milestones_workspace_id_project_id_phase_id_schedule_phases_workspace_id_project_id_id_fk',
     }).onDelete('cascade'),
     foreignKey({
       columns: [table.workspaceId, table.completedByUserId],
@@ -102,6 +107,11 @@ export const scheduleMilestones = pgTable(
     ),
     index('schedule_milestones_workspace_phase_idx').on(table.workspaceId, table.phaseId),
     unique('schedule_milestones_workspace_id_id_unique').on(table.workspaceId, table.id),
+    unique('schedule_milestones_workspace_id_project_id_id_unique').on(
+      table.workspaceId,
+      table.projectId,
+      table.id,
+    ),
   ],
 );
 
@@ -125,9 +135,13 @@ export const scheduleForecastMoves = pgTable(
   },
   (table) => [
     foreignKey({
-      columns: [table.workspaceId, table.milestoneId],
-      foreignColumns: [scheduleMilestones.workspaceId, scheduleMilestones.id],
-      name: 'schedule_forecast_moves_workspace_id_milestone_id_milestones_fk',
+      columns: [table.workspaceId, table.projectId, table.milestoneId],
+      foreignColumns: [
+        scheduleMilestones.workspaceId,
+        scheduleMilestones.projectId,
+        scheduleMilestones.id,
+      ],
+      name: 'schedule_forecast_moves_workspace_id_project_id_milestone_id_milestones_fk',
     }).onDelete('cascade'),
     foreignKey({
       columns: [table.workspaceId, table.movedByUserId],
@@ -158,7 +172,7 @@ export const scheduleBaselines = pgTable(
     projectId: uuid('project_id').notNull(),
     status: varchar('status', { length: 24 }).$type<ScheduleBaselineStatus>().notNull(),
     proposedByUserId: uuid('proposed_by_user_id'),
-    signOffId: uuid('sign_off_id').references(() => signOffs.id, { onDelete: 'set null' }),
+    signOffId: uuid('sign_off_id'),
     selfCertifiedByUserId: uuid('self_certified_by_user_id'),
     selfCertifiedReason: text('self_certified_reason'),
     agreedAt: timestamp('agreed_at', { withTimezone: true }),
@@ -174,6 +188,11 @@ export const scheduleBaselines = pgTable(
       columns: [table.workspaceId, table.proposedByUserId],
       foreignColumns: [workspaceMembershipRefs.workspaceId, workspaceMembershipRefs.userId],
       name: 'schedule_baselines_workspace_id_proposed_by_user_id_membership_fk',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.workspaceId, table.projectId, table.signOffId],
+      foreignColumns: [signOffs.workspaceId, signOffs.projectId, signOffs.id],
+      name: 'schedule_baselines_workspace_id_project_id_sign_off_id_sign_offs_workspace_id_project_id_id_fk',
     }).onDelete('set null'),
     foreignKey({
       columns: [table.workspaceId, table.selfCertifiedByUserId],
@@ -213,6 +232,7 @@ export const scheduleBaselineMilestones = pgTable(
     displayOrder: integer('display_order').notNull().default(0),
   },
   (table) => [
+    check('schedule_baseline_milestones_display_order_check', sql`${table.displayOrder} >= 0`),
     index('schedule_baseline_milestones_baseline_order_idx').on(
       table.baselineId,
       table.displayOrder,

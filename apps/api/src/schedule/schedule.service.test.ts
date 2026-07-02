@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import type { WorkspaceContext } from '@materiabill/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -93,7 +93,7 @@ describe('ScheduleService', () => {
   let repository: RepositoryMock;
   let auditService: { recordEvent: MockFn };
   let realtimePublisher: { publish: MockFn };
-  let signOffsService: { createSignOff: MockFn };
+  let signOffsService: { createSignOff: MockFn; deletePendingSignOff: MockFn };
   let registry: { register: MockFn };
   let service: ScheduleService;
 
@@ -116,6 +116,7 @@ describe('ScheduleService', () => {
       createSignOff: vi.fn().mockResolvedValue({
         id: '77777777-7777-4777-8777-777777777777',
       }),
+      deletePendingSignOff: vi.fn().mockResolvedValue(undefined),
     };
     registry = { register: vi.fn() };
     service = new ScheduleService(
@@ -209,6 +210,20 @@ describe('ScheduleService', () => {
     );
   });
 
+  it('returns not found when completing an unknown milestone', async () => {
+    repository.listSchedule.mockResolvedValueOnce(schedule);
+
+    await expect(
+      service.completeMilestone(
+        workspaceContext,
+        projectId,
+        'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      ),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(repository.completeMilestone).not.toHaveBeenCalled();
+  });
+
   it('proposes a baseline by snapshotting milestones and creating a client sign-off', async () => {
     repository.proposeBaseline.mockResolvedValueOnce({
       baseline: {
@@ -291,6 +306,19 @@ describe('ScheduleService', () => {
     );
 
     expect(signOffsService.createSignOff).not.toHaveBeenCalled();
+  });
+
+  it('cleans up the pending sign-off when baseline proposal loses the persistence race', async () => {
+    repository.proposeBaseline.mockResolvedValueOnce(undefined);
+
+    await expect(service.proposeBaseline(workspaceContext, projectId)).rejects.toThrow(
+      ConflictException,
+    );
+
+    expect(signOffsService.deletePendingSignOff).toHaveBeenCalledWith({
+      workspaceId,
+      signOffId: '77777777-7777-4777-8777-777777777777',
+    });
   });
 
   it('self-certifies a baseline with required reason and internal audit', async () => {
@@ -382,6 +410,45 @@ describe('ScheduleService', () => {
       agreedAt: now,
     });
     expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'schedule.baseline_agreed' }),
+    );
+  });
+
+  it('ignores stale approved baseline sign-offs when the baseline is no longer proposed', async () => {
+    repository.markBaselineAgreedBySignOff.mockResolvedValueOnce(undefined);
+
+    await expect(
+      service.onTimelineBaselineSignOffResolved(
+        {
+          id: '77777777-7777-4777-8777-777777777777',
+          workspaceId,
+          projectId,
+          subjectType: 'timeline_baseline',
+          subjectId: baselineId,
+          title: 'Approve timeline baseline',
+          summary: null,
+          assignedAudience: 'client',
+          requiredAction: 'approve',
+          status: 'approved',
+          requestedByUserId: actorUserId,
+          resolvedByUserId: actorUserId,
+          resolutionReason: null,
+          resolutionDecisionId: null,
+          lastReminderAt: null,
+          reminderCount: 0,
+          createdAt: now,
+          updatedAt: now,
+          resolvedAt: now,
+        },
+        {
+          actorUserId,
+          decisionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          resolvedAt: now,
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(auditService.recordEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ action: 'schedule.baseline_agreed' }),
     );
   });

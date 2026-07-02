@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -95,6 +96,11 @@ export const signOffs = pgTable(
     index('sign_offs_requested_by_user_id_idx').on(table.requestedByUserId),
     index('sign_offs_resolved_by_user_id_idx').on(table.resolvedByUserId),
     index('sign_offs_resolution_decision_id_idx').on(table.resolutionDecisionId),
+    unique('sign_offs_workspace_id_project_id_id_unique').on(
+      table.workspaceId,
+      table.projectId,
+      table.id,
+    ),
   ],
 );
 

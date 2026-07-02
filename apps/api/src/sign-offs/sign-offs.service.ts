@@ -122,6 +122,13 @@ export class SignOffsService implements OnModuleInit {
     });
   }
 
+  async deletePendingSignOff(input: {
+    readonly workspaceId: string;
+    readonly signOffId: string;
+  }): Promise<void> {
+    await this.repository.deletePending(input);
+  }
+
   async requestResolution(input: ResolveSignOffInput): Promise<{
     signOff: SignOff;
     pendingDecision: PendingDecision;

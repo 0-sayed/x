@@ -269,6 +269,14 @@ export class ScheduleService implements OnModuleInit {
     milestoneId: string,
   ): Promise<ScheduleMilestone> {
     await this.requireWritableProject(workspaceContext.workspace.id, projectId);
+    const schedule = await this.repository.listSchedule({
+      workspaceId: workspaceContext.workspace.id,
+      projectId,
+    });
+    const existing = schedule.milestones.find((row) => row.id === milestoneId);
+    if (!existing) throw new NotFoundException('Schedule milestone not found');
+    if (existing.completedAt) throw new ConflictException('Schedule milestone is already complete');
+
     const milestone = await this.repository.completeMilestone({
       workspaceId: workspaceContext.workspace.id,
       projectId,
@@ -373,7 +381,13 @@ export class ScheduleService implements OnModuleInit {
       milestones,
       now: new Date(),
     });
-    if (!persisted) throw new ConflictException('Timeline baseline could not be proposed');
+    if (!persisted) {
+      await this.signOffsService.deletePendingSignOff({
+        workspaceId: workspaceContext.workspace.id,
+        signOffId: signOff.id,
+      });
+      throw new ConflictException('Timeline baseline could not be proposed');
+    }
 
     await this.recordAudit(
       workspaceContext,
@@ -459,7 +473,7 @@ export class ScheduleService implements OnModuleInit {
       signOffId: signOff.id,
       agreedAt: context.resolvedAt,
     });
-    if (!baseline) throw new ConflictException('Timeline baseline is no longer proposed');
+    if (!baseline) return;
 
     await this.auditService.recordEvent({
       workspaceId: signOff.workspaceId,

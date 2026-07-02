@@ -21,6 +21,19 @@ const scheduleDescriptionSchema = z.string().trim().min(1).max(1000).nullable();
 const scheduleReasonSchema = z.string().trim().min(1).max(1000);
 const displayOrderSchema = z.number().int().min(0).max(100_000);
 
+const validatePhaseDateOrder = (
+  value: { startsOn?: string | null; endsOn?: string | null },
+  context: z.RefinementCtx,
+) => {
+  if (value.startsOn && value.endsOn && value.endsOn < value.startsOn) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Phase endsOn cannot be before startsOn',
+      path: ['endsOn'],
+    });
+  }
+};
+
 export const createSchedulePhaseRequestSchema = z
   .object({
     name: scheduleNameSchema,
@@ -28,7 +41,8 @@ export const createSchedulePhaseRequestSchema = z
     endsOn: optionalDateOnlySchema,
     displayOrder: displayOrderSchema.default(0),
   })
-  .strict();
+  .strict()
+  .superRefine(validatePhaseDateOrder);
 
 export const updateSchedulePhaseRequestSchema = z
   .object({
@@ -38,6 +52,7 @@ export const updateSchedulePhaseRequestSchema = z
     displayOrder: displayOrderSchema.optional(),
   })
   .strict()
+  .superRefine(validatePhaseDateOrder)
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one phase field is required',
   });
@@ -100,7 +115,8 @@ export const schedulePhaseSchema = z
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   })
-  .strict();
+  .strict()
+  .superRefine(validatePhaseDateOrder);
 
 export const scheduleMilestoneSchema = z
   .object({
