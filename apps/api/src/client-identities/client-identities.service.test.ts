@@ -81,9 +81,9 @@ describe('ClientIdentitiesService', () => {
     const repository = createRepositoryMock();
     const service = new ClientIdentitiesService(repository as never);
 
-    await expect(
-      service.createIdentity({ displayName: 'Client One' } as never),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.createIdentity({ displayName: 'Client One' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(repository.createIdentity).not.toHaveBeenCalled();
   });
 
