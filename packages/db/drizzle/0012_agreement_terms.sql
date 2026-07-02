@@ -1,3 +1,25 @@
+CREATE FUNCTION "agreement_terms_reimbursable_categories_valid"("categories" jsonb) RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+AS $$
+	SELECT CASE
+		WHEN jsonb_typeof("categories") <> 'array' THEN false
+		ELSE jsonb_array_length("categories") >= 1
+			AND NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements("categories") AS "category"("value")
+				WHERE jsonb_typeof("category"."value") <> 'string'
+					OR "category"."value" #>> '{}' <> btrim("category"."value" #>> '{}')
+					OR length("category"."value" #>> '{}') < 1
+					OR length("category"."value" #>> '{}') > 80
+			)
+			AND jsonb_array_length("categories") = (
+				SELECT count(DISTINCT btrim("category"."value" #>> '{}'))
+				FROM jsonb_array_elements("categories") AS "category"("value")
+			)
+	END
+$$;
+--> statement-breakpoint
 CREATE TABLE "agreement_terms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"workspace_id" uuid NOT NULL,
@@ -7,12 +29,12 @@ CREATE TABLE "agreement_terms" (
 	"disclosure_depth" varchar(16) NOT NULL,
 	"retention_percentage" integer NOT NULL,
 	"billing_cycle" varchar(16) NOT NULL,
-	"contract_value_minor" integer,
+	"contract_value_minor" bigint,
 	"fee_basis" varchar(16),
 	"fee_percentage_bps" integer,
-	"fee_amount_minor" integer,
-	"target_cost_minor" integer,
-	"gmp_ceiling_minor" integer,
+	"fee_amount_minor" bigint,
+	"target_cost_minor" bigint,
+	"gmp_ceiling_minor" bigint,
 	"savings_split_contractor_bps" integer,
 	"reimbursable_cost_categories" jsonb,
 	"fee_applies_to_subs" boolean,
@@ -34,6 +56,9 @@ CREATE TABLE "agreement_terms" (
 	CONSTRAINT "agreement_terms_fee_basis_check" CHECK ("agreement_terms"."fee_basis" is null or "agreement_terms"."fee_basis" in ('percentage', 'fixed')),
 	CONSTRAINT "agreement_terms_retention_percentage_check" CHECK ("agreement_terms"."retention_percentage" >= 0 and "agreement_terms"."retention_percentage" <= 100),
 	CONSTRAINT "agreement_terms_basis_points_check" CHECK (("agreement_terms"."fee_percentage_bps" is null or ("agreement_terms"."fee_percentage_bps" >= 0 and "agreement_terms"."fee_percentage_bps" <= 10000)) and ("agreement_terms"."savings_split_contractor_bps" is null or ("agreement_terms"."savings_split_contractor_bps" >= 0 and "agreement_terms"."savings_split_contractor_bps" <= 10000))),
+	CONSTRAINT "agreement_terms_minor_units_non_negative_check" CHECK (("agreement_terms"."contract_value_minor" is null or "agreement_terms"."contract_value_minor" >= 0) and ("agreement_terms"."fee_amount_minor" is null or "agreement_terms"."fee_amount_minor" >= 0) and ("agreement_terms"."target_cost_minor" is null or "agreement_terms"."target_cost_minor" >= 0) and ("agreement_terms"."gmp_ceiling_minor" is null or "agreement_terms"."gmp_ceiling_minor" >= 0)),
+	CONSTRAINT "agreement_terms_reimbursable_categories_shape_check" CHECK ("agreement_terms"."reimbursable_cost_categories" is null or agreement_terms_reimbursable_categories_valid("agreement_terms"."reimbursable_cost_categories")),
+	CONSTRAINT "agreement_terms_lock_reason_check" CHECK ("agreement_terms"."lock_reason" is null or "agreement_terms"."lock_reason" in ('first_draw_item_approved')),
 	CONSTRAINT "agreement_terms_fee_value_shape_check" CHECK (("agreement_terms"."fee_basis" is null and "agreement_terms"."fee_percentage_bps" is null and "agreement_terms"."fee_amount_minor" is null) or ("agreement_terms"."fee_basis" = 'percentage' and "agreement_terms"."fee_percentage_bps" is not null and "agreement_terms"."fee_amount_minor" is null) or ("agreement_terms"."fee_basis" = 'fixed' and "agreement_terms"."fee_amount_minor" is not null and "agreement_terms"."fee_percentage_bps" is null)),
 	CONSTRAINT "agreement_terms_lump_sum_shape_check" CHECK ("agreement_terms"."commercial_model" <> 'lump_sum' or ("agreement_terms"."contract_value_minor" is not null and "agreement_terms"."fee_basis" is null and "agreement_terms"."fee_percentage_bps" is null and "agreement_terms"."fee_amount_minor" is null and "agreement_terms"."target_cost_minor" is null and "agreement_terms"."gmp_ceiling_minor" is null and "agreement_terms"."savings_split_contractor_bps" is null and "agreement_terms"."reimbursable_cost_categories" is null and "agreement_terms"."fee_applies_to_subs" is null and "agreement_terms"."fee_applies_to_change_orders" is null)),
 	CONSTRAINT "agreement_terms_cost_plus_shape_check" CHECK ("agreement_terms"."commercial_model" <> 'cost_plus' or ("agreement_terms"."contract_value_minor" is null and "agreement_terms"."fee_basis" is not null and "agreement_terms"."reimbursable_cost_categories" is not null and "agreement_terms"."fee_applies_to_subs" is not null and "agreement_terms"."fee_applies_to_change_orders" is not null and (("agreement_terms"."gmp_ceiling_minor" is null and "agreement_terms"."savings_split_contractor_bps" is null) or ("agreement_terms"."gmp_ceiling_minor" is not null and "agreement_terms"."savings_split_contractor_bps" is not null)))),

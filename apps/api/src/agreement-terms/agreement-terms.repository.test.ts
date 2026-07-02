@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { agreementTerms, projects } from '@materiabill/db';
 import { AgreementTermsRepository } from './agreement-terms.repository.js';
 
-function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly unknown[] = []) {
+function createDbMock(
+  selectRows: readonly unknown[] = [],
+  updateRows: readonly unknown[] = [],
+  insertRows?: readonly unknown[],
+) {
   const calls: unknown[] = [];
   const selectBuilder = {
     from: vi.fn(),
@@ -20,7 +24,7 @@ function createDbMock(selectRows: readonly unknown[] = [], updateRows: readonly 
       return {
         values: vi.fn((values: unknown) => ({
           onConflictDoUpdate: vi.fn((config: unknown) => ({
-            returning: vi.fn().mockResolvedValue([{ ...(values as object), config }]),
+            returning: vi.fn().mockResolvedValue(insertRows ?? [{ ...(values as object), config }]),
           })),
         })),
       };
@@ -103,6 +107,27 @@ describe('AgreementTermsRepository', () => {
     expect(calls).toEqual([expect.objectContaining({ op: 'insert', table: agreementTerms })]);
   });
 
+  it('returns undefined when a locked conflict skips the upsert update', async () => {
+    const { db } = createDbMock([], [], []);
+    const repository = new AgreementTermsRepository({ db } as never);
+
+    await expect(
+      repository.upsertTerms({
+        workspaceId: '82bf0afe-b730-4046-ac0b-30f74ce1db7a',
+        projectId: 'c5d9ed84-6469-4889-995d-cd38994fb7dd',
+        commercialModel: 'lump_sum',
+        currency: 'SAR',
+        disclosureDepth: 'category',
+        retentionPercentage: 5,
+        billingCycle: 'monthly',
+        contractValueMinor: 2_500_000,
+        contractSnapshotMarkdown: '# Agreement Terms\n',
+        contractSnapshotGeneratedAt: new Date('2026-07-02T09:00:00.000Z'),
+        configuredByUserId: '3f43835d-7f3b-4b16-907b-d57db49832dd',
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it('locks unlocked terms for the approved draw item', async () => {
     const lockedAt = new Date('2026-07-02T09:15:00.000Z');
     const { calls, db } = createDbMock(
@@ -128,5 +153,11 @@ describe('AgreementTermsRepository', () => {
     ).resolves.toEqual(expect.objectContaining({ lockedAt }));
 
     expect(calls).toEqual([expect.objectContaining({ op: 'update', table: agreementTerms })]);
+    const conditionLeaves = collectLeaves(
+      db.update.mock.results[0]?.value.set.mock.results[0]?.value.where.mock.calls[0]?.[0],
+    );
+    expect(conditionLeaves).toContain('82bf0afe-b730-4046-ac0b-30f74ce1db7a');
+    expect(conditionLeaves).toContain('c5d9ed84-6469-4889-995d-cd38994fb7dd');
+    expect(conditionLeaves).toContain('locked_at');
   });
 });

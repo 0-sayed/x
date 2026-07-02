@@ -79,6 +79,9 @@ export class AgreementTermsService {
       contractSnapshotGeneratedAt: new Date(),
       configuredByUserId: workspaceContext.membership.userId,
     });
+    if (!terms) {
+      throw new ConflictException('Agreement terms are locked');
+    }
 
     await this.auditService.recordEvent({
       workspaceId: workspaceContext.workspace.id,

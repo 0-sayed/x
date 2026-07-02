@@ -54,7 +54,7 @@ export class AgreementTermsRepository {
     return rows[0];
   }
 
-  async upsertTerms(input: UpsertAgreementTermsInput): Promise<AgreementTermsRecord> {
+  async upsertTerms(input: UpsertAgreementTermsInput): Promise<AgreementTermsRecord | undefined> {
     const record = toRecord(input);
     const rows = await this.#db
       .insert(agreementTerms)
@@ -69,12 +69,7 @@ export class AgreementTermsRepository {
       })
       .returning();
 
-    const row = rows[0];
-    if (!row) {
-      throw new Error('Failed to upsert agreement terms');
-    }
-
-    return row;
+    return rows[0];
   }
 
   async lockForApprovedDraw(

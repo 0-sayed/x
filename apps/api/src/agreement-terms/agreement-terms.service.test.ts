@@ -187,6 +187,25 @@ describe('AgreementTermsService', () => {
     );
   });
 
+  it('rejects configuration when a concurrent lock skips the upsert update', async () => {
+    const { service, repository, auditService, terms } = createService();
+    repository.findTerms.mockResolvedValueOnce(null);
+    repository.upsertTerms.mockResolvedValueOnce(undefined);
+
+    await expect(
+      service.configureAgreementTerms(workspaceContext as never, terms.projectId, {
+        commercialModel: 'lump_sum',
+        currency: 'SAR',
+        disclosureDepth: 'category',
+        retentionPercentage: 5,
+        billingCycle: 'monthly',
+        contractValueMinor: 2_500_000,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(auditService.recordEvent).not.toHaveBeenCalled();
+  });
+
   it('locks terms for approved draw items and records audit', async () => {
     const { service, auditService, terms } = createService();
 

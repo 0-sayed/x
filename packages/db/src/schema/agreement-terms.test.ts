@@ -27,8 +27,19 @@ describe('agreement terms schema', () => {
     expect(columns.gmpCeilingMinor.name).toBe('gmp_ceiling_minor');
     expect(columns.savingsSplitContractorBps.name).toBe('savings_split_contractor_bps');
     expect(columns.reimbursableCostCategories.name).toBe('reimbursable_cost_categories');
+    expect(columns.feeAppliesToSubs.name).toBe('fee_applies_to_subs');
+    expect(columns.feeAppliesToChangeOrders.name).toBe('fee_applies_to_change_orders');
     expect(columns.contractSnapshotMarkdown.name).toBe('contract_snapshot_markdown');
     expect(columns.contractSnapshotGeneratedAt.name).toBe('contract_snapshot_generated_at');
+  });
+
+  it('stores monetary minor units in 64-bit columns', () => {
+    const columns = getTableColumns(agreementTerms);
+
+    expect(columns.contractValueMinor.getSQLType()).toBe('bigint');
+    expect(columns.feeAmountMinor.getSQLType()).toBe('bigint');
+    expect(columns.targetCostMinor.getSQLType()).toBe('bigint');
+    expect(columns.gmpCeilingMinor.getSQLType()).toBe('bigint');
   });
 
   it('stores lock and audit metadata', () => {
@@ -57,7 +68,10 @@ describe('agreement terms schema', () => {
         'agreement_terms_billing_cycle_check',
         'agreement_terms_commercial_model_check',
         'agreement_terms_cost_plus_shape_check',
+        'agreement_terms_lock_reason_check',
         'agreement_terms_lump_sum_shape_check',
+        'agreement_terms_minor_units_non_negative_check',
+        'agreement_terms_reimbursable_categories_shape_check',
         'agreement_terms_remeasured_shape_check',
         'agreement_terms_retention_percentage_check',
       ]),
@@ -80,6 +94,30 @@ describe('agreement terms schema', () => {
     );
     expect(checks.get('agreement_terms_remeasured_shape_check')).toEqual(
       expect.arrayContaining(['fee_applies_to_change_orders']),
+    );
+  });
+
+  it('defines storage checks that mirror contract parser constraints', () => {
+    const checks = new Map(
+      getTableConfig(agreementTerms).checks.map((check) => [
+        check.name,
+        check.value.queryChunks.flatMap((chunk) => (chunk && 'name' in chunk ? [chunk.name] : [])),
+      ]),
+    );
+
+    expect(checks.get('agreement_terms_minor_units_non_negative_check')).toEqual(
+      expect.arrayContaining([
+        'contract_value_minor',
+        'fee_amount_minor',
+        'target_cost_minor',
+        'gmp_ceiling_minor',
+      ]),
+    );
+    expect(checks.get('agreement_terms_reimbursable_categories_shape_check')).toEqual(
+      expect.arrayContaining(['reimbursable_cost_categories']),
+    );
+    expect(checks.get('agreement_terms_lock_reason_check')).toEqual(
+      expect.arrayContaining(['lock_reason']),
     );
   });
 });

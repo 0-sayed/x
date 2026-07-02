@@ -35,6 +35,16 @@ describe('agreement terms contracts', () => {
     });
   });
 
+  it('rejects unsafe monetary minor-unit numbers', () => {
+    expect(() =>
+      configureAgreementTermsRequestSchema.parse({
+        ...base,
+        commercialModel: 'lump_sum',
+        contractValueMinor: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).toThrow();
+  });
+
   it('requires cost-plus GMP savings split only when a GMP ceiling is set', () => {
     expect(() =>
       configureAgreementTermsRequestSchema.parse({
@@ -74,6 +84,26 @@ describe('agreement terms contracts', () => {
     });
   });
 
+  it('accepts cost-plus terms with a fixed fee and default fee applicability flags', () => {
+    expect(
+      configureAgreementTermsRequestSchema.parse({
+        ...base,
+        commercialModel: 'cost_plus',
+        feeBasis: 'fixed',
+        feeAmountMinor: 250_000,
+        reimbursableCostCategories: ['materials'],
+      }),
+    ).toEqual({
+      ...base,
+      commercialModel: 'cost_plus',
+      feeBasis: 'fixed',
+      feeAmountMinor: 250_000,
+      reimbursableCostCategories: ['materials'],
+      feeAppliesToSubs: false,
+      feeAppliesToChangeOrders: false,
+    });
+  });
+
   it('accepts remeasured terms with fee mechanics and no cost-plus fields', () => {
     expect(
       configureAgreementTermsRequestSchema.parse({
@@ -87,6 +117,22 @@ describe('agreement terms contracts', () => {
       commercialModel: 'remeasured',
       feeBasis: 'fixed',
       feeAmountMinor: 150_000,
+    });
+  });
+
+  it('accepts remeasured terms with percentage fee mechanics', () => {
+    expect(
+      configureAgreementTermsRequestSchema.parse({
+        ...base,
+        commercialModel: 'remeasured',
+        feeBasis: 'percentage',
+        feePercentageBps: 750,
+      }),
+    ).toEqual({
+      ...base,
+      commercialModel: 'remeasured',
+      feeBasis: 'percentage',
+      feePercentageBps: 750,
     });
   });
 

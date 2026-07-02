@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   foreignKey,
@@ -27,6 +28,7 @@ const commercialModelSql = sql`'lump_sum', 'cost_plus', 'remeasured'`;
 const feeBasisSql = sql`'percentage', 'fixed'`;
 const disclosureDepthSql = sql`'none', 'category', 'line'`;
 const billingCycleSql = sql`'milestone', 'monthly', 'biweekly'`;
+const lockReasonSql = sql`'first_draw_item_approved'`;
 
 export const agreementTerms = pgTable(
   'agreement_terms',
@@ -43,12 +45,12 @@ export const agreementTerms = pgTable(
       .notNull(),
     retentionPercentage: integer('retention_percentage').notNull(),
     billingCycle: varchar('billing_cycle', { length: 16 }).$type<BillingCycle>().notNull(),
-    contractValueMinor: integer('contract_value_minor'),
+    contractValueMinor: bigint('contract_value_minor', { mode: 'number' }),
     feeBasis: varchar('fee_basis', { length: 16 }).$type<FeeBasis>(),
     feePercentageBps: integer('fee_percentage_bps'),
-    feeAmountMinor: integer('fee_amount_minor'),
-    targetCostMinor: integer('target_cost_minor'),
-    gmpCeilingMinor: integer('gmp_ceiling_minor'),
+    feeAmountMinor: bigint('fee_amount_minor', { mode: 'number' }),
+    targetCostMinor: bigint('target_cost_minor', { mode: 'number' }),
+    gmpCeilingMinor: bigint('gmp_ceiling_minor', { mode: 'number' }),
     savingsSplitContractorBps: integer('savings_split_contractor_bps'),
     reimbursableCostCategories: jsonb('reimbursable_cost_categories').$type<string[]>(),
     feeAppliesToSubs: boolean('fee_applies_to_subs'),
@@ -64,7 +66,7 @@ export const agreementTerms = pgTable(
       onDelete: 'set null',
     }),
     lockedByDrawItemId: uuid('locked_by_draw_item_id'),
-    lockReason: varchar('lock_reason', { length: 80 }),
+    lockReason: varchar('lock_reason', { length: 80 }).$type<'first_draw_item_approved'>(),
     configuredByUserId: uuid('configured_by_user_id')
       .notNull()
       .references(() => inframodernUserRefs.id, { onDelete: 'restrict' }),
@@ -107,6 +109,18 @@ export const agreementTerms = pgTable(
     check(
       'agreement_terms_basis_points_check',
       sql`(${table.feePercentageBps} is null or (${table.feePercentageBps} >= 0 and ${table.feePercentageBps} <= 10000)) and (${table.savingsSplitContractorBps} is null or (${table.savingsSplitContractorBps} >= 0 and ${table.savingsSplitContractorBps} <= 10000))`,
+    ),
+    check(
+      'agreement_terms_minor_units_non_negative_check',
+      sql`(${table.contractValueMinor} is null or ${table.contractValueMinor} >= 0) and (${table.feeAmountMinor} is null or ${table.feeAmountMinor} >= 0) and (${table.targetCostMinor} is null or ${table.targetCostMinor} >= 0) and (${table.gmpCeilingMinor} is null or ${table.gmpCeilingMinor} >= 0)`,
+    ),
+    check(
+      'agreement_terms_reimbursable_categories_shape_check',
+      sql`${table.reimbursableCostCategories} is null or agreement_terms_reimbursable_categories_valid(${table.reimbursableCostCategories})`,
+    ),
+    check(
+      'agreement_terms_lock_reason_check',
+      sql`${table.lockReason} is null or ${table.lockReason} in (${lockReasonSql})`,
     ),
     check(
       'agreement_terms_fee_value_shape_check',

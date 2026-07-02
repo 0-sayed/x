@@ -59,7 +59,7 @@
         },
         "contract_value_minor": {
           "name": "contract_value_minor",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
@@ -77,19 +77,19 @@
         },
         "fee_amount_minor": {
           "name": "fee_amount_minor",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
         "target_cost_minor": {
           "name": "target_cost_minor",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
         "gmp_ceiling_minor": {
           "name": "gmp_ceiling_minor",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
@@ -294,6 +294,18 @@
         "agreement_terms_basis_points_check": {
           "name": "agreement_terms_basis_points_check",
           "value": "(\"agreement_terms\".\"fee_percentage_bps\" is null or (\"agreement_terms\".\"fee_percentage_bps\" >= 0 and \"agreement_terms\".\"fee_percentage_bps\" <= 10000)) and (\"agreement_terms\".\"savings_split_contractor_bps\" is null or (\"agreement_terms\".\"savings_split_contractor_bps\" >= 0 and \"agreement_terms\".\"savings_split_contractor_bps\" <= 10000))"
+        },
+        "agreement_terms_minor_units_non_negative_check": {
+          "name": "agreement_terms_minor_units_non_negative_check",
+          "value": "(\"agreement_terms\".\"contract_value_minor\" is null or \"agreement_terms\".\"contract_value_minor\" >= 0) and (\"agreement_terms\".\"fee_amount_minor\" is null or \"agreement_terms\".\"fee_amount_minor\" >= 0) and (\"agreement_terms\".\"target_cost_minor\" is null or \"agreement_terms\".\"target_cost_minor\" >= 0) and (\"agreement_terms\".\"gmp_ceiling_minor\" is null or \"agreement_terms\".\"gmp_ceiling_minor\" >= 0)"
+        },
+        "agreement_terms_reimbursable_categories_shape_check": {
+          "name": "agreement_terms_reimbursable_categories_shape_check",
+          "value": "\"agreement_terms\".\"reimbursable_cost_categories\" is null or agreement_terms_reimbursable_categories_valid(\"agreement_terms\".\"reimbursable_cost_categories\")"
+        },
+        "agreement_terms_lock_reason_check": {
+          "name": "agreement_terms_lock_reason_check",
+          "value": "\"agreement_terms\".\"lock_reason\" is null or \"agreement_terms\".\"lock_reason\" in ('first_draw_item_approved')"
         },
         "agreement_terms_fee_value_shape_check": {
           "name": "agreement_terms_fee_value_shape_check",
