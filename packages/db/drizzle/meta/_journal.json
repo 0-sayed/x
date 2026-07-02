@@ -89,8 +89,15 @@
     {
       "idx": 12,
       "version": "7",
-      "when": 1782945214920,
-      "tag": "0012_agreement_terms",
+      "when": 1782945324406,
+      "tag": "0012_client_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782953154815,
+      "tag": "0013_agreement_terms",
       "breakpoints": true
     }
   ]

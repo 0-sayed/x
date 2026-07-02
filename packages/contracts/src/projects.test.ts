@@ -26,6 +26,7 @@ describe('project contracts', () => {
         pmUserId: userId,
         locationId: null,
         clientOrgId: null,
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
       }),
     ).toEqual({
       name: 'Villa A12',
@@ -38,13 +39,56 @@ describe('project contracts', () => {
       pmUserId: userId,
       locationId: null,
       clientOrgId: null,
+      endCustomerId: '11111111-1111-4111-8111-111111111111',
     });
+  });
+
+  it('requires exactly one client reference when creating projects', () => {
+    const base = {
+      name: 'Villa A12',
+      city: 'Riyadh',
+      currency: 'SAR',
+      baselineDeliveryDate: '2026-12-15',
+    };
+
+    expect(() => createProjectRequestSchema.parse(base)).toThrow();
+    expect(() =>
+      createProjectRequestSchema.parse({
+        ...base,
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
+        clientOrgId: '22222222-2222-4222-8222-222222222222',
+      }),
+    ).toThrow();
+    expect(
+      createProjectRequestSchema.parse({
+        ...base,
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).toEqual(expect.objectContaining({ endCustomerId: '11111111-1111-4111-8111-111111111111' }));
   });
 
   it('does not allow baseline delivery date updates', () => {
     expect(() =>
       updateProjectRequestSchema.parse({
         baselineDeliveryDate: '2027-01-01',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects update requests that set both client references', () => {
+    expect(() =>
+      updateProjectRequestSchema.parse({
+        endCustomerId: '11111111-1111-4111-8111-111111111111',
+        clientOrgId: '22222222-2222-4222-8222-222222222222',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects update requests that explicitly clear both client references', () => {
+    expect(() =>
+      updateProjectRequestSchema.parse({
+        endCustomerId: null,
+        clientOrgId: null,
       }),
     ).toThrow();
   });
@@ -96,6 +140,7 @@ describe('project contracts', () => {
         pmUserId: null,
         locationId: null,
         clientOrgId: null,
+        endCustomerId: null,
         archivedAt: null,
         createdAt: '2026-07-01T09:00:00.000Z',
         updatedAt: '2026-07-01T09:00:00.000Z',

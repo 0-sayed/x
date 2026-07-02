@@ -1,9 +1,331 @@
 {
-  "id": "5da852a0-b4c6-4057-8281-d30dc74f0b9f",
-  "prevId": "6f3222d5-843e-4d82-8735-b127789b7b30",
+  "id": "8936c743-86c0-40c3-9d6a-52139f4c7f11",
+  "prevId": "5da852a0-b4c6-4057-8281-d30dc74f0b9f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.agreement_terms": {
+      "name": "agreement_terms",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commercial_model": {
+          "name": "commercial_model",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "disclosure_depth": {
+          "name": "disclosure_depth",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "retention_percentage": {
+          "name": "retention_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_cycle": {
+          "name": "billing_cycle",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_value_minor": {
+          "name": "contract_value_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_basis": {
+          "name": "fee_basis",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_percentage_bps": {
+          "name": "fee_percentage_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_amount_minor": {
+          "name": "fee_amount_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_cost_minor": {
+          "name": "target_cost_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gmp_ceiling_minor": {
+          "name": "gmp_ceiling_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "savings_split_contractor_bps": {
+          "name": "savings_split_contractor_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reimbursable_cost_categories": {
+          "name": "reimbursable_cost_categories",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_applies_to_subs": {
+          "name": "fee_applies_to_subs",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_applies_to_change_orders": {
+          "name": "fee_applies_to_change_orders",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_snapshot_markdown": {
+          "name": "contract_snapshot_markdown",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_snapshot_generated_at": {
+          "name": "contract_snapshot_generated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_by_user_id": {
+          "name": "locked_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_by_draw_item_id": {
+          "name": "locked_by_draw_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lock_reason": {
+          "name": "lock_reason",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configured_by_user_id": {
+          "name": "configured_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "agreement_terms_workspace_project_idx": {
+          "name": "agreement_terms_workspace_project_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "agreement_terms_workspace_locked_at_idx": {
+          "name": "agreement_terms_workspace_locked_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "locked_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agreement_terms_workspace_id_workspace_refs_id_fk": {
+          "name": "agreement_terms_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_locked_by_user_id_inframodern_user_refs_id_fk": {
+          "name": "agreement_terms_locked_by_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": ["locked_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_configured_by_user_id_inframodern_user_refs_id_fk": {
+          "name": "agreement_terms_configured_by_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": ["configured_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_workspace_id_project_id_projects_workspace_id_id_fk": {
+          "name": "agreement_terms_workspace_id_project_id_projects_workspace_id_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "projects",
+          "columnsFrom": ["workspace_id", "project_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "agreement_terms_workspace_id_project_id_unique": {
+          "name": "agreement_terms_workspace_id_project_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "project_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "agreement_terms_commercial_model_check": {
+          "name": "agreement_terms_commercial_model_check",
+          "value": "\"agreement_terms\".\"commercial_model\" in ('lump_sum', 'cost_plus', 'remeasured')"
+        },
+        "agreement_terms_currency_check": {
+          "name": "agreement_terms_currency_check",
+          "value": "\"agreement_terms\".\"currency\" in ('SAR', 'EGP')"
+        },
+        "agreement_terms_disclosure_depth_check": {
+          "name": "agreement_terms_disclosure_depth_check",
+          "value": "\"agreement_terms\".\"disclosure_depth\" in ('none', 'category', 'line')"
+        },
+        "agreement_terms_billing_cycle_check": {
+          "name": "agreement_terms_billing_cycle_check",
+          "value": "\"agreement_terms\".\"billing_cycle\" in ('milestone', 'monthly', 'biweekly')"
+        },
+        "agreement_terms_fee_basis_check": {
+          "name": "agreement_terms_fee_basis_check",
+          "value": "\"agreement_terms\".\"fee_basis\" is null or \"agreement_terms\".\"fee_basis\" in ('percentage', 'fixed')"
+        },
+        "agreement_terms_retention_percentage_check": {
+          "name": "agreement_terms_retention_percentage_check",
+          "value": "\"agreement_terms\".\"retention_percentage\" >= 0 and \"agreement_terms\".\"retention_percentage\" <= 100"
+        },
+        "agreement_terms_basis_points_check": {
+          "name": "agreement_terms_basis_points_check",
+          "value": "(\"agreement_terms\".\"fee_percentage_bps\" is null or (\"agreement_terms\".\"fee_percentage_bps\" >= 0 and \"agreement_terms\".\"fee_percentage_bps\" <= 10000)) and (\"agreement_terms\".\"savings_split_contractor_bps\" is null or (\"agreement_terms\".\"savings_split_contractor_bps\" >= 0 and \"agreement_terms\".\"savings_split_contractor_bps\" <= 10000))"
+        },
+        "agreement_terms_minor_units_non_negative_check": {
+          "name": "agreement_terms_minor_units_non_negative_check",
+          "value": "(\"agreement_terms\".\"contract_value_minor\" is null or \"agreement_terms\".\"contract_value_minor\" >= 0) and (\"agreement_terms\".\"fee_amount_minor\" is null or \"agreement_terms\".\"fee_amount_minor\" >= 0) and (\"agreement_terms\".\"target_cost_minor\" is null or \"agreement_terms\".\"target_cost_minor\" >= 0) and (\"agreement_terms\".\"gmp_ceiling_minor\" is null or \"agreement_terms\".\"gmp_ceiling_minor\" >= 0)"
+        },
+        "agreement_terms_reimbursable_categories_shape_check": {
+          "name": "agreement_terms_reimbursable_categories_shape_check",
+          "value": "\"agreement_terms\".\"reimbursable_cost_categories\" is null or agreement_terms_reimbursable_categories_valid(\"agreement_terms\".\"reimbursable_cost_categories\")"
+        },
+        "agreement_terms_lock_reason_check": {
+          "name": "agreement_terms_lock_reason_check",
+          "value": "\"agreement_terms\".\"lock_reason\" is null or \"agreement_terms\".\"lock_reason\" in ('first_draw_item_approved')"
+        },
+        "agreement_terms_fee_value_shape_check": {
+          "name": "agreement_terms_fee_value_shape_check",
+          "value": "(\"agreement_terms\".\"fee_basis\" is null and \"agreement_terms\".\"fee_percentage_bps\" is null and \"agreement_terms\".\"fee_amount_minor\" is null) or (\"agreement_terms\".\"fee_basis\" = 'percentage' and \"agreement_terms\".\"fee_percentage_bps\" is not null and \"agreement_terms\".\"fee_amount_minor\" is null) or (\"agreement_terms\".\"fee_basis\" = 'fixed' and \"agreement_terms\".\"fee_amount_minor\" is not null and \"agreement_terms\".\"fee_percentage_bps\" is null)"
+        },
+        "agreement_terms_lump_sum_shape_check": {
+          "name": "agreement_terms_lump_sum_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'lump_sum' or (\"agreement_terms\".\"contract_value_minor\" is not null and \"agreement_terms\".\"fee_basis\" is null and \"agreement_terms\".\"fee_percentage_bps\" is null and \"agreement_terms\".\"fee_amount_minor\" is null and \"agreement_terms\".\"target_cost_minor\" is null and \"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null and \"agreement_terms\".\"reimbursable_cost_categories\" is null and \"agreement_terms\".\"fee_applies_to_subs\" is null and \"agreement_terms\".\"fee_applies_to_change_orders\" is null)"
+        },
+        "agreement_terms_cost_plus_shape_check": {
+          "name": "agreement_terms_cost_plus_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'cost_plus' or (\"agreement_terms\".\"contract_value_minor\" is null and \"agreement_terms\".\"fee_basis\" is not null and \"agreement_terms\".\"reimbursable_cost_categories\" is not null and \"agreement_terms\".\"fee_applies_to_subs\" is not null and \"agreement_terms\".\"fee_applies_to_change_orders\" is not null and ((\"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null) or (\"agreement_terms\".\"gmp_ceiling_minor\" is not null and \"agreement_terms\".\"savings_split_contractor_bps\" is not null)))"
+        },
+        "agreement_terms_remeasured_shape_check": {
+          "name": "agreement_terms_remeasured_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'remeasured' or (\"agreement_terms\".\"fee_basis\" is not null and \"agreement_terms\".\"contract_value_minor\" is null and \"agreement_terms\".\"target_cost_minor\" is null and \"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null and \"agreement_terms\".\"reimbursable_cost_categories\" is null and \"agreement_terms\".\"fee_applies_to_subs\" is null and \"agreement_terms\".\"fee_applies_to_change_orders\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.audit_events": {
       "name": "audit_events",
       "schema": "",

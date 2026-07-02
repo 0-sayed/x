@@ -1,25 +1,3 @@
-CREATE FUNCTION "agreement_terms_reimbursable_categories_valid"("categories" jsonb) RETURNS boolean
-LANGUAGE sql
-IMMUTABLE
-AS $$
-	SELECT CASE
-		WHEN jsonb_typeof("categories") <> 'array' THEN false
-		ELSE jsonb_array_length("categories") >= 1
-			AND NOT EXISTS (
-				SELECT 1
-				FROM jsonb_array_elements("categories") AS "category"("value")
-				WHERE jsonb_typeof("category"."value") <> 'string'
-					OR "category"."value" #>> '{}' <> btrim("category"."value" #>> '{}')
-					OR length("category"."value" #>> '{}') < 1
-					OR length("category"."value" #>> '{}') > 80
-			)
-			AND jsonb_array_length("categories") = (
-				SELECT count(DISTINCT btrim("category"."value" #>> '{}'))
-				FROM jsonb_array_elements("categories") AS "category"("value")
-			)
-	END
-$$;
---> statement-breakpoint
 CREATE TABLE "agreement_terms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"workspace_id" uuid NOT NULL,

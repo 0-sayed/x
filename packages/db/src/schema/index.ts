@@ -1,5 +1,6 @@
 export { auditEvents } from './audit.js';
 export { agreementTerms } from './agreement-terms.js';
+export { clientIdentities } from './client-identities.js';
 export {
   brandRefs,
   exchangeRateRefs,
@@ -18,6 +19,7 @@ export { rolePermissions, userRoleAssignments, workspaceRoles } from './permissi
 export { projectParticipants, projects } from './projects.js';
 export { workspaceSettings } from './settings.js';
 export { sessionRecords } from './sessions.js';
+export type { ClientIdentityRecord, NewClientIdentityRecord } from './client-identities.js';
 export type { AuditEventRecord, NewAuditEventRecord } from './audit.js';
 export type { AgreementTermsRecord, NewAgreementTermsRecord } from './agreement-terms.js';
 export type {
