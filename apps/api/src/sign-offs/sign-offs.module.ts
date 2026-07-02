@@ -4,6 +4,7 @@ import { AuditModule } from '../audit/audit.module.js';
 import { GraceWindowModule } from '../grace-window/grace-window.module.js';
 import { SessionModule } from '../session/session.module.js';
 import { WorkspaceContextModule } from '../workspace-context/workspace-context.module.js';
+import { SignOffResolutionHandlerRegistry } from './sign-off-resolution-handlers.js';
 import { SignOffsController } from './sign-offs.controller.js';
 import { SignOffsRepository } from './sign-offs.repository.js';
 import { SignOffsService } from './sign-offs.service.js';
@@ -11,7 +12,7 @@ import { SignOffsService } from './sign-offs.service.js';
 @Module({
   imports: [AuditModule, GraceWindowModule, SessionModule, WorkspaceContextModule],
   controllers: [SignOffsController],
-  providers: [SignOffsRepository, SignOffsService],
-  exports: [SignOffsService],
+  providers: [SignOffsRepository, SignOffsService, SignOffResolutionHandlerRegistry],
+  exports: [SignOffsService, SignOffResolutionHandlerRegistry],
 })
 export class SignOffsModule {}

@@ -65,6 +65,7 @@ export * from './client-identities.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
 export * from './projects.js';
+export * from './schedule.js';
 export * from './agreement-terms.js';
 export type {
   AgreementTerms,

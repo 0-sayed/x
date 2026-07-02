@@ -5,6 +5,7 @@ import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { DATABASE_CLIENT } from '../database/database.module.js';
 import type {
   CreateSignOffRecordInput,
+  DeletePendingSignOffInput,
   FindSignOffInput,
   ListSignOffRowsInput,
   MarkSignOffReminderSentInput,
@@ -58,6 +59,21 @@ export class SignOffsRepository {
       .from(signOffs)
       .where(and(eq(signOffs.workspaceId, input.workspaceId), eq(signOffs.id, input.signOffId)))
       .limit(1);
+
+    return rows[0];
+  }
+
+  async deletePending(input: DeletePendingSignOffInput): Promise<SignOffRecord | undefined> {
+    const rows = await this.#db
+      .delete(signOffs)
+      .where(
+        and(
+          eq(signOffs.workspaceId, input.workspaceId),
+          eq(signOffs.id, input.signOffId),
+          eq(signOffs.status, 'pending'),
+        ),
+      )
+      .returning();
 
     return rows[0];
   }

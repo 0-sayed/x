@@ -49,11 +49,16 @@ type CommitHandlerRegistryMock = {
   register: MockFn;
 };
 
+type ResolutionHandlerRegistryMock = {
+  handle: MockFn;
+};
+
 describe('SignOffsService', () => {
   let repository: RepositoryMock;
   let graceWindowService: GraceWindowServiceMock;
   let auditService: AuditServiceMock;
   let commitHandlers: CommitHandlerRegistryMock;
+  let resolutionHandlers: ResolutionHandlerRegistryMock;
   let service: SignOffsService;
 
   beforeEach(() => {
@@ -70,11 +75,13 @@ describe('SignOffsService', () => {
     };
     auditService = { recordEvent: vi.fn() };
     commitHandlers = { register: vi.fn() };
+    resolutionHandlers = { handle: vi.fn() };
     service = new SignOffsService(
       repository as unknown as ConstructorParameters<typeof SignOffsService>[0],
       graceWindowService as unknown as ConstructorParameters<typeof SignOffsService>[1],
       auditService as unknown as ConstructorParameters<typeof SignOffsService>[2],
       commitHandlers as unknown as ConstructorParameters<typeof SignOffsService>[3],
+      resolutionHandlers as unknown as ConstructorParameters<typeof SignOffsService>[4],
     );
   });
 
@@ -282,6 +289,35 @@ describe('SignOffsService', () => {
     expect(resolved.status).toBe('approved');
     expect(auditService.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'signoff.resolved', resourceId: signOff.id }),
+    );
+  });
+
+  it('notifies subject handlers after a sign-off resolution commits', async () => {
+    repository.findByIdInWorkspace.mockResolvedValueOnce(signOff);
+    repository.resolve.mockResolvedValueOnce({
+      ...signOff,
+      status: 'approved',
+      resolvedByUserId: '55555555-5555-4555-8555-555555555555',
+      resolutionDecisionId: '66666666-6666-4666-8666-666666666666',
+      resolvedAt: now,
+    });
+
+    await service.commitPendingDecisionResolution({
+      workspaceId: signOff.workspaceId,
+      signOffId: signOff.id,
+      decisionId: '66666666-6666-4666-8666-666666666666',
+      actorUserId: '55555555-5555-4555-8555-555555555555',
+      action: 'approve',
+      now,
+    });
+
+    expect(resolutionHandlers.handle).toHaveBeenCalledWith(
+      expect.objectContaining({ id: signOff.id, subjectType: 'timeline_baseline' }),
+      expect.objectContaining({
+        actorUserId: '55555555-5555-4555-8555-555555555555',
+        decisionId: '66666666-6666-4666-8666-666666666666',
+        resolvedAt: now,
+      }),
     );
   });
 

@@ -19,6 +19,11 @@ export type FindSignOffInput = {
   readonly signOffId: string;
 };
 
+export type DeletePendingSignOffInput = {
+  readonly workspaceId: string;
+  readonly signOffId: string;
+};
+
 export type ResolveSignOffInput = {
   readonly workspaceId: string;
   readonly signOffId: string;

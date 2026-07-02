@@ -50,6 +50,14 @@ describe('signOffs schema', () => {
     ]);
   });
 
+  it('adds the project-scoped unique key used by schedule baselines', () => {
+    const constraints = getTableConfig(signOffs)
+      .uniqueConstraints.map((constraint) => constraint.getName())
+      .sort();
+
+    expect(constraints).toContain('sign_offs_workspace_id_project_id_id_unique');
+  });
+
   it('adds enum, required-action status, and reject-reason checks to the generated migration', () => {
     const migrationSql = readFileSync(
       new URL('../../drizzle/0008_sign_offs.sql', import.meta.url),

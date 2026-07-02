@@ -6,6 +6,8 @@ export const realtimeEventTypeSchema = z.enum([
   'pending_decisions.changed',
   'draws.settlement_bar.changed',
   'schedule.milestone.completed',
+  'schedule.forecast.moved',
+  'schedule.baseline.changed',
   'notifications.changed',
 ]);
 
