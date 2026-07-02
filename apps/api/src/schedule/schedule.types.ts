@@ -95,6 +95,11 @@ export type SelfCertifyBaselineInput = ScheduleIdentityInput & {
   readonly now: Date;
 };
 
+export type PersistedBaselineSnapshot = {
+  readonly baseline: ScheduleBaselineRecord;
+  readonly milestones: ScheduleBaselineMilestoneRecord[];
+};
+
 export type MarkBaselineAgreedBySignOffInput = {
   readonly workspaceId: string;
   readonly signOffId: string;

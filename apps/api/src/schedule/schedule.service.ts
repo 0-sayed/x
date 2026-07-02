@@ -49,8 +49,16 @@ import { SignOffsService } from '../sign-offs/sign-offs.service.js';
 import { ScheduleRepository } from './schedule.repository.js';
 import type { BaselineSnapshotItemInput, ScheduleReadModel } from './schedule.types.js';
 
+type ValidationIssue = {
+  readonly path: PropertyKey[];
+  readonly message: string;
+  readonly code: string;
+};
+
 type RequestSchema<T> = {
-  safeParse: (value: unknown) => { success: true; data: T } | { success: false };
+  safeParse: (
+    value: unknown,
+  ) => { success: true; data: T } | { success: false; error: { issues: ValidationIssue[] } };
 };
 
 @Injectable()
@@ -340,9 +348,11 @@ export class ScheduleService implements OnModuleInit {
     if (milestones.length === 0) {
       throw new ConflictException('Cannot propose a baseline without milestones');
     }
+    if (schedule.baseline?.status === 'proposed') {
+      throw new ConflictException('Timeline baseline is already proposed');
+    }
 
-    const baselineId =
-      schedule.baseline?.status === 'proposed' ? schedule.baseline.id : randomUUID();
+    const baselineId = randomUUID();
     const signOff = await this.signOffsService.createSignOff({
       workspaceId: workspaceContext.workspace.id,
       projectId,
@@ -354,7 +364,7 @@ export class ScheduleService implements OnModuleInit {
       requiredAction: 'approve',
       requestedByUserId: workspaceContext.membership.userId,
     });
-    const baseline = await this.repository.proposeBaseline({
+    const persisted = await this.repository.proposeBaseline({
       baselineId,
       workspaceId: workspaceContext.workspace.id,
       projectId,
@@ -363,23 +373,27 @@ export class ScheduleService implements OnModuleInit {
       milestones,
       now: new Date(),
     });
-    if (!baseline) throw new ConflictException('Timeline baseline could not be proposed');
+    if (!persisted) throw new ConflictException('Timeline baseline could not be proposed');
 
     await this.recordAudit(
       workspaceContext,
       projectId,
       'schedule.baseline_proposed',
       'schedule_baseline',
-      baseline.id,
+      persisted.baseline.id,
       { signOffId: signOff.id },
     );
     this.realtimePublisher.publish({
       workspaceId: workspaceContext.workspace.id,
       type: 'schedule.baseline.changed',
-      payload: { projectId, baselineId: baseline.id, status: baseline.status },
+      payload: {
+        projectId,
+        baselineId: persisted.baseline.id,
+        status: persisted.baseline.status,
+      },
     });
 
-    return this.toBaseline(baseline, milestonesToRecords(baseline.id, milestones));
+    return this.toBaseline(persisted.baseline, persisted.milestones);
   }
 
   async selfCertifyBaseline(
@@ -402,7 +416,7 @@ export class ScheduleService implements OnModuleInit {
       throw new ConflictException('Cannot self-certify a baseline without milestones');
     }
 
-    const baseline = await this.repository.selfCertifyBaseline({
+    const persisted = await this.repository.selfCertifyBaseline({
       workspaceId: workspaceContext.workspace.id,
       projectId,
       selfCertifiedByUserId: workspaceContext.membership.userId,
@@ -410,24 +424,28 @@ export class ScheduleService implements OnModuleInit {
       milestones,
       now: new Date(),
     });
-    if (!baseline) throw new ConflictException('Timeline baseline could not be self-certified');
+    if (!persisted) throw new ConflictException('Timeline baseline could not be self-certified');
 
     await this.recordAudit(
       workspaceContext,
       projectId,
       'schedule.baseline_self_certified',
       'schedule_baseline',
-      baseline.id,
+      persisted.baseline.id,
       { reason: parsed.reason },
       'internal',
     );
     this.realtimePublisher.publish({
       workspaceId: workspaceContext.workspace.id,
       type: 'schedule.baseline.changed',
-      payload: { projectId, baselineId: baseline.id, status: baseline.status },
+      payload: {
+        projectId,
+        baselineId: persisted.baseline.id,
+        status: persisted.baseline.status,
+      },
     });
 
-    return this.toBaseline(baseline, milestonesToRecords(baseline.id, milestones));
+    return this.toBaseline(persisted.baseline, persisted.milestones);
   }
 
   async onTimelineBaselineSignOffResolved(
@@ -580,21 +598,19 @@ export class ScheduleService implements OnModuleInit {
 
 function parseRequest<T>(schema: RequestSchema<T>, value: unknown, message: string): T {
   const parsed = schema.safeParse(value);
-  if (!parsed.success) throw new BadRequestException(message);
+  if (!parsed.success) {
+    throw new BadRequestException({
+      message,
+      issues: parsed.error.issues.map(toValidationIssue),
+    });
+  }
   return parsed.data;
 }
 
-function milestonesToRecords(
-  baselineId: string,
-  milestones: readonly BaselineSnapshotItemInput[],
-): ScheduleBaselineMilestoneRecord[] {
-  return milestones.map((milestone, index) => ({
-    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
-    baselineId,
-    sourceMilestoneId: milestone.sourceMilestoneId,
-    phaseName: milestone.phaseName,
-    milestoneName: milestone.milestoneName,
-    baselineDate: milestone.baselineDate,
-    displayOrder: milestone.displayOrder,
-  }));
+function toValidationIssue(issue: ValidationIssue): ValidationIssue {
+  return {
+    path: issue.path,
+    message: issue.message,
+    code: issue.code,
+  };
 }

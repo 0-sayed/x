@@ -10,6 +10,7 @@ import {
   type DatabaseClient,
   type MilestoneDrawLinkRecord,
   type ProjectRecord,
+  type ScheduleBaselineMilestoneRecord,
   type ScheduleBaselineRecord,
   type ScheduleMilestoneRecord,
   type SchedulePhaseRecord,
@@ -24,6 +25,7 @@ import type {
   MarkBaselineAgreedBySignOffInput,
   MoveForecastDateInput,
   MoveForecastDateResult,
+  PersistedBaselineSnapshot,
   ProposeBaselineInput,
   ReplaceDrawLinksInput,
   ScheduleIdentityInput,
@@ -354,7 +356,9 @@ export class ScheduleRepository {
     });
   }
 
-  async proposeBaseline(input: ProposeBaselineInput): Promise<ScheduleBaselineRecord | undefined> {
+  async proposeBaseline(
+    input: ProposeBaselineInput,
+  ): Promise<PersistedBaselineSnapshot | undefined> {
     return this.#db.transaction(async (tx) => {
       const project = await this.findWritableProject(tx, input);
       if (!project) return undefined;
@@ -387,14 +391,14 @@ export class ScheduleRepository {
       const baseline = rows[0];
       if (!baseline) return undefined;
 
-      await this.replaceBaselineMilestones(tx, baseline.id, input.milestones);
-      return baseline;
+      const milestones = await this.replaceBaselineMilestones(tx, baseline.id, input.milestones);
+      return { baseline, milestones };
     });
   }
 
   async selfCertifyBaseline(
     input: SelfCertifyBaselineInput,
-  ): Promise<ScheduleBaselineRecord | undefined> {
+  ): Promise<PersistedBaselineSnapshot | undefined> {
     return this.#db.transaction(async (tx) => {
       const project = await this.findWritableProject(tx, input);
       if (!project) return undefined;
@@ -426,8 +430,8 @@ export class ScheduleRepository {
       const baseline = rows[0];
       if (!baseline) return undefined;
 
-      await this.replaceBaselineMilestones(tx, baseline.id, input.milestones);
-      return baseline;
+      const milestones = await this.replaceBaselineMilestones(tx, baseline.id, input.milestones);
+      return { baseline, milestones };
     });
   }
 
@@ -546,23 +550,26 @@ export class ScheduleRepository {
       readonly baselineDate: string;
       readonly displayOrder: number;
     }[],
-  ): Promise<void> {
+  ): Promise<ScheduleBaselineMilestoneRecord[]> {
     await db
       .delete(scheduleBaselineMilestones)
       .where(eq(scheduleBaselineMilestones.baselineId, baselineId));
 
-    if (milestones.length === 0) return;
+    if (milestones.length === 0) return [];
 
-    await db.insert(scheduleBaselineMilestones).values(
-      milestones.map((milestone) => ({
-        baselineId,
-        sourceMilestoneId: milestone.sourceMilestoneId,
-        phaseName: milestone.phaseName,
-        milestoneName: milestone.milestoneName,
-        baselineDate: milestone.baselineDate,
-        displayOrder: milestone.displayOrder,
-      })),
-    );
+    return db
+      .insert(scheduleBaselineMilestones)
+      .values(
+        milestones.map((milestone) => ({
+          baselineId,
+          sourceMilestoneId: milestone.sourceMilestoneId,
+          phaseName: milestone.phaseName,
+          milestoneName: milestone.milestoneName,
+          baselineDate: milestone.baselineDate,
+          displayOrder: milestone.displayOrder,
+        })),
+      )
+      .returning();
   }
 }
 
