@@ -3,6 +3,7 @@ import { getApiLoggerOptions, getApiRuntimeConfig } from '@materiabill/config';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AuditModule } from './audit/audit.module.js';
+import { AgreementTermsModule } from './agreement-terms/agreement-terms.module.js';
 import { AudienceModule } from './audience/audience.module.js';
 import { BootstrapInfoController } from './bootstrap-info.controller.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -38,6 +39,7 @@ import { WorkspaceContextModule } from './workspace-context/workspace-context.mo
     PermissionsModule,
     ProjectsModule,
     ScheduleModule,
+    AgreementTermsModule,
     SettingsModule,
   ],
   controllers: [HealthController, BootstrapInfoController, PermissionsController],

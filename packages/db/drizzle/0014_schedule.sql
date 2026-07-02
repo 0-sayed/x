@@ -84,7 +84,6 @@ CREATE TABLE "schedule_phases" (
 ALTER TABLE "milestone_draw_links" ADD CONSTRAINT "milestone_draw_links_workspace_id_milestone_id_milestones_fk" FOREIGN KEY ("workspace_id","milestone_id") REFERENCES "public"."schedule_milestones"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baseline_milestones" ADD CONSTRAINT "schedule_baseline_milestones_baseline_id_schedule_baselines_id_fk" FOREIGN KEY ("baseline_id") REFERENCES "public"."schedule_baselines"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_workspace_refs_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace_refs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sign_offs" ADD CONSTRAINT "sign_offs_workspace_id_project_id_id_unique" UNIQUE("workspace_id","project_id","id");--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_project_id_projects_workspace_id_id_fk" FOREIGN KEY ("workspace_id","project_id") REFERENCES "public"."projects"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_proposed_by_user_id_membership_fk" FOREIGN KEY ("workspace_id","proposed_by_user_id") REFERENCES "public"."workspace_membership_refs"("workspace_id","user_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedule_baselines" ADD CONSTRAINT "schedule_baselines_workspace_id_project_id_sign_off_id_sign_offs_workspace_id_project_id_id_fk" FOREIGN KEY ("workspace_id","project_id","sign_off_id") REFERENCES "public"."sign_offs"("workspace_id","project_id","id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -105,4 +104,5 @@ CREATE INDEX "schedule_baselines_sign_off_id_idx" ON "schedule_baselines" USING 
 CREATE INDEX "schedule_forecast_moves_workspace_project_moved_at_idx" ON "schedule_forecast_moves" USING btree ("workspace_id","project_id","moved_at");--> statement-breakpoint
 CREATE INDEX "schedule_milestones_workspace_project_order_idx" ON "schedule_milestones" USING btree ("workspace_id","project_id","display_order");--> statement-breakpoint
 CREATE INDEX "schedule_milestones_workspace_phase_idx" ON "schedule_milestones" USING btree ("workspace_id","phase_id");--> statement-breakpoint
-CREATE INDEX "schedule_phases_workspace_project_order_idx" ON "schedule_phases" USING btree ("workspace_id","project_id","display_order");
+CREATE INDEX "schedule_phases_workspace_project_order_idx" ON "schedule_phases" USING btree ("workspace_id","project_id","display_order");--> statement-breakpoint
+ALTER TABLE "sign_offs" ADD CONSTRAINT "sign_offs_workspace_id_project_id_id_unique" UNIQUE("workspace_id","project_id","id");

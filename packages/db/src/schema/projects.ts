@@ -20,6 +20,7 @@ import {
   workspaceMembershipRefs,
   workspaceRefs,
 } from './projections.js';
+import { clientIdentities } from './client-identities.js';
 
 const projectStatusSql = sql`'on_plan', 'behind', 'stale'`;
 
@@ -49,8 +50,11 @@ export const projects = pgTable(
       onDelete: 'set null',
     }),
     locationId: uuid('location_id').references(() => locationRefs.id, { onDelete: 'set null' }),
+    endCustomerId: uuid('end_customer_id').references(() => clientIdentities.id, {
+      onDelete: 'restrict',
+    }),
     clientOrgId: uuid('client_org_id').references(() => workspaceRefs.id, {
-      onDelete: 'set null',
+      onDelete: 'restrict',
     }),
     createdByUserId: uuid('created_by_user_id').references(() => inframodernUserRefs.id, {
       onDelete: 'set null',
@@ -60,6 +64,10 @@ export const projects = pgTable(
   },
   (table) => [
     check('projects_status_check', sql`${table.status} in (${projectStatusSql})`),
+    check(
+      'projects_exactly_one_client_check',
+      sql`num_nonnulls(${table.endCustomerId}, ${table.clientOrgId}) = 1`,
+    ),
     unique('projects_workspace_id_id_unique').on(table.workspaceId, table.id),
     foreignKey({
       columns: [table.workspaceId, table.pmUserId],
@@ -79,6 +87,7 @@ export const projects = pgTable(
     ),
     index('projects_workspace_pm_user_idx').on(table.workspaceId, table.pmUserId),
     index('projects_workspace_location_idx').on(table.workspaceId, table.locationId),
+    index('projects_workspace_end_customer_idx').on(table.workspaceId, table.endCustomerId),
     index('projects_workspace_client_org_idx').on(table.workspaceId, table.clientOrgId),
   ],
 );

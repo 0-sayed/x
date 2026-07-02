@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { getTableColumns } from 'drizzle-orm';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
@@ -63,5 +65,28 @@ describe('projects schema', () => {
       'project_participants_workspace_id_project_id_projects_workspace_id_id_fk',
       'project_participants_workspace_id_user_id_workspace_membership_refs_workspace_id_user_id_fk',
     ]);
+  });
+
+  it('supports exactly one project client reference', () => {
+    const columns = getTableColumns(projects);
+    const config = getTableConfig(projects);
+
+    expect(columns.endCustomerId.name).toBe('end_customer_id');
+    expect(config.checks.map((check) => check.name)).toContain('projects_exactly_one_client_check');
+    expect(foreignKeyNames(projects)).toEqual(
+      expect.arrayContaining(['projects_end_customer_id_client_identities_id_fk']),
+    );
+  });
+
+  it('keeps the client identity migration safe for existing direct-client projects', () => {
+    const migrationSql = readFileSync(
+      new URL('../../drizzle/0012_client_identities.sql', import.meta.url),
+      'utf8',
+    );
+
+    expect(migrationSql).toContain(
+      'CHECK (num_nonnulls("projects"."end_customer_id", "projects"."client_org_id") = 1) NOT VALID',
+    );
+    expect(migrationSql).toContain('ON DELETE restrict ON UPDATE no action');
   });
 });

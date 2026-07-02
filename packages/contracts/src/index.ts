@@ -61,7 +61,17 @@ export * from './audit.js';
 export * from './audience.js';
 export * from './grace-window.js';
 export * from './notifications.js';
+export * from './client-identities.js';
 export * from './workspace-context.js';
 export * from './realtime.js';
 export * from './projects.js';
 export * from './schedule.js';
+export * from './agreement-terms.js';
+export type {
+  AgreementTerms,
+  AgreementTermsResponse,
+  BillingCycle,
+  CommercialModel,
+  ConfigureAgreementTermsRequest,
+  FeeBasis,
+} from './agreement-terms.js';

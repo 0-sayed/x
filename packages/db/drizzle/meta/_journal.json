@@ -89,8 +89,22 @@
     {
       "idx": 12,
       "version": "7",
-      "when": 1782945291844,
-      "tag": "0012_schedule",
+      "when": 1782945324406,
+      "tag": "0012_client_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782953154815,
+      "tag": "0013_agreement_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1782953440288,
+      "tag": "0014_schedule",
       "breakpoints": true
     }
   ]

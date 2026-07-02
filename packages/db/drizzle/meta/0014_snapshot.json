@@ -1,9 +1,331 @@
 {
-  "id": "5da852a0-b4c6-4057-8281-d30dc74f0b9f",
-  "prevId": "6f3222d5-843e-4d82-8735-b127789b7b30",
+  "id": "ce17503f-c003-4dbe-9e01-07fad6630a2b",
+  "prevId": "8936c743-86c0-40c3-9d6a-52139f4c7f11",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.agreement_terms": {
+      "name": "agreement_terms",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commercial_model": {
+          "name": "commercial_model",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "disclosure_depth": {
+          "name": "disclosure_depth",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "retention_percentage": {
+          "name": "retention_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_cycle": {
+          "name": "billing_cycle",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_value_minor": {
+          "name": "contract_value_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_basis": {
+          "name": "fee_basis",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_percentage_bps": {
+          "name": "fee_percentage_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_amount_minor": {
+          "name": "fee_amount_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_cost_minor": {
+          "name": "target_cost_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gmp_ceiling_minor": {
+          "name": "gmp_ceiling_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "savings_split_contractor_bps": {
+          "name": "savings_split_contractor_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reimbursable_cost_categories": {
+          "name": "reimbursable_cost_categories",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_applies_to_subs": {
+          "name": "fee_applies_to_subs",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fee_applies_to_change_orders": {
+          "name": "fee_applies_to_change_orders",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_snapshot_markdown": {
+          "name": "contract_snapshot_markdown",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_snapshot_generated_at": {
+          "name": "contract_snapshot_generated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_by_user_id": {
+          "name": "locked_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_by_draw_item_id": {
+          "name": "locked_by_draw_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lock_reason": {
+          "name": "lock_reason",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configured_by_user_id": {
+          "name": "configured_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "agreement_terms_workspace_project_idx": {
+          "name": "agreement_terms_workspace_project_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "agreement_terms_workspace_locked_at_idx": {
+          "name": "agreement_terms_workspace_locked_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "locked_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agreement_terms_workspace_id_workspace_refs_id_fk": {
+          "name": "agreement_terms_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_locked_by_user_id_inframodern_user_refs_id_fk": {
+          "name": "agreement_terms_locked_by_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": ["locked_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_configured_by_user_id_inframodern_user_refs_id_fk": {
+          "name": "agreement_terms_configured_by_user_id_inframodern_user_refs_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "inframodern_user_refs",
+          "columnsFrom": ["configured_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "agreement_terms_workspace_id_project_id_projects_workspace_id_id_fk": {
+          "name": "agreement_terms_workspace_id_project_id_projects_workspace_id_id_fk",
+          "tableFrom": "agreement_terms",
+          "tableTo": "projects",
+          "columnsFrom": ["workspace_id", "project_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "agreement_terms_workspace_id_project_id_unique": {
+          "name": "agreement_terms_workspace_id_project_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "project_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "agreement_terms_commercial_model_check": {
+          "name": "agreement_terms_commercial_model_check",
+          "value": "\"agreement_terms\".\"commercial_model\" in ('lump_sum', 'cost_plus', 'remeasured')"
+        },
+        "agreement_terms_currency_check": {
+          "name": "agreement_terms_currency_check",
+          "value": "\"agreement_terms\".\"currency\" in ('SAR', 'EGP')"
+        },
+        "agreement_terms_disclosure_depth_check": {
+          "name": "agreement_terms_disclosure_depth_check",
+          "value": "\"agreement_terms\".\"disclosure_depth\" in ('none', 'category', 'line')"
+        },
+        "agreement_terms_billing_cycle_check": {
+          "name": "agreement_terms_billing_cycle_check",
+          "value": "\"agreement_terms\".\"billing_cycle\" in ('milestone', 'monthly', 'biweekly')"
+        },
+        "agreement_terms_fee_basis_check": {
+          "name": "agreement_terms_fee_basis_check",
+          "value": "\"agreement_terms\".\"fee_basis\" is null or \"agreement_terms\".\"fee_basis\" in ('percentage', 'fixed')"
+        },
+        "agreement_terms_retention_percentage_check": {
+          "name": "agreement_terms_retention_percentage_check",
+          "value": "\"agreement_terms\".\"retention_percentage\" >= 0 and \"agreement_terms\".\"retention_percentage\" <= 100"
+        },
+        "agreement_terms_basis_points_check": {
+          "name": "agreement_terms_basis_points_check",
+          "value": "(\"agreement_terms\".\"fee_percentage_bps\" is null or (\"agreement_terms\".\"fee_percentage_bps\" >= 0 and \"agreement_terms\".\"fee_percentage_bps\" <= 10000)) and (\"agreement_terms\".\"savings_split_contractor_bps\" is null or (\"agreement_terms\".\"savings_split_contractor_bps\" >= 0 and \"agreement_terms\".\"savings_split_contractor_bps\" <= 10000))"
+        },
+        "agreement_terms_minor_units_non_negative_check": {
+          "name": "agreement_terms_minor_units_non_negative_check",
+          "value": "(\"agreement_terms\".\"contract_value_minor\" is null or \"agreement_terms\".\"contract_value_minor\" >= 0) and (\"agreement_terms\".\"fee_amount_minor\" is null or \"agreement_terms\".\"fee_amount_minor\" >= 0) and (\"agreement_terms\".\"target_cost_minor\" is null or \"agreement_terms\".\"target_cost_minor\" >= 0) and (\"agreement_terms\".\"gmp_ceiling_minor\" is null or \"agreement_terms\".\"gmp_ceiling_minor\" >= 0)"
+        },
+        "agreement_terms_reimbursable_categories_shape_check": {
+          "name": "agreement_terms_reimbursable_categories_shape_check",
+          "value": "\"agreement_terms\".\"reimbursable_cost_categories\" is null or agreement_terms_reimbursable_categories_valid(\"agreement_terms\".\"reimbursable_cost_categories\")"
+        },
+        "agreement_terms_lock_reason_check": {
+          "name": "agreement_terms_lock_reason_check",
+          "value": "\"agreement_terms\".\"lock_reason\" is null or \"agreement_terms\".\"lock_reason\" in ('first_draw_item_approved')"
+        },
+        "agreement_terms_fee_value_shape_check": {
+          "name": "agreement_terms_fee_value_shape_check",
+          "value": "(\"agreement_terms\".\"fee_basis\" is null and \"agreement_terms\".\"fee_percentage_bps\" is null and \"agreement_terms\".\"fee_amount_minor\" is null) or (\"agreement_terms\".\"fee_basis\" = 'percentage' and \"agreement_terms\".\"fee_percentage_bps\" is not null and \"agreement_terms\".\"fee_amount_minor\" is null) or (\"agreement_terms\".\"fee_basis\" = 'fixed' and \"agreement_terms\".\"fee_amount_minor\" is not null and \"agreement_terms\".\"fee_percentage_bps\" is null)"
+        },
+        "agreement_terms_lump_sum_shape_check": {
+          "name": "agreement_terms_lump_sum_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'lump_sum' or (\"agreement_terms\".\"contract_value_minor\" is not null and \"agreement_terms\".\"fee_basis\" is null and \"agreement_terms\".\"fee_percentage_bps\" is null and \"agreement_terms\".\"fee_amount_minor\" is null and \"agreement_terms\".\"target_cost_minor\" is null and \"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null and \"agreement_terms\".\"reimbursable_cost_categories\" is null and \"agreement_terms\".\"fee_applies_to_subs\" is null and \"agreement_terms\".\"fee_applies_to_change_orders\" is null)"
+        },
+        "agreement_terms_cost_plus_shape_check": {
+          "name": "agreement_terms_cost_plus_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'cost_plus' or (\"agreement_terms\".\"contract_value_minor\" is null and \"agreement_terms\".\"fee_basis\" is not null and \"agreement_terms\".\"reimbursable_cost_categories\" is not null and \"agreement_terms\".\"fee_applies_to_subs\" is not null and \"agreement_terms\".\"fee_applies_to_change_orders\" is not null and ((\"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null) or (\"agreement_terms\".\"gmp_ceiling_minor\" is not null and \"agreement_terms\".\"savings_split_contractor_bps\" is not null)))"
+        },
+        "agreement_terms_remeasured_shape_check": {
+          "name": "agreement_terms_remeasured_shape_check",
+          "value": "\"agreement_terms\".\"commercial_model\" <> 'remeasured' or (\"agreement_terms\".\"fee_basis\" is not null and \"agreement_terms\".\"contract_value_minor\" is null and \"agreement_terms\".\"target_cost_minor\" is null and \"agreement_terms\".\"gmp_ceiling_minor\" is null and \"agreement_terms\".\"savings_split_contractor_bps\" is null and \"agreement_terms\".\"reimbursable_cost_categories\" is null and \"agreement_terms\".\"fee_applies_to_subs\" is null and \"agreement_terms\".\"fee_applies_to_change_orders\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.audit_events": {
       "name": "audit_events",
       "schema": "",
@@ -1027,6 +1349,81 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.milestone_draw_links": {
+      "name": "milestone_draw_links",
+      "schema": "",
+      "columns": {
+        "milestone_id": {
+          "name": "milestone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "draw_item_id": {
+          "name": "draw_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "milestone_draw_links_workspace_draw_item_idx": {
+          "name": "milestone_draw_links_workspace_draw_item_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "draw_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "milestone_draw_links_workspace_id_milestone_id_milestones_fk": {
+          "name": "milestone_draw_links_workspace_id_milestone_id_milestones_fk",
+          "tableFrom": "milestone_draw_links",
+          "tableTo": "schedule_milestones",
+          "columnsFrom": ["workspace_id", "milestone_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "milestone_draw_links_milestone_id_draw_item_id_pk": {
+          "name": "milestone_draw_links_milestone_id_draw_item_id_pk",
+          "columns": ["milestone_id", "draw_item_id"]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -2317,6 +2714,748 @@
       },
       "isRLSEnabled": false
     },
+    "public.schedule_baseline_milestones": {
+      "name": "schedule_baseline_milestones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "baseline_id": {
+          "name": "baseline_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_milestone_id": {
+          "name": "source_milestone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phase_name": {
+          "name": "phase_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "milestone_name": {
+          "name": "milestone_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "baseline_date": {
+          "name": "baseline_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "schedule_baseline_milestones_baseline_order_idx": {
+          "name": "schedule_baseline_milestones_baseline_order_idx",
+          "columns": [
+            {
+              "expression": "baseline_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "display_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_baseline_milestones_baseline_id_schedule_baselines_id_fk": {
+          "name": "schedule_baseline_milestones_baseline_id_schedule_baselines_id_fk",
+          "tableFrom": "schedule_baseline_milestones",
+          "tableTo": "schedule_baselines",
+          "columnsFrom": ["baseline_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "schedule_baseline_milestones_display_order_check": {
+          "name": "schedule_baseline_milestones_display_order_check",
+          "value": "\"schedule_baseline_milestones\".\"display_order\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.schedule_baselines": {
+      "name": "schedule_baselines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proposed_by_user_id": {
+          "name": "proposed_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sign_off_id": {
+          "name": "sign_off_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "self_certified_by_user_id": {
+          "name": "self_certified_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "self_certified_reason": {
+          "name": "self_certified_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agreed_at": {
+          "name": "agreed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "schedule_baselines_workspace_project_status_idx": {
+          "name": "schedule_baselines_workspace_project_status_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "schedule_baselines_sign_off_id_idx": {
+          "name": "schedule_baselines_sign_off_id_idx",
+          "columns": [
+            {
+              "expression": "sign_off_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_baselines_workspace_id_workspace_refs_id_fk": {
+          "name": "schedule_baselines_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "schedule_baselines",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_baselines_workspace_id_project_id_projects_workspace_id_id_fk": {
+          "name": "schedule_baselines_workspace_id_project_id_projects_workspace_id_id_fk",
+          "tableFrom": "schedule_baselines",
+          "tableTo": "projects",
+          "columnsFrom": ["workspace_id", "project_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_baselines_workspace_id_proposed_by_user_id_membership_fk": {
+          "name": "schedule_baselines_workspace_id_proposed_by_user_id_membership_fk",
+          "tableFrom": "schedule_baselines",
+          "tableTo": "workspace_membership_refs",
+          "columnsFrom": ["workspace_id", "proposed_by_user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "schedule_baselines_workspace_id_project_id_sign_off_id_sign_offs_workspace_id_project_id_id_fk": {
+          "name": "schedule_baselines_workspace_id_project_id_sign_off_id_sign_offs_workspace_id_project_id_id_fk",
+          "tableFrom": "schedule_baselines",
+          "tableTo": "sign_offs",
+          "columnsFrom": ["workspace_id", "project_id", "sign_off_id"],
+          "columnsTo": ["workspace_id", "project_id", "id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "schedule_baselines_workspace_id_self_certified_by_user_id_membership_fk": {
+          "name": "schedule_baselines_workspace_id_self_certified_by_user_id_membership_fk",
+          "tableFrom": "schedule_baselines",
+          "tableTo": "workspace_membership_refs",
+          "columnsFrom": ["workspace_id", "self_certified_by_user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "schedule_baselines_status_check": {
+          "name": "schedule_baselines_status_check",
+          "value": "\"schedule_baselines\".\"status\" in ('draft', 'proposed', 'agreed', 'self_certified')"
+        },
+        "schedule_baselines_self_certified_reason_check": {
+          "name": "schedule_baselines_self_certified_reason_check",
+          "value": "\"schedule_baselines\".\"status\" != 'self_certified' OR nullif(trim(\"schedule_baselines\".\"self_certified_reason\"), '') is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.schedule_forecast_moves": {
+      "name": "schedule_forecast_moves",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "milestone_id": {
+          "name": "milestone_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "old_forecast_date": {
+          "name": "old_forecast_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_forecast_date": {
+          "name": "new_forecast_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moved_by_user_id": {
+          "name": "moved_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moved_at": {
+          "name": "moved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "schedule_forecast_moves_workspace_project_moved_at_idx": {
+          "name": "schedule_forecast_moves_workspace_project_moved_at_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "moved_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_forecast_moves_workspace_id_workspace_refs_id_fk": {
+          "name": "schedule_forecast_moves_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "schedule_forecast_moves",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_forecast_moves_workspace_id_project_id_milestone_id_milestones_fk": {
+          "name": "schedule_forecast_moves_workspace_id_project_id_milestone_id_milestones_fk",
+          "tableFrom": "schedule_forecast_moves",
+          "tableTo": "schedule_milestones",
+          "columnsFrom": ["workspace_id", "project_id", "milestone_id"],
+          "columnsTo": ["workspace_id", "project_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_forecast_moves_workspace_id_moved_by_user_id_membership_fk": {
+          "name": "schedule_forecast_moves_workspace_id_moved_by_user_id_membership_fk",
+          "tableFrom": "schedule_forecast_moves",
+          "tableTo": "workspace_membership_refs",
+          "columnsFrom": ["workspace_id", "moved_by_user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "schedule_forecast_moves_reason_check": {
+          "name": "schedule_forecast_moves_reason_check",
+          "value": "nullif(trim(\"schedule_forecast_moves\".\"reason\"), '') is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.schedule_milestones": {
+      "name": "schedule_milestones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase_id": {
+          "name": "phase_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "forecast_date": {
+          "name": "forecast_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_by_user_id": {
+          "name": "completed_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "schedule_milestones_workspace_project_order_idx": {
+          "name": "schedule_milestones_workspace_project_order_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "display_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "schedule_milestones_workspace_phase_idx": {
+          "name": "schedule_milestones_workspace_phase_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_milestones_workspace_id_workspace_refs_id_fk": {
+          "name": "schedule_milestones_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "schedule_milestones",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_milestones_workspace_id_project_id_projects_workspace_id_id_fk": {
+          "name": "schedule_milestones_workspace_id_project_id_projects_workspace_id_id_fk",
+          "tableFrom": "schedule_milestones",
+          "tableTo": "projects",
+          "columnsFrom": ["workspace_id", "project_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_milestones_workspace_id_project_id_phase_id_schedule_phases_workspace_id_project_id_id_fk": {
+          "name": "schedule_milestones_workspace_id_project_id_phase_id_schedule_phases_workspace_id_project_id_id_fk",
+          "tableFrom": "schedule_milestones",
+          "tableTo": "schedule_phases",
+          "columnsFrom": ["workspace_id", "project_id", "phase_id"],
+          "columnsTo": ["workspace_id", "project_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_milestones_workspace_id_completed_by_user_id_membership_fk": {
+          "name": "schedule_milestones_workspace_id_completed_by_user_id_membership_fk",
+          "tableFrom": "schedule_milestones",
+          "tableTo": "workspace_membership_refs",
+          "columnsFrom": ["workspace_id", "completed_by_user_id"],
+          "columnsTo": ["workspace_id", "user_id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "schedule_milestones_workspace_id_id_unique": {
+          "name": "schedule_milestones_workspace_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "id"]
+        },
+        "schedule_milestones_workspace_id_project_id_id_unique": {
+          "name": "schedule_milestones_workspace_id_project_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "project_id", "id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "schedule_milestones_display_order_check": {
+          "name": "schedule_milestones_display_order_check",
+          "value": "\"schedule_milestones\".\"display_order\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.schedule_phases": {
+      "name": "schedule_phases",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_on": {
+          "name": "starts_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ends_on": {
+          "name": "ends_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "schedule_phases_workspace_project_order_idx": {
+          "name": "schedule_phases_workspace_project_order_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "display_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "schedule_phases_workspace_id_workspace_refs_id_fk": {
+          "name": "schedule_phases_workspace_id_workspace_refs_id_fk",
+          "tableFrom": "schedule_phases",
+          "tableTo": "workspace_refs",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_phases_workspace_id_project_id_projects_workspace_id_id_fk": {
+          "name": "schedule_phases_workspace_id_project_id_projects_workspace_id_id_fk",
+          "tableFrom": "schedule_phases",
+          "tableTo": "projects",
+          "columnsFrom": ["workspace_id", "project_id"],
+          "columnsTo": ["workspace_id", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "schedule_phases_workspace_id_id_unique": {
+          "name": "schedule_phases_workspace_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "id"]
+        },
+        "schedule_phases_workspace_id_project_id_id_unique": {
+          "name": "schedule_phases_workspace_id_project_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "project_id", "id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "schedule_phases_display_order_check": {
+          "name": "schedule_phases_display_order_check",
+          "value": "\"schedule_phases\".\"display_order\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.session_records": {
       "name": "session_records",
       "schema": "",
@@ -2780,7 +3919,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "sign_offs_workspace_id_project_id_id_unique": {
+          "name": "sign_offs_workspace_id_project_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["workspace_id", "project_id", "id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "sign_offs_assigned_audience_check": {

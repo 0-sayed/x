@@ -13,7 +13,7 @@ import {
 } from './schedule.js';
 
 const scheduleMigrationSql = () =>
-  readFileSync(new URL('../../drizzle/0012_schedule.sql', import.meta.url), 'utf8');
+  readFileSync(new URL('../../drizzle/0014_schedule.sql', import.meta.url), 'utf8');
 
 const foreignKeyNames = (
   table:
