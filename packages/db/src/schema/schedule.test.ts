@@ -85,6 +85,7 @@ describe('schedule schema', () => {
     expect(sql).toContain(
       'FOREIGN KEY ("workspace_id","project_id","sign_off_id") REFERENCES "public"."sign_offs"("workspace_id","project_id","id")',
     );
+    expect(sql).toContain('ON DELETE SET NULL ("sign_off_id") ON UPDATE no action');
   });
 
   it('prevents negative baseline milestone display order', () => {
